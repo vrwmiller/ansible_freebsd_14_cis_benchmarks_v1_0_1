@@ -2,4 +2,1282 @@
 # FreeBSD 14 CIS Benchmark v1.0.1
 # Section 1 — Initial Setup
 # Controls: 1.1.1.1 – 1.6.5
-[]
+
+# =============================================================
+# 1.1 Filesystem
+# 1.1.1 Configure Filesystem Kernel Modules
+# =============================================================
+
+- name: "1.1.1.1 | Ensure ext2fs kernel module is not available"
+  when: "'1.1.1.1' not in active_exceptions"
+  tags: [rule_1.1.1.1, level1, section_1]
+  block:
+    - name: "1.1.1.1 | AUDIT | Check whether ext2fs module is loaded"
+      ansible.builtin.command: kldstat -q -m ext2fs
+      register: cis_1_1_1_1_kld
+      changed_when: cis_1_1_1_1_kld.rc == 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.1.1 | AUDIT | Check ext2fs boot-load setting in loader.conf"
+      ansible.builtin.command:
+        argv:
+          - grep
+          - -E
+          - '^[[:space:]]*ext2fs_load="NO"[[:space:]]*$'
+          - /boot/loader.conf
+      register: cis_1_1_1_1_loader_no
+      changed_when: cis_1_1_1_1_loader_no.rc != 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.1.1 | AUDIT | Report ext2fs module state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'FAIL: ext2fs kernel module is loaded'
+             if cis_1_1_1_1_kld.rc == 0
+             else 'PASS: ext2fs kernel module is NOT loaded' }}
+
+    - name: "1.1.1.1 | REMEDIATE | Unload ext2fs from the running kernel"
+      ansible.builtin.command: kldunload -f ext2fs
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_1_1_kld.rc == 0 or cis_1_1_1_1_loader_no.rc != 0
+      changed_when: true
+
+    - name: "1.1.1.1 | REMEDIATE | Prevent ext2fs from loading at boot"
+      ansible.builtin.lineinfile:
+        path: /boot/loader.conf
+        regexp: '^ext2fs_load='
+        line: 'ext2fs_load="NO"'
+        create: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_1_1_kld.rc == 0 or cis_1_1_1_1_loader_no.rc != 0
+
+# ---
+
+- name: "1.1.1.2 | Ensure msdosfs kernel module is not available"
+  when: "'1.1.1.2' not in active_exceptions"
+  tags: [rule_1.1.1.2, level1, section_1]
+  block:
+    - name: "1.1.1.2 | AUDIT | Check whether msdosfs module is loaded"
+      ansible.builtin.command: kldstat -q -m msdosfs
+      register: cis_1_1_1_2_kld
+      changed_when: cis_1_1_1_2_kld.rc == 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.1.2 | AUDIT | Check msdosfs boot-load setting in loader.conf"
+      ansible.builtin.command:
+        argv:
+          - grep
+          - -E
+          - '^[[:space:]]*msdosfs_load="NO"[[:space:]]*$'
+          - /boot/loader.conf
+      register: cis_1_1_1_2_loader_no
+      changed_when: cis_1_1_1_2_loader_no.rc != 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.1.2 | AUDIT | Report msdosfs module state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'FAIL: msdosfs kernel module is loaded'
+             if cis_1_1_1_2_kld.rc == 0
+             else 'PASS: msdosfs kernel module is NOT loaded' }}
+
+    - name: "1.1.1.2 | REMEDIATE | Unload msdosfs from the running kernel"
+      ansible.builtin.command: kldunload -f msdosfs
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_1_2_kld.rc == 0
+      changed_when: true
+
+    - name: "1.1.1.2 | REMEDIATE | Prevent msdosfs from loading at boot"
+      ansible.builtin.lineinfile:
+        path: /boot/loader.conf
+        regexp: '^msdosfs_load='
+        line: 'msdosfs_load="NO"'
+        create: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_1_2_kld.rc == 0
+
+# ---
+
+- name: "1.1.1.3 | Ensure zfs kernel module is not available"
+  when: "'1.1.1.3' not in active_exceptions"
+  tags: [rule_1.1.1.3, level1, section_1]
+  block:
+    - name: "1.1.1.3 | AUDIT | Check whether zfs module is loaded"
+      ansible.builtin.command: kldstat -q -m zfs
+      register: cis_1_1_1_3_kld
+      changed_when: cis_1_1_1_3_kld.rc == 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.1.3 | AUDIT | Check zfs boot-load setting in loader.conf"
+      ansible.builtin.command:
+        argv:
+          - grep
+          - -E
+          - '^[[:space:]]*zfs_load="NO"[[:space:]]*$'
+          - /boot/loader.conf
+      register: cis_1_1_1_3_loader_no
+      changed_when: cis_1_1_1_3_loader_no.rc != 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.1.3 | AUDIT | Report zfs module state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'FAIL: zfs kernel module is loaded'
+             if cis_1_1_1_3_kld.rc == 0
+             else 'PASS: zfs kernel module is NOT loaded' }}
+
+    - name: "1.1.1.3 | REMEDIATE | Check for active ZFS pools before unloading"
+      ansible.builtin.command: zpool list -H
+      register: cis_1_1_1_3_zpools
+      changed_when: false
+      failed_when: false
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_1_3_kld.rc == 0
+
+    - name: "1.1.1.3 | REMEDIATE | Warn — ZFS pools active, skipping unload to prevent data loss"
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: ZFS pools are currently active. Skipping ZFS disable/unload
+          remediation to prevent data loss or system instability. Manually
+          migrate off ZFS before applying this control.
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_1_3_kld.rc == 0
+        - cis_1_1_1_3_zpools is defined
+        - cis_1_1_1_3_zpools.rc == 0
+        - cis_1_1_1_3_zpools.stdout | default('') | length > 0
+
+    - name: "1.1.1.3 | REMEDIATE | Warn — unable to verify ZFS pool state"
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: Unable to verify active ZFS pool state (`zpool list -H` failed).
+          Skipping ZFS disable/unload remediation to avoid applying destructive
+          changes on unknown storage state.
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_1_3_kld.rc == 0
+        - cis_1_1_1_3_zpools is defined
+        - cis_1_1_1_3_zpools.rc != 0
+
+    - name: "1.1.1.3 | REMEDIATE | Disable the zfs service"
+      ansible.builtin.command: sysrc zfs_enable="NO"
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_1_3_kld.rc == 0
+        - cis_1_1_1_3_zpools is defined
+        - cis_1_1_1_3_zpools.rc == 0
+        - cis_1_1_1_3_zpools.stdout | default('') | length == 0
+      changed_when: true
+      failed_when: false
+
+    - name: "1.1.1.3 | REMEDIATE | Stop the zfs service"
+      ansible.builtin.command: service zfs stop
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_1_3_kld.rc == 0
+        - cis_1_1_1_3_zpools is defined
+        - cis_1_1_1_3_zpools.rc == 0
+        - cis_1_1_1_3_zpools.stdout | default('') | length == 0
+      changed_when: true
+      failed_when: false
+
+    - name: "1.1.1.3 | REMEDIATE | Unload zfs from the running kernel"
+      ansible.builtin.command: kldunload -f zfs
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_1_3_kld.rc == 0
+        - cis_1_1_1_3_zpools is defined
+        - cis_1_1_1_3_zpools.rc == 0
+        - cis_1_1_1_3_zpools.stdout | default('') | length == 0
+      changed_when: true
+
+    - name: "1.1.1.3 | REMEDIATE | Prevent zfs from loading at boot"
+      ansible.builtin.lineinfile:
+        path: /boot/loader.conf
+        regexp: '^zfs_load='
+        line: 'zfs_load="NO"'
+        create: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_1_3_loader_no.rc != 0
+        - cis_1_1_1_3_kld.rc != 0 or (
+            cis_1_1_1_3_zpools is defined and
+            cis_1_1_1_3_zpools.rc == 0 and
+            cis_1_1_1_3_zpools.stdout | default('') | length == 0
+          )
+
+# =============================================================
+# 1.1.2 Configure Filesystem Partitions
+# 1.1.2.1 Configure /tmp
+# =============================================================
+
+- name: "1.1.2.1.1 | Ensure /tmp is a separate partition"
+  when: "'1.1.2.1.1' not in active_exceptions"
+  tags: [rule_1.1.2.1.1, level1, section_1]
+  block:
+    - name: "1.1.2.1.1 | AUDIT | Check if /tmp is a separately mounted filesystem"
+      ansible.builtin.shell: mount -p | grep -E '[[:space:]]/tmp[[:space:]]'
+      register: cis_1_1_2_1_1_mount
+      changed_when: cis_1_1_2_1_1_mount.rc != 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.2.1.1 | AUDIT | Check sysrc tmpmfs value"
+      ansible.builtin.command: sysrc -n tmpmfs
+      register: cis_1_1_2_1_1_sysrc
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.2.1.1 | AUDIT | Report /tmp partition state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'PASS: /tmp is a separate partition'
+             if cis_1_1_2_1_1_mount.rc == 0
+             else 'FAIL: /tmp is not a separate partition (sysrc tmpmfs='
+               ~ (cis_1_1_2_1_1_sysrc.stdout | default('unset')) ~ ')' }}
+
+    - name: "1.1.2.1.1 | REMEDIATE | Enable tmpfs for /tmp at boot"
+      ansible.builtin.command: sysrc tmpmfs="YES"
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_1_1_mount.rc != 0
+        - (cis_1_1_2_1_1_sysrc.stdout | default('')) | upper != 'YES'
+      changed_when: true
+
+    - name: "1.1.2.1.1 | REMEDIATE | Set tmpfs size for /tmp"
+      ansible.builtin.command: "sysrc tmpsize={{ freebsd_cis_tmp_size }}"
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_1_1_mount.rc != 0
+        - (cis_1_1_2_1_1_sysrc.stdout | default('')) | upper != 'YES'
+      changed_when: true
+
+    - name: "1.1.2.1.1 | REMEDIATE | Warn — reboot required to mount /tmp as tmpfs"
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: tmpmfs=YES is already set in rc.conf but /tmp is not currently
+          a separate partition. A reboot is required for the setting to take effect.
+          No further automated remediation is possible until after the next boot.
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_1_1_mount.rc != 0
+        - (cis_1_1_2_1_1_sysrc.stdout | default('')) | upper == 'YES'
+
+# ---
+
+- name: "1.1.2.1.2 | Ensure nosuid option set on /tmp partition"
+  when: "'1.1.2.1.2' not in active_exceptions"
+  tags: [rule_1.1.2.1.2, level1, section_1]
+  block:
+    - name: "1.1.2.1.2 | AUDIT | Check /tmp mount for missing nosuid"
+      ansible.builtin.shell: mount | grep -E '[[:space:]]/tmp([[:space:]]|$)' | grep -v nosuid
+      register: cis_1_1_2_1_2_nosuid
+      changed_when: cis_1_1_2_1_2_nosuid.rc == 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.2.1.2 | AUDIT | Report nosuid state on /tmp"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'FAIL: /tmp is mounted without nosuid'
+             if cis_1_1_2_1_2_nosuid.rc == 0
+             else 'PASS: nosuid is set on /tmp or /tmp is not a separate partition' }}
+
+    - name: "1.1.2.1.2 | REMEDIATE | Apply nosuid to /tmp mount"
+      ansible.builtin.command: mount -u -o nosuid /tmp
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_1_2_nosuid.rc == 0
+      changed_when: true
+      failed_when: false
+
+    - name: "1.1.2.1.2 | REMEDIATE | Read current tmpmfs_flags"
+      ansible.builtin.command: sysrc -n tmpmfs_flags
+      register: cis_1_1_2_1_2_tmpmfs_flags
+      changed_when: false
+      failed_when: false
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_1_2_nosuid.rc == 0
+
+    - name: "1.1.2.1.2 | REMEDIATE | Persist nosuid in tmpmfs_flags in rc.conf"
+      ansible.builtin.command: >-
+        sysrc tmpmfs_flags="{{ (cis_1_1_2_1_2_tmpmfs_flags.stdout | default('') | trim) ~ (' -o nosuid' if (cis_1_1_2_1_2_tmpmfs_flags.stdout | default('') | trim | length > 0) else '-o nosuid') }}"
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_1_2_nosuid.rc == 0
+        - "'-o nosuid' not in (cis_1_1_2_1_2_tmpmfs_flags.stdout | default(''))"
+      changed_when: true
+      failed_when: false
+
+# ---
+
+- name: "1.1.2.1.3 | Ensure noexec option set on /tmp partition"
+  when: "'1.1.2.1.3' not in active_exceptions"
+  tags: [rule_1.1.2.1.3, level1, section_1]
+  block:
+    - name: "1.1.2.1.3 | AUDIT | Check /tmp mount for missing noexec"
+      ansible.builtin.shell: mount | grep -E '[[:space:]]/tmp([[:space:]]|$)' | grep -v noexec
+      register: cis_1_1_2_1_3_noexec
+      changed_when: cis_1_1_2_1_3_noexec.rc == 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.2.1.3 | AUDIT | Report noexec state on /tmp"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'FAIL: /tmp is mounted without noexec'
+             if cis_1_1_2_1_3_noexec.rc == 0
+             else 'PASS: noexec is set on /tmp or /tmp is not a separate partition' }}
+
+    - name: "1.1.2.1.3 | REMEDIATE | Apply noexec to /tmp mount"
+      ansible.builtin.command: mount -u -o noexec /tmp
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_1_3_noexec.rc == 0
+      changed_when: true
+      failed_when: false
+
+    - name: "1.1.2.1.3 | REMEDIATE | Read current tmpmfs_flags"
+      ansible.builtin.command: sysrc -n tmpmfs_flags
+      register: cis_1_1_2_1_3_tmpmfs_flags
+      changed_when: false
+      failed_when: false
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_1_3_noexec.rc == 0
+
+    - name: "1.1.2.1.3 | REMEDIATE | Persist noexec in tmpmfs_flags in rc.conf"
+      ansible.builtin.command: >-
+        sysrc tmpmfs_flags="{{ (cis_1_1_2_1_3_tmpmfs_flags.stdout | default('') | trim) ~ (' -o noexec' if (cis_1_1_2_1_3_tmpmfs_flags.stdout | default('') | trim | length > 0) else '-o noexec') }}"
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_1_3_noexec.rc == 0
+        - "'-o noexec' not in (cis_1_1_2_1_3_tmpmfs_flags.stdout | default(''))"
+      changed_when: true
+      failed_when: false
+
+# =============================================================
+# 1.1.2.2 Configure /home
+# =============================================================
+
+- name: "1.1.2.2.1 | Ensure separate partition exists for /home"
+  when:
+    - "'1.1.2.2.1' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_1.1.2.2.1, level2, section_1]
+  block:
+    - name: "1.1.2.2.1 | AUDIT | Check if /home is a separately mounted filesystem"
+      ansible.builtin.shell: mount | grep -E '[[:space:]]/home([[:space:]]|$)'
+      register: cis_1_1_2_2_1_mount
+      changed_when: cis_1_1_2_2_1_mount.rc != 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.2.2.1 | AUDIT | Report /home partition state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'PASS: /home is a separate partition'
+             if cis_1_1_2_2_1_mount.rc == 0
+             else 'FAIL: /home is not a separate partition — manual repartitioning required' }}
+
+# ---
+
+- name: "1.1.2.2.2 | Ensure nosuid option set on /home partition"
+  when: "'1.1.2.2.2' not in active_exceptions"
+  tags: [rule_1.1.2.2.2, level1, section_1]
+  block:
+    - name: "1.1.2.2.2 | AUDIT | Check /home mount for missing nosuid"
+      ansible.builtin.shell: mount | grep -E '[[:space:]]/home([[:space:]]|$)' | grep -v nosuid
+      register: cis_1_1_2_2_2_nosuid
+      changed_when: cis_1_1_2_2_2_nosuid.rc == 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.2.2.2 | AUDIT | Report nosuid state on /home"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'FAIL: /home is mounted without nosuid'
+             if cis_1_1_2_2_2_nosuid.rc == 0
+             else 'PASS: nosuid is set on /home or /home is not a separate partition' }}
+
+    - name: "1.1.2.2.2 | REMEDIATE | Apply nosuid to /home mount"
+      ansible.builtin.command: mount -u -o nosuid /home
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_2_2_nosuid.rc == 0
+      changed_when: true
+      failed_when: false
+
+    - name: "1.1.2.2.2 | REMEDIATE | Persist nosuid in /etc/fstab for /home"
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^(\S+\s+/home\s+\S+\s+)(?!.*\bnosuid\b)(\S+)(\s+\d+\s+\d+)(\s*(?:#.*)?)$'
+        replace: '\1\2,nosuid\3\4'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_2_2_nosuid.rc == 0
+
+# =============================================================
+# 1.1.2.3 Configure /var
+# =============================================================
+
+- name: "1.1.2.3.1 | Ensure separate partition exists for /var"
+  when:
+    - "'1.1.2.3.1' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_1.1.2.3.1, level2, section_1]
+  block:
+    - name: "1.1.2.3.1 | AUDIT | Check if /var is a separately mounted filesystem"
+      ansible.builtin.shell: mount | grep -E '[[:space:]]/var([[:space:]]|$)'
+      register: cis_1_1_2_3_1_mount
+      changed_when: cis_1_1_2_3_1_mount.rc != 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.2.3.1 | AUDIT | Report /var partition state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'PASS: /var is a separate partition'
+             if cis_1_1_2_3_1_mount.rc == 0
+             else 'FAIL: /var is not a separate partition — manual repartitioning required' }}
+
+# ---
+
+- name: "1.1.2.3.2 | Ensure nosuid option set on /var partition"
+  when: "'1.1.2.3.2' not in active_exceptions"
+  tags: [rule_1.1.2.3.2, level1, section_1]
+  block:
+    - name: "1.1.2.3.2 | AUDIT | Check /var mount for missing nosuid"
+      ansible.builtin.shell: mount | grep -E '[[:space:]]/var([[:space:]]|$)' | grep -v nosuid
+      register: cis_1_1_2_3_2_nosuid
+      changed_when: cis_1_1_2_3_2_nosuid.rc == 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.2.3.2 | AUDIT | Report nosuid state on /var"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'FAIL: /var is mounted without nosuid'
+             if cis_1_1_2_3_2_nosuid.rc == 0
+             else 'PASS: nosuid is set on /var or /var is not a separate partition' }}
+
+    - name: "1.1.2.3.2 | REMEDIATE | Apply nosuid to /var mount"
+      ansible.builtin.command: mount -u -o nosuid /var
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_3_2_nosuid.rc == 0
+      changed_when: true
+      failed_when: false
+
+    - name: "1.1.2.3.2 | REMEDIATE | Persist nosuid in /etc/fstab for /var"
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^(\S+\s+/var\s+\S+\s+)(?!.*\bnosuid\b)(\S+)(\s+\d+\s+\d+)(\s*(?:#.*)?)$'
+        replace: '\1\2,nosuid\3\4'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_3_2_nosuid.rc == 0
+
+# =============================================================
+# 1.1.2.4 Configure /var/tmp
+# =============================================================
+
+- name: "1.1.2.4.1 | Ensure separate partition exists for /var/tmp"
+  when:
+    - "'1.1.2.4.1' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_1.1.2.4.1, level2, section_1]
+  block:
+    - name: "1.1.2.4.1 | AUDIT | Check if /var/tmp is a separately mounted filesystem"
+      ansible.builtin.shell: mount | grep -E '[[:space:]]/var/tmp([[:space:]]|$)'
+      register: cis_1_1_2_4_1_mount
+      changed_when: cis_1_1_2_4_1_mount.rc != 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.2.4.1 | AUDIT | Report /var/tmp partition state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'PASS: /var/tmp is a separate partition'
+             if cis_1_1_2_4_1_mount.rc == 0
+             else 'FAIL: /var/tmp is not a separate partition — manual repartitioning required' }}
+
+# ---
+
+- name: "1.1.2.4.2 | Ensure nosuid option set on /var/tmp partition"
+  when: "'1.1.2.4.2' not in active_exceptions"
+  tags: [rule_1.1.2.4.2, level1, section_1]
+  block:
+    - name: "1.1.2.4.2 | AUDIT | Check /var/tmp mount for missing nosuid"
+      ansible.builtin.shell: mount | grep -E '[[:space:]]/var/tmp([[:space:]]|$)' | grep -v nosuid
+      register: cis_1_1_2_4_2_nosuid
+      changed_when: cis_1_1_2_4_2_nosuid.rc == 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.2.4.2 | AUDIT | Report nosuid state on /var/tmp"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'FAIL: /var/tmp is mounted without nosuid'
+             if cis_1_1_2_4_2_nosuid.rc == 0
+             else 'PASS: nosuid is set on /var/tmp or /var/tmp is not a separate partition' }}
+
+    - name: "1.1.2.4.2 | REMEDIATE | Apply nosuid to /var/tmp mount"
+      ansible.builtin.command: mount -u -o nosuid /var/tmp
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_4_2_nosuid.rc == 0
+      changed_when: true
+      failed_when: false
+
+    - name: "1.1.2.4.2 | REMEDIATE | Persist nosuid in /etc/fstab for /var/tmp"
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^(\S+\s+/var/tmp\s+\S+\s+)(?!.*\bnosuid\b)(\S+)(\s+\d+\s+\d+)(\s*(?:#.*)?)$'
+        replace: '\1\2,nosuid\3\4'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_4_2_nosuid.rc == 0
+
+# ---
+
+- name: "1.1.2.4.3 | Ensure noexec option set on /var/tmp partition"
+  when: "'1.1.2.4.3' not in active_exceptions"
+  tags: [rule_1.1.2.4.3, level1, section_1]
+  block:
+    - name: "1.1.2.4.3 | AUDIT | Check /var/tmp mount for missing noexec"
+      ansible.builtin.shell: mount | grep -E '[[:space:]]/var/tmp([[:space:]]|$)' | grep -v noexec
+      register: cis_1_1_2_4_3_noexec
+      changed_when: cis_1_1_2_4_3_noexec.rc == 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.2.4.3 | AUDIT | Report noexec state on /var/tmp"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'FAIL: /var/tmp is mounted without noexec'
+             if cis_1_1_2_4_3_noexec.rc == 0
+             else 'PASS: noexec is set on /var/tmp or /var/tmp is not a separate partition' }}
+
+    - name: "1.1.2.4.3 | REMEDIATE | Apply noexec to /var/tmp mount"
+      ansible.builtin.command: mount -u -o noexec /var/tmp
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_4_3_noexec.rc == 0
+      changed_when: true
+      failed_when: false
+
+    - name: "1.1.2.4.3 | REMEDIATE | Persist noexec in /etc/fstab for /var/tmp"
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^(\S+\s+/var/tmp\s+\S+\s+)(?!.*\bnoexec\b)(\S+)(\s+\d+\s+\d+)(\s*(?:#.*)?)$'
+        replace: '\1\2,noexec\3\4'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_4_3_noexec.rc == 0
+
+# =============================================================
+# 1.1.2.5 Configure /var/log
+# =============================================================
+
+- name: "1.1.2.5.1 | Ensure separate partition exists for /var/log"
+  when:
+    - "'1.1.2.5.1' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_1.1.2.5.1, level2, section_1]
+  block:
+    - name: "1.1.2.5.1 | AUDIT | Check if /var/log is a separately mounted filesystem"
+      ansible.builtin.shell: mount | grep -E '[[:space:]]/var/log([[:space:]]|$)'
+      register: cis_1_1_2_5_1_mount
+      changed_when: cis_1_1_2_5_1_mount.rc != 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.2.5.1 | AUDIT | Report /var/log partition state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'PASS: /var/log is a separate partition'
+             if cis_1_1_2_5_1_mount.rc == 0
+             else 'FAIL: /var/log is not a separate partition — manual repartitioning required' }}
+
+# ---
+
+- name: "1.1.2.5.2 | Ensure nosuid option set on /var/log partition"
+  when: "'1.1.2.5.2' not in active_exceptions"
+  tags: [rule_1.1.2.5.2, level1, section_1]
+  block:
+    - name: "1.1.2.5.2 | AUDIT | Check /var/log mount for missing nosuid"
+      ansible.builtin.shell: mount | grep -E '[[:space:]]/var/log([[:space:]]|$)' | grep -v nosuid
+      register: cis_1_1_2_5_2_nosuid
+      changed_when: cis_1_1_2_5_2_nosuid.rc == 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.2.5.2 | AUDIT | Report nosuid state on /var/log"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'FAIL: /var/log is mounted without nosuid'
+             if cis_1_1_2_5_2_nosuid.rc == 0
+             else 'PASS: nosuid is set on /var/log or /var/log is not a separate partition' }}
+
+    - name: "1.1.2.5.2 | REMEDIATE | Apply nosuid to /var/log mount"
+      ansible.builtin.command: mount -u -o nosuid /var/log
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_5_2_nosuid.rc == 0
+      changed_when: true
+      failed_when: false
+
+    - name: "1.1.2.5.2 | REMEDIATE | Persist nosuid in /etc/fstab for /var/log"
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^(\S+\s+/var/log\s+\S+\s+)(?!.*\bnosuid\b)(\S+)(\s+\d+\s+\d+)(\s*(?:#.*)?)$'
+        replace: '\1\2,nosuid\3\4'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_5_2_nosuid.rc == 0
+
+# ---
+
+- name: "1.1.2.5.3 | Ensure noexec option set on /var/log partition"
+  when: "'1.1.2.5.3' not in active_exceptions"
+  tags: [rule_1.1.2.5.3, level1, section_1]
+  block:
+    - name: "1.1.2.5.3 | AUDIT | Check /var/log mount for missing noexec"
+      ansible.builtin.shell: mount | grep -E '[[:space:]]/var/log([[:space:]]|$)' | grep -v noexec
+      register: cis_1_1_2_5_3_noexec
+      changed_when: cis_1_1_2_5_3_noexec.rc == 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.2.5.3 | AUDIT | Report noexec state on /var/log"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'FAIL: /var/log is mounted without noexec'
+             if cis_1_1_2_5_3_noexec.rc == 0
+             else 'PASS: noexec is set on /var/log or /var/log is not a separate partition' }}
+
+    - name: "1.1.2.5.3 | REMEDIATE | Apply noexec to /var/log mount"
+      ansible.builtin.command: mount -u -o noexec /var/log
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_5_3_noexec.rc == 0
+      changed_when: true
+      failed_when: false
+
+    - name: "1.1.2.5.3 | REMEDIATE | Persist noexec in /etc/fstab for /var/log"
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^(\S+\s+/var/log\s+\S+\s+)(?!.*\bnoexec\b)(\S+)(\s+\d+\s+\d+)(\s*(?:#.*)?)$'
+        replace: '\1\2,noexec\3\4'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_5_3_noexec.rc == 0
+
+# =============================================================
+# 1.1.2.6 Configure /var/audit
+# =============================================================
+
+- name: "1.1.2.6.1 | Ensure separate partition exists for /var/audit"
+  when:
+    - "'1.1.2.6.1' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_1.1.2.6.1, level2, section_1]
+  block:
+    - name: "1.1.2.6.1 | AUDIT | Check if /var/audit is a separately mounted filesystem"
+      ansible.builtin.shell: mount | grep -E '[[:space:]]/var/audit([[:space:]]|$)'
+      register: cis_1_1_2_6_1_mount
+      changed_when: cis_1_1_2_6_1_mount.rc != 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.2.6.1 | AUDIT | Report /var/audit partition state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'PASS: /var/audit is a separate partition'
+             if cis_1_1_2_6_1_mount.rc == 0
+             else 'FAIL: /var/audit is not a separate partition — manual repartitioning required' }}
+
+# ---
+
+- name: "1.1.2.6.2 | Ensure nosuid option set on /var/audit partition"
+  when: "'1.1.2.6.2' not in active_exceptions"
+  tags: [rule_1.1.2.6.2, level1, section_1]
+  block:
+    - name: "1.1.2.6.2 | AUDIT | Check /var/audit mount for missing nosuid"
+      ansible.builtin.shell: mount | grep -E '[[:space:]]/var/audit([[:space:]]|$)' | grep -v nosuid
+      register: cis_1_1_2_6_2_nosuid
+      changed_when: cis_1_1_2_6_2_nosuid.rc == 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.2.6.2 | AUDIT | Report nosuid state on /var/audit"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'FAIL: /var/audit is mounted without nosuid'
+             if cis_1_1_2_6_2_nosuid.rc == 0
+             else 'PASS: nosuid is set on /var/audit or /var/audit is not a separate partition' }}
+
+    - name: "1.1.2.6.2 | REMEDIATE | Apply nosuid to /var/audit mount"
+      ansible.builtin.command: mount -u -o nosuid /var/audit
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_6_2_nosuid.rc == 0
+      changed_when: true
+      failed_when: false
+
+    - name: "1.1.2.6.2 | REMEDIATE | Persist nosuid in /etc/fstab for /var/audit"
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^(\S+\s+/var/audit\s+\S+\s+)(?!.*\bnosuid\b)(\S+)(\s+\d+\s+\d+)(\s*(?:#.*)?)$'
+        replace: '\1\2,nosuid\3\4'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_6_2_nosuid.rc == 0
+
+# ---
+
+- name: "1.1.2.6.3 | Ensure noexec option set on /var/audit partition"
+  when: "'1.1.2.6.3' not in active_exceptions"
+  tags: [rule_1.1.2.6.3, level1, section_1]
+  block:
+    - name: "1.1.2.6.3 | AUDIT | Check /var/audit mount for missing noexec"
+      ansible.builtin.shell: mount | grep -E '[[:space:]]/var/audit([[:space:]]|$)' | grep -v noexec
+      register: cis_1_1_2_6_3_noexec
+      changed_when: cis_1_1_2_6_3_noexec.rc == 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.2.6.3 | AUDIT | Report noexec state on /var/audit"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'FAIL: /var/audit is mounted without noexec'
+             if cis_1_1_2_6_3_noexec.rc == 0
+             else 'PASS: noexec is set on /var/audit or /var/audit is not a separate partition' }}
+
+    - name: "1.1.2.6.3 | REMEDIATE | Apply noexec to /var/audit mount"
+      ansible.builtin.command: mount -u -o noexec /var/audit
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_6_3_noexec.rc == 0
+      changed_when: true
+      failed_when: false
+
+    - name: "1.1.2.6.3 | REMEDIATE | Persist noexec in /etc/fstab for /var/audit"
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^(\S+\s+/var/audit\s+\S+\s+)(?!.*\bnoexec\b)(\S+)(\s+\d+\s+\d+)(\s*(?:#.*)?)$'
+        replace: '\1\2,noexec\3\4'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_6_3_noexec.rc == 0
+
+# =============================================================
+# 1.2 Configure Software and Patch Management
+# =============================================================
+
+- name: "1.2.1 | Ensure update server certificate key fingerprints are configured"
+  when: "'1.2.1' not in active_exceptions"
+  tags: [rule_1.2.1, level1, section_1]
+  block:
+    - name: "1.2.1 | AUDIT | Read KeyPrint from freebsd-update.conf"
+      ansible.builtin.command:
+        argv:
+          - grep
+          - -E
+          - '^[[:space:]]*KeyPrint([[:space:]]|$)'
+          - /etc/freebsd-update.conf
+      register: cis_1_2_1_keyprint
+      changed_when: cis_1_2_1_keyprint.rc != 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.2.1 | AUDIT | Report update server key fingerprint state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'PASS: KeyPrint is configured in /etc/freebsd-update.conf'
+             if cis_1_2_1_keyprint.rc == 0
+             else 'FAIL: KeyPrint is not present in /etc/freebsd-update.conf — manual verification required' }}
+
+    - name: "1.2.1 | AUDIT | Note — manual fingerprint verification required"
+      ansible.builtin.debug:
+        msg: >-
+          NOTE: Cryptographic verification of the key fingerprint against the live update
+          server must be performed manually. See CIS 1.2.1 audit procedure.
+      when: cis_1_2_1_keyprint.rc == 0
+
+# ---
+
+- name: "1.2.2 | Ensure package manager repositories are configured"
+  when: "'1.2.2' not in active_exceptions"
+  tags: [rule_1.2.2, level1, section_1]
+  block:
+    - name: "1.2.2 | AUDIT | Check pkg repository configuration"
+      ansible.builtin.shell: pkg -vv 2>/dev/null | sed '1,/^Repositories/d'
+      register: cis_1_2_2_repos
+      changed_when: not (cis_1_2_2_repos.rc == 0 and cis_1_2_2_repos.stdout | length > 0)
+      failed_when: false
+      check_mode: false
+
+    - name: "1.2.2 | AUDIT | Report repository configuration"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'PASS: pkg repository configuration found — verify settings match site policy'
+             if cis_1_2_2_repos.rc == 0 and cis_1_2_2_repos.stdout | length > 0
+             else 'FAIL: unable to read pkg repository configuration' }}
+
+# ---
+
+- name: "1.2.3 | Ensure updates, patches, and additional security software are installed"
+  when: "'1.2.3' not in active_exceptions"
+  tags: [rule_1.2.3, level1, section_1]
+  block:
+    - name: "1.2.3 | AUDIT | Check for pending base system updates"
+      ansible.builtin.command: freebsd-update updatesready
+      register: cis_1_2_3_base
+      changed_when: cis_1_2_3_base.rc == 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.2.3 | AUDIT | Report base system update state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'FAIL: base system updates are available — run freebsd-update fetch install'
+             if cis_1_2_3_base.rc == 0
+             else 'PASS: no pending base system updates' }}
+
+    - name: "1.2.3 | AUDIT | Check for pending pkg package upgrades"
+      ansible.builtin.command: pkg upgrade -n
+      register: cis_1_2_3_pkg
+      changed_when: >-
+        'Your packages are up to date.' not in
+        ((cis_1_2_3_pkg.stdout | default('')) ~ (cis_1_2_3_pkg.stderr | default('')))
+      failed_when: false
+      check_mode: false
+
+    - name: "1.2.3 | AUDIT | Report pkg package update state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'PASS: installed pkg packages are current'
+             if 'Your packages are up to date.' in
+                ((cis_1_2_3_pkg.stdout | default('')) ~ (cis_1_2_3_pkg.stderr | default('')))
+             else 'FAIL: pkg package upgrades are available' }}
+
+    - name: "1.2.3 | REMEDIATE | Fetch and install base system updates"
+      ansible.builtin.command: freebsd-update fetch install
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_2_3_base.rc == 0
+      changed_when: true
+
+    - name: "1.2.3 | REMEDIATE | Update pkg package index"
+      ansible.builtin.command: pkg update
+      when:
+        - freebsd_cis_remediate | bool
+        - "'Your packages are up to date.' not in
+           ((cis_1_2_3_pkg.stdout | default('')) ~ (cis_1_2_3_pkg.stderr | default('')))"
+      changed_when: true
+
+    - name: "1.2.3 | REMEDIATE | Upgrade installed packages"
+      ansible.builtin.command: pkg upgrade -y
+      when:
+        - freebsd_cis_remediate | bool
+        - "'Your packages are up to date.' not in
+           ((cis_1_2_3_pkg.stdout | default('')) ~ (cis_1_2_3_pkg.stderr | default('')))"
+      changed_when: true
+
+# =============================================================
+# 1.3 Configure Secure Boot Settings
+# =============================================================
+
+- name: "1.3.1 | Ensure bootloader password is set"
+  when: "'1.3.1' not in active_exceptions"
+  tags: [rule_1.3.1, level1, section_1]
+  block:
+    - name: "1.3.1 | AUDIT | Check for bootloader password in loader.conf"
+      ansible.builtin.command: grep -c '^password=' /boot/loader.conf
+      register: cis_1_3_1_pw
+      changed_when: cis_1_3_1_pw.rc != 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.3.1 | AUDIT | Report bootloader password state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'PASS: bootloader password is set in /boot/loader.conf'
+             if cis_1_3_1_pw.rc == 0
+             else 'FAIL: no bootloader password found in /boot/loader.conf' }}
+
+    - name: "1.3.1 | REMEDIATE | Set bootloader password in loader.conf"
+      ansible.builtin.lineinfile:
+        path: /boot/loader.conf
+        regexp: '^password='
+        line: 'password="{{ freebsd_cis_bootloader_password }}"'
+        create: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      no_log: true
+      when:
+        - freebsd_cis_remediate | bool
+        - freebsd_cis_bootloader_password | length > 0
+        - cis_1_3_1_pw.rc != 0
+
+    - name: "1.3.1 | REMEDIATE | Warn if bootloader password not configured"
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: freebsd_cis_bootloader_password is empty — bootloader password
+          remediation skipped. Set this variable to enable automated remediation.
+          NOTE: FreeBSD stores this password in plaintext in /boot/loader.conf.
+      when:
+        - freebsd_cis_remediate | bool
+        - freebsd_cis_bootloader_password | length == 0
+
+# ---
+
+- name: "1.3.2 | Ensure permissions on bootloader config are configured"
+  when: "'1.3.2' not in active_exceptions"
+  tags: [rule_1.3.2, level1, section_1]
+  block:
+    - name: "1.3.2 | AUDIT | Check /boot/loader.conf permissions"
+      ansible.builtin.stat:
+        path: /boot/loader.conf
+      register: cis_1_3_2_stat
+
+    - name: "1.3.2 | AUDIT | Report /boot/loader.conf permission state"
+      ansible.builtin.debug:
+        msg: >-
+          {% if not cis_1_3_2_stat.stat.exists %}
+          N/A: /boot/loader.conf does not exist
+          {% elif cis_1_3_2_stat.stat.mode == '0600' and
+                  cis_1_3_2_stat.stat.pw_name == 'root' and
+                  cis_1_3_2_stat.stat.gr_name == 'wheel' %}
+          PASS: /boot/loader.conf is mode 0600, owner root:wheel
+          {% else %}
+          FAIL: /boot/loader.conf — mode={{ cis_1_3_2_stat.stat.mode }}
+          owner={{ cis_1_3_2_stat.stat.pw_name }}:{{ cis_1_3_2_stat.stat.gr_name }}
+          (expected 0600 root:wheel)
+          {% endif %}
+
+    - name: "1.3.2 | REMEDIATE | Set /boot/loader.conf permissions"
+      ansible.builtin.file:
+        path: /boot/loader.conf
+        owner: root
+        group: wheel
+        mode: '0600'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_3_2_stat.stat.exists
+
+    - name: "1.3.2 | REMEDIATE | Set /boot/loader.conf.local permissions (if present)"
+      ansible.builtin.file:
+        path: /boot/loader.conf.local
+        owner: root
+        group: wheel
+        mode: '0600'
+      when:
+        - freebsd_cis_remediate | bool
+      failed_when: false
+
+# =============================================================
+# 1.4 Configure Additional Process Hardening
+# =============================================================
+
+- name: "1.4.1 | Ensure address space layout randomization (ASLR) is enabled"
+  when: "'1.4.1' not in active_exceptions"
+  tags: [rule_1.4.1, level1, section_1]
+  block:
+    - name: "1.4.1 | AUDIT | Read kern.elf64.aslr.enable sysctl"
+      ansible.builtin.command: sysctl -nq kern.elf64.aslr.enable
+      register: cis_1_4_1_aslr
+      changed_when: cis_1_4_1_aslr.stdout | default('0') | trim != '1'
+      failed_when: false
+      check_mode: false
+
+    - name: "1.4.1 | AUDIT | Report ASLR state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'PASS: ASLR is enabled (kern.elf64.aslr.enable=1)'
+             if cis_1_4_1_aslr.stdout | default('0') | trim == '1'
+             else 'FAIL: ASLR is disabled (kern.elf64.aslr.enable=' ~ (cis_1_4_1_aslr.stdout | default('unknown') | trim) ~ ')' }}
+
+    - name: "1.4.1 | REMEDIATE | Persist ASLR setting in /etc/sysctl.conf"
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.conf
+        regexp: '^kern\.elf64\.aslr\.enable='
+        line: 'kern.elf64.aslr.enable=1'
+        create: true
+        mode: '0644'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_4_1_aslr.stdout | default('0') | trim != '1'
+
+    - name: "1.4.1 | REMEDIATE | Enable ASLR at runtime"
+      ansible.builtin.command: sysctl kern.elf64.aslr.enable=1
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_4_1_aslr.stdout | default('0') | trim != '1'
+      changed_when: true
+      failed_when: false
+
+# ---
+
+- name: "1.4.2 | Ensure core dump backtraces are disabled"
+  when: "'1.4.2' not in active_exceptions"
+  tags: [rule_1.4.2, level1, section_1]
+  block:
+    - name: "1.4.2 | AUDIT | Check savecore_enable sysrc value"
+      ansible.builtin.command: sysrc -n savecore_enable
+      register: cis_1_4_2_savecore
+      changed_when: (cis_1_4_2_savecore.stdout | default('') | upper) == 'YES'
+      failed_when: false
+      check_mode: false
+
+    - name: "1.4.2 | AUDIT | Report savecore state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'FAIL: savecore_enable is YES — core dump backtraces are enabled'
+             if (cis_1_4_2_savecore.stdout | default('') | upper) == 'YES'
+             else 'PASS: savecore is disabled' }}
+
+    - name: "1.4.2 | REMEDIATE | Stop savecore service"
+      ansible.builtin.command: service savecore onestop
+      when:
+        - freebsd_cis_remediate | bool
+        - (cis_1_4_2_savecore.stdout | default('') | upper) == 'YES'
+      changed_when: true
+      failed_when: false
+
+    - name: "1.4.2 | REMEDIATE | Disable savecore at boot"
+      ansible.builtin.command: sysrc savecore_enable="NO"
+      when:
+        - freebsd_cis_remediate | bool
+        - (cis_1_4_2_savecore.stdout | default('') | upper) == 'YES'
+      changed_when: true
+
+# ---
+
+- name: "1.4.3 | Ensure core dump storage is disabled"
+  when: "'1.4.3' not in active_exceptions"
+  tags: [rule_1.4.3, level1, section_1]
+  block:
+    - name: "1.4.3 | AUDIT | Check dumpdev sysrc value"
+      ansible.builtin.command: sysrc -n dumpdev
+      register: cis_1_4_3_dumpdev
+      changed_when: (cis_1_4_3_dumpdev.stdout | default('') | upper) != 'NO'
+      failed_when: false
+      check_mode: false
+
+    - name: "1.4.3 | AUDIT | Report dumpdev state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'PASS: dumpdev is set to NO'
+             if (cis_1_4_3_dumpdev.stdout | default('') | upper) == 'NO'
+             else 'FAIL: dumpdev is set to ' ~ (cis_1_4_3_dumpdev.stdout | default('undefined') | trim) }}
+
+    - name: "1.4.3 | REMEDIATE | Set dumpdev=NO"
+      ansible.builtin.command: sysrc dumpdev="NO"
+      when:
+        - freebsd_cis_remediate | bool
+        - (cis_1_4_3_dumpdev.stdout | default('') | upper) != 'NO'
+      changed_when: true
+
+# =============================================================
+# 1.6 Configure Command Line Warning Banners
+# =============================================================
+
+- name: "1.6.1 | Ensure message of the day is configured properly"
+  when: "'1.6.1' not in active_exceptions"
+  tags: [rule_1.6.1, level1, section_1]
+  block:
+    - name: "1.6.1 | AUDIT | Check /etc/motd for OS version disclosure"
+      ansible.builtin.shell: >
+        grep -Ei 'FreeBSD [0-9]' /etc/motd 2>/dev/null
+      register: cis_1_6_1_motd
+      changed_when: cis_1_6_1_motd.rc == 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.6.1 | AUDIT | Report /etc/motd state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'FAIL: /etc/motd contains OS version information — update per site policy'
+             if cis_1_6_1_motd.rc == 0
+             else 'PASS: /etc/motd does not expose OS version information' }}
+
+    - name: "1.6.1 | REMEDIATE | Write site-policy warning banner to /etc/motd"
+      ansible.builtin.copy:
+        content: "{{ freebsd_cis_warning_banner }}\n"
+        dest: /etc/motd
+        owner: root
+        group: wheel
+        mode: '0644'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_6_1_motd.rc == 0
+
+    - name: "1.6.1 | REMEDIATE | Disable motd service to prevent version re-injection"
+      ansible.builtin.command: sysrc motd_enable="NO"
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_6_1_motd.rc == 0
+      changed_when: true
+      failed_when: false
+
+# ---
+
+- name: "1.6.2 | Ensure local login warning banner is configured properly"
+  when: "'1.6.2' not in active_exceptions"
+  tags: [rule_1.6.2, level1, section_1]
+  block:
+    - name: "1.6.2 | AUDIT | Check /etc/issue for OS version disclosure"
+      ansible.builtin.shell: >
+        [ -f /etc/issue ] && grep -Ei 'FreeBSD [0-9]' /etc/issue
+      register: cis_1_6_2_issue
+      changed_when: cis_1_6_2_issue.rc == 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.6.2 | AUDIT | Report /etc/issue state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'FAIL: /etc/issue contains OS version information — update per site policy'
+             if cis_1_6_2_issue.rc == 0
+             else 'PASS: /etc/issue does not expose OS version information (or does not exist)' }}
+
+    - name: "1.6.2 | REMEDIATE | Write site-policy warning banner to /etc/issue"
+      ansible.builtin.copy:
+        content: "{{ freebsd_cis_warning_banner }}\n"
+        dest: /etc/issue
+        owner: root
+        group: wheel
+        mode: '0644'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_6_2_issue.rc == 0
+
+# ---
+
+- name: "1.6.3 | Ensure remote login warning banner is configured properly"
+  when: "'1.6.3' not in active_exceptions"
+  tags: [rule_1.6.3, level1, section_1]
+  block:
+    - name: "1.6.3 | AUDIT | Check /etc/issue.net for OS version disclosure"
+      ansible.builtin.shell: >
+        [ -f /etc/issue.net ] && grep -Ei 'FreeBSD [0-9]' /etc/issue.net
+      register: cis_1_6_3_issue_net
+      changed_when: cis_1_6_3_issue_net.rc == 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.6.3 | AUDIT | Report /etc/issue.net state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'FAIL: /etc/issue.net contains OS version information — update per site policy'
+             if cis_1_6_3_issue_net.rc == 0
+             else 'PASS: /etc/issue.net does not expose OS version information (or does not exist)' }}
+
+    - name: "1.6.3 | REMEDIATE | Write site-policy warning banner to /etc/issue.net"
+      ansible.builtin.copy:
+        content: "{{ freebsd_cis_warning_banner }}\n"
+        dest: /etc/issue.net
+        owner: root
+        group: wheel
+        mode: '0644'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_6_3_issue_net.rc == 0
+
+# ---
+
+- name: "1.6.4 | Ensure access to /etc/motd is configured"
+  when: "'1.6.4' not in active_exceptions"
+  tags: [rule_1.6.4, level1, section_1]
+  block:
+    - name: "1.6.4 | AUDIT | Stat /etc/motd"
+      ansible.builtin.stat:
+        path: /etc/motd
+      register: cis_1_6_4_stat
+
+    - name: "1.6.4 | AUDIT | Report /etc/motd permission state"
+      ansible.builtin.debug:
+        msg: >-
+          {% if not cis_1_6_4_stat.stat.exists %}
+          N/A: /etc/motd does not exist
+          {% elif (cis_1_6_4_stat.stat.mode | int(base=8)) <= 0o644 and
+                  cis_1_6_4_stat.stat.pw_name == 'root' and
+                  cis_1_6_4_stat.stat.gr_name == 'wheel' %}
+          PASS: /etc/motd permissions are acceptable
+          {% else %}
+          FAIL: /etc/motd — mode={{ cis_1_6_4_stat.stat.mode }}
+          owner={{ cis_1_6_4_stat.stat.pw_name }}:{{ cis_1_6_4_stat.stat.gr_name }}
+          (expected mode <=0644, owner root:wheel)
+          {% endif %}
+
+    - name: "1.6.4 | REMEDIATE | Set /etc/motd permissions"
+      ansible.builtin.file:
+        path: /etc/motd
+        owner: root
+        group: wheel
+        mode: '0644'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_6_4_stat.stat.exists
+
+# ---
+
+- name: "1.6.5 | Ensure access to /etc/issue is configured"
+  when: "'1.6.5' not in active_exceptions"
+  tags: [rule_1.6.5, level1, section_1]
+  block:
+    - name: "1.6.5 | AUDIT | Stat /etc/issue"
+      ansible.builtin.stat:
+        path: /etc/issue
+      register: cis_1_6_5_stat
+
+    - name: "1.6.5 | AUDIT | Report /etc/issue permission state"
+      ansible.builtin.debug:
+        msg: >-
+          {% if not cis_1_6_5_stat.stat.exists %}
+          N/A: /etc/issue does not exist
+          {% elif (cis_1_6_5_stat.stat.mode | int(base=8)) <= 0o644 and
+                  cis_1_6_5_stat.stat.pw_name == 'root' and
+                  cis_1_6_5_stat.stat.gr_name == 'wheel' %}
+          PASS: /etc/issue permissions are acceptable
+          {% else %}
+          FAIL: /etc/issue — mode={{ cis_1_6_5_stat.stat.mode }}
+          owner={{ cis_1_6_5_stat.stat.pw_name }}:{{ cis_1_6_5_stat.stat.gr_name }}
+          (expected mode <=0644, owner root:wheel)
+          {% endif %}
+
+    - name: "1.6.5 | REMEDIATE | Set /etc/issue permissions"
+      ansible.builtin.file:
+        path: /etc/issue
+        owner: root
+        group: wheel
+        mode: '0644'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_6_5_stat.stat.exists
