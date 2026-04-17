@@ -101,7 +101,7 @@
   tags: [rule_2.2.2, level1, section_2]
   block:
     - name: "2.2.2 | AUDIT | Check if ftpd is enabled through inetd"
-      ansible.builtin.command: grep -E '^ftp\s' /etc/inetd.conf
+      ansible.builtin.command: grep -E '^[[:space:]]*ftp[[:space:]]' /etc/inetd.conf
       register: cis_2_2_2_inetd_ftp
       changed_when: cis_2_2_2_inetd_ftp.rc == 0
       failed_when: false
@@ -128,7 +128,7 @@
     - name: "2.2.2 | REMEDIATE | Comment out ftp entry in /etc/inetd.conf"
       ansible.builtin.replace:
         path: /etc/inetd.conf
-        regexp: '^(ftp\s)'
+        regexp: '^(\s*ftp\s)'
         replace: '#\1'
       when:
         - freebsd_cis_remediate | bool
@@ -374,7 +374,7 @@
       check_mode: false
 
     - name: "2.2.8 | AUDIT | Check if telnet is enabled via inetd"
-      ansible.builtin.command: grep -E '^telnet\s' /etc/inetd.conf
+      ansible.builtin.command: grep -E '^[[:space:]]*telnet[[:space:]]' /etc/inetd.conf
       register: cis_2_2_8_inetd_telnet
       changed_when: cis_2_2_8_inetd_telnet.rc == 0
       failed_when: false
@@ -394,7 +394,7 @@
     - name: "2.2.8 | REMEDIATE | Comment out telnet entry in /etc/inetd.conf"
       ansible.builtin.replace:
         path: /etc/inetd.conf
-        regexp: '^(telnet\s)'
+        regexp: '^(\s*telnet\s)'
         replace: '#\1'
       when:
         - freebsd_cis_remediate | bool
@@ -423,7 +423,7 @@
   tags: [rule_2.2.9, level1, section_2]
   block:
     - name: "2.2.9 | AUDIT | Check if tftp is enabled via inetd"
-      ansible.builtin.command: grep -E '^tftp\s' /etc/inetd.conf
+      ansible.builtin.command: grep -E '^[[:space:]]*tftp[[:space:]]' /etc/inetd.conf
       register: cis_2_2_9_inetd_tftp
       changed_when: cis_2_2_9_inetd_tftp.rc == 0
       failed_when: false
@@ -439,7 +439,7 @@
     - name: "2.2.9 | REMEDIATE | Comment out tftp entry in /etc/inetd.conf"
       ansible.builtin.replace:
         path: /etc/inetd.conf
-        regexp: '^(tftp\s)'
+        regexp: '^(\s*tftp\s)'
         replace: '#\1'
       when:
         - freebsd_cis_remediate | bool
