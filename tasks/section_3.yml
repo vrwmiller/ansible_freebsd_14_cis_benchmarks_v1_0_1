@@ -2,4 +2,587 @@
 # FreeBSD 14 CIS Benchmark v1.0.1
 # Section 3 — Network
 # Controls: 3.1.1 – 3.4.1.2
-[]
+# lint-clean: production profile
+
+# =============================================================
+# 3.1 Configure Network Devices
+# =============================================================
+
+- name: "3.1.1 | Ensure IPv6 status is identified"
+  when: "'3.1.1' not in active_exceptions"
+  tags: [rule_3.1.1, level1, section_3]
+  block:
+    - name: "3.1.1 | AUDIT | Check kern.features.inet6 sysctl"
+      ansible.builtin.command: sysctl -nq kern.features.inet6
+      register: cis_3_1_1_ipv6
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "3.1.1 | AUDIT | Report IPv6 status"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'IPv6 is ENABLED — ensure IPv6 is configured in accordance with
+          benchmark recommendations or disable it if not used in this environment'
+             if cis_3_1_1_ipv6.stdout | trim == '1'
+             else 'IPv6 is NOT enabled — IPv6-specific controls may be skipped' }}
+
+# =============================================================
+# 3.2 Configure Network Kernel Modules
+# =============================================================
+
+- name: "3.2.1 | Ensure sctp kernel module is not available"
+  when:
+    - "'3.2.1' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_3.2.1, level2, section_3]
+  block:
+    - name: "3.2.1 | AUDIT | Check whether sctp module is loaded"
+      ansible.builtin.command: kldstat -q -m sctp
+      register: cis_3_2_1_sctp
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "3.2.1 | AUDIT | Report sctp module state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: sctp kernel module is loaded'
+             if cis_3_2_1_sctp.rc == 0
+             else 'COMPLIANT: sctp kernel module is NOT loaded' }}
+
+    - name: "3.2.1 | REMEDIATE | Blacklist sctp module in loader.conf"
+      ansible.builtin.lineinfile:
+        path: /boot/loader.conf
+        regexp: '^module_blacklist='
+        line: 'module_blacklist="sctp"'
+        create: true
+        owner: root
+        group: wheel
+        mode: '0644'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_2_1_sctp.rc == 0
+
+# =============================================================
+# 3.3 Configure Network Kernel Parameters
+# =============================================================
+
+- name: "3.3.1 | Ensure ip forwarding is disabled"
+  when: "'3.3.1' not in active_exceptions"
+  tags: [rule_3.3.1, level1, section_3]
+  block:
+    - name: "3.3.1 | AUDIT | Check net.inet.ip.forwarding"
+      ansible.builtin.command: sysctl -nq net.inet.ip.forwarding
+      register: cis_3_3_1_ipv4_fwd
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "3.3.1 | AUDIT | Check net.inet6.ip6.forwarding"
+      ansible.builtin.command: sysctl -nq net.inet6.ip6.forwarding
+      register: cis_3_3_1_ipv6_fwd
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "3.3.1 | AUDIT | Check gateway_enable rc.conf setting"
+      ansible.builtin.command: sysrc -q -n gateway_enable
+      register: cis_3_3_1_gw
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "3.3.1 | AUDIT | Check ipv6_gateway_enable rc.conf setting"
+      ansible.builtin.command: sysrc -q -n ipv6_gateway_enable
+      register: cis_3_3_1_ipv6_gw
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "3.3.1 | AUDIT | Report IP forwarding state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ ['3.3.1 IP forwarding audit:',
+              ('  net.inet.ip.forwarding: NON-COMPLIANT — set to 1'
+               if cis_3_3_1_ipv4_fwd.stdout | trim == '1'
+               else '  net.inet.ip.forwarding: COMPLIANT — set to 0'),
+              ('  net.inet6.ip6.forwarding: NON-COMPLIANT — set to 1'
+               if cis_3_3_1_ipv6_fwd.stdout | trim == '1'
+               else '  net.inet6.ip6.forwarding: COMPLIANT — set to 0'),
+              ('  gateway_enable: NON-COMPLIANT — set to YES'
+               if cis_3_3_1_gw.stdout | trim | upper == 'YES'
+               else '  gateway_enable: COMPLIANT — not YES'),
+              ('  ipv6_gateway_enable: NON-COMPLIANT — set to YES'
+               if cis_3_3_1_ipv6_gw.stdout | trim | upper == 'YES'
+               else '  ipv6_gateway_enable: COMPLIANT — not YES')] | join('\n') }}
+
+    - name: "3.3.1 | REMEDIATE | Disable IPv4 forwarding in sysctl.conf"
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.conf
+        regexp: '^net\.inet\.ip\.forwarding\s*='
+        line: 'net.inet.ip.forwarding=0'
+        create: true
+        owner: root
+        group: wheel
+        mode: '0644'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_1_ipv4_fwd.stdout | trim == '1'
+
+    - name: "3.3.1 | REMEDIATE | Apply IPv4 forwarding disable at runtime"
+      ansible.builtin.command: sysctl net.inet.ip.forwarding=0
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_1_ipv4_fwd.stdout | trim == '1'
+      changed_when: true
+
+    - name: "3.3.1 | REMEDIATE | Disable IPv6 forwarding in sysctl.conf"
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.conf
+        regexp: '^net\.inet6\.ip6\.forwarding\s*='
+        line: 'net.inet6.ip6.forwarding=0'
+        create: true
+        owner: root
+        group: wheel
+        mode: '0644'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_1_ipv6_fwd.stdout | trim == '1'
+
+    - name: "3.3.1 | REMEDIATE | Apply IPv6 forwarding disable at runtime"
+      ansible.builtin.command: sysctl net.inet6.ip6.forwarding=0
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_1_ipv6_fwd.stdout | trim == '1'
+      changed_when: true
+
+    - name: "3.3.1 | REMEDIATE | Disable gateway service"
+      ansible.builtin.service:
+        name: gateway
+        state: stopped
+        enabled: false
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_1_gw.stdout | trim | upper == 'YES'
+      failed_when: false
+
+    - name: "3.3.1 | REMEDIATE | Disable ipv6_gateway service"
+      ansible.builtin.service:
+        name: ipv6_gateway
+        state: stopped
+        enabled: false
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_1_ipv6_gw.stdout | trim | upper == 'YES'
+      failed_when: false
+
+# ---
+
+- name: "3.3.2 | Ensure packet redirect sending is disabled"
+  when: "'3.3.2' not in active_exceptions"
+  tags: [rule_3.3.2, level1, section_3]
+  block:
+    - name: "3.3.2 | AUDIT | Check net.inet.ip.redirect"
+      ansible.builtin.command: sysctl -nq net.inet.ip.redirect
+      register: cis_3_3_2_ipv4_redirect
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "3.3.2 | AUDIT | Check net.inet6.ip6.redirect"
+      ansible.builtin.command: sysctl -nq net.inet6.ip6.redirect
+      register: cis_3_3_2_ipv6_redirect
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "3.3.2 | AUDIT | Report packet redirect sending state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ ['3.3.2 Packet redirect audit:',
+              ('  net.inet.ip.redirect: NON-COMPLIANT — set to 1 (redirects enabled)'
+               if cis_3_3_2_ipv4_redirect.stdout | trim == '1'
+               else '  net.inet.ip.redirect: COMPLIANT — set to 0'),
+              ('  net.inet6.ip6.redirect: NON-COMPLIANT — set to 1 (redirects enabled)'
+               if cis_3_3_2_ipv6_redirect.stdout | trim == '1'
+               else '  net.inet6.ip6.redirect: COMPLIANT — set to 0')] | join('\n') }}
+
+    - name: "3.3.2 | REMEDIATE | Disable IPv4 redirect sending in sysctl.conf"
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.conf
+        regexp: '^net\.inet\.ip\.redirect\s*='
+        line: 'net.inet.ip.redirect=0'
+        create: true
+        owner: root
+        group: wheel
+        mode: '0644'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_2_ipv4_redirect.stdout | trim == '1'
+
+    - name: "3.3.2 | REMEDIATE | Apply IPv4 redirect disable at runtime"
+      ansible.builtin.command: sysctl net.inet.ip.redirect=0
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_2_ipv4_redirect.stdout | trim == '1'
+      changed_when: true
+
+    - name: "3.3.2 | REMEDIATE | Disable IPv6 redirect sending in sysctl.conf"
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.conf
+        regexp: '^net\.inet6\.ip6\.redirect\s*='
+        line: 'net.inet6.ip6.redirect=0'
+        create: true
+        owner: root
+        group: wheel
+        mode: '0644'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_2_ipv6_redirect.stdout | trim == '1'
+
+    - name: "3.3.2 | REMEDIATE | Apply IPv6 redirect disable at runtime"
+      ansible.builtin.command: sysctl net.inet6.ip6.redirect=0
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_2_ipv6_redirect.stdout | trim == '1'
+      changed_when: true
+
+# ---
+
+- name: "3.3.3 | Ensure broadcast and multicast ICMP requests are ignored"
+  when: "'3.3.3' not in active_exceptions"
+  tags: [rule_3.3.3, level1, section_3]
+  block:
+    - name: "3.3.3 | AUDIT | Check net.inet.icmp.bmcastecho"
+      ansible.builtin.command: sysctl -nq net.inet.icmp.bmcastecho
+      register: cis_3_3_3_bmcast
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "3.3.3 | AUDIT | Check net.inet.icmp.tstamprepl"
+      ansible.builtin.command: sysctl -nq net.inet.icmp.tstamprepl
+      register: cis_3_3_3_tstamp
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "3.3.3 | AUDIT | Report broadcast/multicast ICMP state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ ['3.3.3 Broadcast/multicast ICMP audit:',
+              ('  net.inet.icmp.bmcastecho: NON-COMPLIANT — set to 1 (echo requests accepted)'
+               if cis_3_3_3_bmcast.stdout | trim == '1'
+               else '  net.inet.icmp.bmcastecho: COMPLIANT — set to 0'),
+              ('  net.inet.icmp.tstamprepl: NON-COMPLIANT — set to 1 (timestamp replies enabled)'
+               if cis_3_3_3_tstamp.stdout | trim == '1'
+               else '  net.inet.icmp.tstamprepl: COMPLIANT — set to 0')] | join('\n') }}
+
+    - name: "3.3.3 | REMEDIATE | Disable bmcastecho in sysctl.conf"
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.conf
+        regexp: '^net\.inet\.icmp\.bmcastecho\s*='
+        line: 'net.inet.icmp.bmcastecho=0'
+        create: true
+        owner: root
+        group: wheel
+        mode: '0644'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_3_bmcast.stdout | trim == '1'
+
+    - name: "3.3.3 | REMEDIATE | Apply bmcastecho=0 at runtime"
+      ansible.builtin.command: sysctl net.inet.icmp.bmcastecho=0
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_3_bmcast.stdout | trim == '1'
+      changed_when: true
+
+    - name: "3.3.3 | REMEDIATE | Disable tstamprepl in sysctl.conf"
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.conf
+        regexp: '^net\.inet\.icmp\.tstamprepl\s*='
+        line: 'net.inet.icmp.tstamprepl=0'
+        create: true
+        owner: root
+        group: wheel
+        mode: '0644'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_3_tstamp.stdout | trim == '1'
+
+    - name: "3.3.3 | REMEDIATE | Apply tstamprepl=0 at runtime"
+      ansible.builtin.command: sysctl net.inet.icmp.tstamprepl=0
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_3_tstamp.stdout | trim == '1'
+      changed_when: true
+
+# ---
+
+- name: "3.3.4 | Ensure ICMP redirects are not accepted"
+  when: "'3.3.4' not in active_exceptions"
+  tags: [rule_3.3.4, level1, section_3]
+  block:
+    - name: "3.3.4 | AUDIT | Check net.inet.icmp.drop_redirect"
+      ansible.builtin.command: sysctl -nq net.inet.icmp.drop_redirect
+      register: cis_3_3_4_drop_redirect
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "3.3.4 | AUDIT | Check net.inet6.icmp6.rediraccept"
+      ansible.builtin.command: sysctl -nq net.inet6.icmp6.rediraccept
+      register: cis_3_3_4_redir6
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "3.3.4 | AUDIT | Report ICMP redirect acceptance state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ ['3.3.4 ICMP redirect acceptance audit:',
+              ('  net.inet.icmp.drop_redirect: NON-COMPLIANT — set to 0 (redirects accepted)'
+               if cis_3_3_4_drop_redirect.stdout | trim == '0'
+               else '  net.inet.icmp.drop_redirect: COMPLIANT — set to 1'),
+              ('  net.inet6.icmp6.rediraccept: NON-COMPLIANT — set to 1 (IPv6 redirects accepted)'
+               if cis_3_3_4_redir6.stdout | trim == '1'
+               else '  net.inet6.icmp6.rediraccept: COMPLIANT — set to 0')] | join('\n') }}
+
+    - name: "3.3.4 | REMEDIATE | Set drop_redirect=1 in sysctl.conf"
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.conf
+        regexp: '^net\.inet\.icmp\.drop_redirect\s*='
+        line: 'net.inet.icmp.drop_redirect=1'
+        create: true
+        owner: root
+        group: wheel
+        mode: '0644'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_4_drop_redirect.stdout | trim == '0'
+
+    - name: "3.3.4 | REMEDIATE | Apply drop_redirect=1 at runtime"
+      ansible.builtin.command: sysctl net.inet.icmp.drop_redirect=1
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_4_drop_redirect.stdout | trim == '0'
+      changed_when: true
+
+    - name: "3.3.4 | REMEDIATE | Set rediraccept=0 in sysctl.conf"
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.conf
+        regexp: '^net\.inet6\.icmp6\.rediraccept\s*='
+        line: 'net.inet6.icmp6.rediraccept=0'
+        create: true
+        owner: root
+        group: wheel
+        mode: '0644'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_4_redir6.stdout | trim == '1'
+
+    - name: "3.3.4 | REMEDIATE | Apply rediraccept=0 at runtime"
+      ansible.builtin.command: sysctl net.inet6.icmp6.rediraccept=0
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_4_redir6.stdout | trim == '1'
+      changed_when: true
+
+# ---
+
+- name: "3.3.5 | Ensure source routed packets are not accepted"
+  when: "'3.3.5' not in active_exceptions"
+  tags: [rule_3.3.5, level1, section_3]
+  block:
+    - name: "3.3.5 | AUDIT | Check net.inet.ip.accept_sourceroute"
+      ansible.builtin.command: sysctl -nq net.inet.ip.accept_sourceroute
+      register: cis_3_3_5_srcroute
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "3.3.5 | AUDIT | Report source routing state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: net.inet.ip.accept_sourceroute is set to 1 — source routed packets accepted'
+             if cis_3_3_5_srcroute.stdout | trim == '1'
+             else 'COMPLIANT: net.inet.ip.accept_sourceroute is set to 0' }}
+
+    - name: "3.3.5 | REMEDIATE | Set accept_sourceroute=0 in sysctl.conf"
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.conf
+        regexp: '^net\.inet\.ip\.accept_sourceroute\s*='
+        line: 'net.inet.ip.accept_sourceroute=0'
+        create: true
+        owner: root
+        group: wheel
+        mode: '0644'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_5_srcroute.stdout | trim == '1'
+
+    - name: "3.3.5 | REMEDIATE | Apply accept_sourceroute=0 at runtime"
+      ansible.builtin.command: sysctl net.inet.ip.accept_sourceroute=0
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_5_srcroute.stdout | trim == '1'
+      changed_when: true
+
+# ---
+
+- name: "3.3.6 | Ensure TCP SYN cookies is enabled"
+  when: "'3.3.6' not in active_exceptions"
+  tags: [rule_3.3.6, level1, section_3]
+  block:
+    - name: "3.3.6 | AUDIT | Check net.inet.tcp.syncookies"
+      ansible.builtin.command: sysctl -nq net.inet.tcp.syncookies
+      register: cis_3_3_6_syncookies
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "3.3.6 | AUDIT | Report TCP SYN cookies state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: net.inet.tcp.syncookies is set to 0 — SYN flood protection disabled'
+             if cis_3_3_6_syncookies.stdout | trim == '0'
+             else 'COMPLIANT: net.inet.tcp.syncookies is set to 1' }}
+
+    - name: "3.3.6 | REMEDIATE | Set syncookies=1 in sysctl.conf"
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.conf
+        regexp: '^net\.inet\.tcp\.syncookies\s*='
+        line: 'net.inet.tcp.syncookies=1'
+        create: true
+        owner: root
+        group: wheel
+        mode: '0644'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_6_syncookies.stdout | trim == '0'
+
+    - name: "3.3.6 | REMEDIATE | Apply syncookies=1 at runtime"
+      ansible.builtin.command: sysctl net.inet.tcp.syncookies=1
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_6_syncookies.stdout | trim == '0'
+      changed_when: true
+
+# ---
+
+- name: "3.3.7 | Ensure IPv6 router advertisements are not accepted"
+  when: "'3.3.7' not in active_exceptions"
+  tags: [rule_3.3.7, level1, section_3]
+  block:
+    - name: "3.3.7 | AUDIT | Check net.inet6.ip6.accept_rtadv"
+      ansible.builtin.command: sysctl -nq net.inet6.ip6.accept_rtadv
+      register: cis_3_3_7_rtadv
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "3.3.7 | AUDIT | Report IPv6 router advertisement state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: net.inet6.ip6.accept_rtadv is set to 1 — IPv6 router advertisements accepted'
+             if cis_3_3_7_rtadv.stdout | trim == '1'
+             else 'COMPLIANT: net.inet6.ip6.accept_rtadv is set to 0' }}
+
+    - name: "3.3.7 | REMEDIATE | Set accept_rtadv=0 in sysctl.conf"
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.conf
+        regexp: '^net\.inet6\.ip6\.accept_rtadv\s*='
+        line: 'net.inet6.ip6.accept_rtadv=0'
+        create: true
+        owner: root
+        group: wheel
+        mode: '0644'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_7_rtadv.stdout | trim == '1'
+
+    - name: "3.3.7 | REMEDIATE | Apply accept_rtadv=0 at runtime"
+      ansible.builtin.command: sysctl net.inet6.ip6.accept_rtadv=0
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_3_7_rtadv.stdout | trim == '1'
+      changed_when: true
+
+# =============================================================
+# 3.4 Configure Host Based Firewall
+# 3.4.1 Configure a firewall utility
+# =============================================================
+
+- name: "3.4.1.1 | Ensure ipfw is enabled and configured"
+  when: "'3.4.1.1' not in active_exceptions"
+  tags: [rule_3.4.1.1, level1, section_3]
+  block:
+    - name: "3.4.1.1 | AUDIT | Check firewall_enable rc.conf setting"
+      ansible.builtin.command: sysrc -q -n firewall_enable
+      register: cis_3_4_1_1_ipfw
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "3.4.1.1 | AUDIT | Report ipfw state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: ipfw (firewall_enable) is set to YES'
+             if cis_3_4_1_1_ipfw.stdout | trim | upper == 'YES'
+             else 'NON-COMPLIANT: firewall_enable is not set to YES — ipfw is not enabled' }}
+
+    - name: "3.4.1.1 | REMEDIATE | Enable ipfw firewall in rc.conf"
+      ansible.builtin.command: sysrc firewall_enable="YES"
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_4_1_1_ipfw.stdout | trim | upper != 'YES'
+      changed_when: true
+
+    - name: "3.4.1.1 | REMEDIATE | Set ipfw firewall type to workstation"
+      ansible.builtin.command: sysrc firewall_type="workstation"
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_3_4_1_1_ipfw.stdout | trim | upper != 'YES'
+      changed_when: true
+
+# ---
+
+- name: "3.4.1.2 | Ensure a single firewall utility is in use"
+  when: "'3.4.1.2' not in active_exceptions"
+  tags: [rule_3.4.1.2, level1, section_3]
+  block:
+    - name: "3.4.1.2 | AUDIT | Check firewall_enable (ipfw)"
+      ansible.builtin.command: sysrc -q -n firewall_enable
+      register: cis_3_4_1_2_ipfw
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "3.4.1.2 | AUDIT | Check ipfilter_enable"
+      ansible.builtin.command: sysrc -q -n ipfilter_enable
+      register: cis_3_4_1_2_ipfilter
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "3.4.1.2 | AUDIT | Check pf_enable"
+      ansible.builtin.command: sysrc -q -n pf_enable
+      register: cis_3_4_1_2_pf
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "3.4.1.2 | AUDIT | Report firewall utility state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ ['3.4.1.2 Firewall utility audit:',
+              '  firewall_enable (ipfw): ' ~ (cis_3_4_1_2_ipfw.stdout | trim | upper),
+              '  ipfilter_enable:        ' ~ (cis_3_4_1_2_ipfilter.stdout | trim | upper),
+              '  pf_enable:              ' ~ (cis_3_4_1_2_pf.stdout | trim | upper),
+              ('COMPLIANT: exactly one firewall utility is enabled'
+               if ([cis_3_4_1_2_ipfw.stdout | trim | upper == 'YES',
+                    cis_3_4_1_2_ipfilter.stdout | trim | upper == 'YES',
+                    cis_3_4_1_2_pf.stdout | trim | upper == 'YES'] | select | list | length) == 1
+               else 'NON-COMPLIANT: zero or multiple firewall utilities are enabled — ensure exactly one is in use')] | join('\n') }}
