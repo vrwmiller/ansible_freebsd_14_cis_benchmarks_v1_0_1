@@ -71,5 +71,5 @@ conditions are preferred for long-term maintainability in this role.
 - `freebsd_cis_remediate`: Boolean flag controlling whether remediation is applied (default: false).
 - `freebsd_cis_global_exceptions`: List of rule IDs defined at the role level.
 - `freebsd_cis_local_exceptions`: List of rule IDs defined by the user (playbook or host-level).
-- `_cis_<id>_audit`: Internal variables used to store audit results for each rule.
+- `cis_<id>_<purpose>`: Internal variables used to store audit/remediation task results for each rule (for example: `cis_1_1_1_1_kld`, `cis_1_1_2_1_1_mount`).
 

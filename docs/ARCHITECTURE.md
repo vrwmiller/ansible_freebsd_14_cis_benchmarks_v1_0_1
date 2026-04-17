@@ -5,7 +5,11 @@ The role is built around a conditional execution pipeline. Each CIS control is p
 
 1. **Exception Check**: Determine whether the rule ID exists in the `active_exceptions` list. If present, the rule is skipped (Blue/Cyan).
 2. **Audit Phase**: Execute a validation step (command, module, or fact-based check). If the system meets the benchmark, return `ok` (Green). If it does not, return `changed` (Yellow).
-3. **Remediation Phase**: If the audit result is `changed` and `freebsd_cis_remediate` is set to `true`, run the corresponding remediation task.
+3. **Remediation Phase**: If the raw audit signal indicates non-compliance (for example, `result.rc != 0`, `result.rc == 0`, or a mismatched `stdout` value) and `freebsd_cis_remediate` is set to `true`, run the corresponding remediation task.
+
+Notes:
+- Audit tasks still surface non-compliance as `changed` for operator visibility.
+- Remediation gating should use the raw registered result fields directly, not `.changed`, to prevent drift if `changed_when` is later refactored.
 
 ## Data Merging Strategy
 Exception handling is initialized during role setup using a `set_fact` operation:
