@@ -13,7 +13,7 @@ Exception handling is initialized during role setup using a `set_fact` operation
 - **Global Exceptions**: Defined in `defaults/main.yml`.
 - **Local Exceptions**: Supplied via the playbook or `host_vars`.
 - **Merged Result**:  
-  `active_exceptions: "{{ role_defaults | union(playbook_vars) }}"`
+  `active_exceptions: "{{ (freebsd_cis_global_exceptions + freebsd_cis_local_exceptions) | unique }}"`
 
 ## Mode Definitions
 
