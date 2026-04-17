@@ -5,6 +5,10 @@
 # Default is false (audit-only mode).
 freebsd_cis_remediate: false
 
+# CIS profile level. Level 1 is the minimum; Level 2 includes all Level 1 controls.
+# Level 2 controls address higher-risk environments and may have operational impact.
+freebsd_cis_level: 1
+
 # Rule IDs to skip globally (defined at the role level).
 # Example: ["1.1.1.1", "3.2.1"]
 freebsd_cis_global_exceptions: []
@@ -12,3 +16,20 @@ freebsd_cis_global_exceptions: []
 # Rule IDs to skip locally (defined at the playbook or host level).
 # Example: ["4.2.19"]
 freebsd_cis_local_exceptions: []
+
+# -------------------------------------------------------------------
+# Section 1 — Initial Setup
+# -------------------------------------------------------------------
+
+# 1.1.2.1.1 — tmpfs size for /tmp when enabling tmpfs via sysrc.
+freebsd_cis_tmp_size: "2g"
+
+# 1.3.1 — Bootloader password written to /boot/loader.conf.
+# WARNING: FreeBSD's loader stores this value in PLAINTEXT.
+# Leave empty ("") to skip bootloader password remediation.
+freebsd_cis_bootloader_password: ""
+
+# 1.6.1 / 1.6.2 / 1.6.3 — Warning banner text used for /etc/motd,
+# /etc/issue, and /etc/issue.net. Customize per site policy and legal review.
+freebsd_cis_warning_banner: >-
+  Authorized users only. All activity may be monitored and reported.
