@@ -4,6 +4,7 @@
 - name: "Initialize | Merge exception lists"
   ansible.builtin.set_fact:
     active_exceptions: "{{ (freebsd_cis_global_exceptions + freebsd_cis_local_exceptions) | unique }}"
+  tags: [always]
 
 - name: "Section 1 | Initial Setup"
   ansible.builtin.import_tasks: section_1.yml
