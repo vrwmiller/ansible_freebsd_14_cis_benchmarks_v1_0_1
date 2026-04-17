@@ -576,13 +576,13 @@
 
     - name: "3.4.1.2 | AUDIT | Report firewall utility state"
       ansible.builtin.debug:
-        msg: >-
-          {{ ['3.4.1.2 Firewall utility audit:',
-              '  firewall_enable (ipfw): ' ~ (cis_3_4_1_2_ipfw.stdout | trim | upper),
-              '  ipfilter_enable:        ' ~ (cis_3_4_1_2_ipfilter.stdout | trim | upper),
-              '  pf_enable:              ' ~ (cis_3_4_1_2_pf.stdout | trim | upper),
-              ('COMPLIANT: exactly one firewall utility is enabled'
-               if ([cis_3_4_1_2_ipfw.stdout | trim | upper == 'YES',
-                    cis_3_4_1_2_ipfilter.stdout | trim | upper == 'YES',
-                    cis_3_4_1_2_pf.stdout | trim | upper == 'YES'] | select | list | length) == 1
-               else 'NON-COMPLIANT: zero or multiple firewall utilities are enabled — ensure exactly one is in use')] | join('\n') }}
+        msg: "{{ ['3.4.1.2 Firewall utility audit:', ''] +
+              ['  firewall_enable (ipfw): ' ~ (cis_3_4_1_2_ipfw.stdout | trim | upper),
+               '  ipfilter_enable:        ' ~ (cis_3_4_1_2_ipfilter.stdout | trim | upper),
+               '  pf_enable:              ' ~ (cis_3_4_1_2_pf.stdout | trim | upper),
+               '',
+               ('COMPLIANT: exactly one firewall utility is enabled'
+                if ([cis_3_4_1_2_ipfw.stdout | trim | upper == 'YES',
+                     cis_3_4_1_2_ipfilter.stdout | trim | upper == 'YES',
+                     cis_3_4_1_2_pf.stdout | trim | upper == 'YES'] | select | list | length) == 1
+                else 'NON-COMPLIANT: zero or multiple firewall utilities are enabled — ensure exactly one is in use')] }}"
