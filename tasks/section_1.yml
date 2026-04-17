@@ -243,7 +243,7 @@
 
     - name: "1.1.2.1.2 | REMEDIATE | Persist nosuid in tmpmfs_flags in rc.conf"
       ansible.builtin.command: >-
-        sysrc tmpmfs_flags="{{ (cis_1_1_2_1_2_tmpmfs_flags.stdout | default('')) ~ ' -o nosuid' }}"
+        sysrc tmpmfs_flags="{{ (cis_1_1_2_1_2_tmpmfs_flags.stdout | default('') | trim) ~ (' -o nosuid' if (cis_1_1_2_1_2_tmpmfs_flags.stdout | default('') | trim | length > 0) else '-o nosuid') }}"
       when:
         - freebsd_cis_remediate | bool
         - cis_1_1_2_1_2_nosuid.rc == 0
@@ -290,7 +290,7 @@
 
     - name: "1.1.2.1.3 | REMEDIATE | Persist noexec in tmpmfs_flags in rc.conf"
       ansible.builtin.command: >-
-        sysrc tmpmfs_flags="{{ (cis_1_1_2_1_3_tmpmfs_flags.stdout | default('')) ~ ' -o noexec' }}"
+        sysrc tmpmfs_flags="{{ (cis_1_1_2_1_3_tmpmfs_flags.stdout | default('') | trim) ~ (' -o noexec' if (cis_1_1_2_1_3_tmpmfs_flags.stdout | default('') | trim | length > 0) else '-o noexec') }}"
       when:
         - freebsd_cis_remediate | bool
         - cis_1_1_2_1_3_noexec.rc == 0
@@ -353,8 +353,8 @@
     - name: "1.1.2.2.2 | REMEDIATE | Persist nosuid in /etc/fstab for /home"
       ansible.builtin.replace:
         path: /etc/fstab
-        regexp: '^(\S+\s+/home\s+\S+\s+)(?!.*\bnosuid\b)(\S+)(\s+\d+\s+\d+\s*)$'
-        replace: '\1\2,nosuid\3'
+        regexp: '^(\S+\s+/home\s+\S+\s+)(?!.*\bnosuid\b)(\S+)(\s+\d+\s+\d+)(\s*(?:#.*)?)$'
+        replace: '\1\2,nosuid\3\4'
       when:
         - freebsd_cis_remediate | bool
         - cis_1_1_2_2_2_nosuid.rc == 0
@@ -414,8 +414,8 @@
     - name: "1.1.2.3.2 | REMEDIATE | Persist nosuid in /etc/fstab for /var"
       ansible.builtin.replace:
         path: /etc/fstab
-        regexp: '^(\S+\s+/var\s+\S+\s+)(?!.*\bnosuid\b)(\S+)(\s+\d+\s+\d+\s*)$'
-        replace: '\1\2,nosuid\3'
+        regexp: '^(\S+\s+/var\s+\S+\s+)(?!.*\bnosuid\b)(\S+)(\s+\d+\s+\d+)(\s*(?:#.*)?)$'
+        replace: '\1\2,nosuid\3\4'
       when:
         - freebsd_cis_remediate | bool
         - cis_1_1_2_3_2_nosuid.rc == 0
@@ -475,8 +475,8 @@
     - name: "1.1.2.4.2 | REMEDIATE | Persist nosuid in /etc/fstab for /var/tmp"
       ansible.builtin.replace:
         path: /etc/fstab
-        regexp: '^(\S+\s+/var/tmp\s+\S+\s+)(?!.*\bnosuid\b)(\S+)(\s+\d+\s+\d+\s*)$'
-        replace: '\1\2,nosuid\3'
+        regexp: '^(\S+\s+/var/tmp\s+\S+\s+)(?!.*\bnosuid\b)(\S+)(\s+\d+\s+\d+)(\s*(?:#.*)?)$'
+        replace: '\1\2,nosuid\3\4'
       when:
         - freebsd_cis_remediate | bool
         - cis_1_1_2_4_2_nosuid.rc == 0
@@ -512,8 +512,8 @@
     - name: "1.1.2.4.3 | REMEDIATE | Persist noexec in /etc/fstab for /var/tmp"
       ansible.builtin.replace:
         path: /etc/fstab
-        regexp: '^(\S+\s+/var/tmp\s+\S+\s+)(?!.*\bnoexec\b)(\S+)(\s+\d+\s+\d+\s*)$'
-        replace: '\1\2,noexec\3'
+        regexp: '^(\S+\s+/var/tmp\s+\S+\s+)(?!.*\bnoexec\b)(\S+)(\s+\d+\s+\d+)(\s*(?:#.*)?)$'
+        replace: '\1\2,noexec\3\4'
       when:
         - freebsd_cis_remediate | bool
         - cis_1_1_2_4_3_noexec.rc == 0
@@ -573,8 +573,8 @@
     - name: "1.1.2.5.2 | REMEDIATE | Persist nosuid in /etc/fstab for /var/log"
       ansible.builtin.replace:
         path: /etc/fstab
-        regexp: '^(\S+\s+/var/log\s+\S+\s+)(?!.*\bnosuid\b)(\S+)(\s+\d+\s+\d+\s*)$'
-        replace: '\1\2,nosuid\3'
+        regexp: '^(\S+\s+/var/log\s+\S+\s+)(?!.*\bnosuid\b)(\S+)(\s+\d+\s+\d+)(\s*(?:#.*)?)$'
+        replace: '\1\2,nosuid\3\4'
       when:
         - freebsd_cis_remediate | bool
         - cis_1_1_2_5_2_nosuid.rc == 0
@@ -610,8 +610,8 @@
     - name: "1.1.2.5.3 | REMEDIATE | Persist noexec in /etc/fstab for /var/log"
       ansible.builtin.replace:
         path: /etc/fstab
-        regexp: '^(\S+\s+/var/log\s+\S+\s+)(?!.*\bnoexec\b)(\S+)(\s+\d+\s+\d+\s*)$'
-        replace: '\1\2,noexec\3'
+        regexp: '^(\S+\s+/var/log\s+\S+\s+)(?!.*\bnoexec\b)(\S+)(\s+\d+\s+\d+)(\s*(?:#.*)?)$'
+        replace: '\1\2,noexec\3\4'
       when:
         - freebsd_cis_remediate | bool
         - cis_1_1_2_5_3_noexec.rc == 0
@@ -671,8 +671,8 @@
     - name: "1.1.2.6.2 | REMEDIATE | Persist nosuid in /etc/fstab for /var/audit"
       ansible.builtin.replace:
         path: /etc/fstab
-        regexp: '^(\S+\s+/var/audit\s+\S+\s+)(?!.*\bnosuid\b)(\S+)(\s+\d+\s+\d+\s*)$'
-        replace: '\1\2,nosuid\3'
+        regexp: '^(\S+\s+/var/audit\s+\S+\s+)(?!.*\bnosuid\b)(\S+)(\s+\d+\s+\d+)(\s*(?:#.*)?)$'
+        replace: '\1\2,nosuid\3\4'
       when:
         - freebsd_cis_remediate | bool
         - cis_1_1_2_6_2_nosuid.rc == 0
@@ -708,8 +708,8 @@
     - name: "1.1.2.6.3 | REMEDIATE | Persist noexec in /etc/fstab for /var/audit"
       ansible.builtin.replace:
         path: /etc/fstab
-        regexp: '^(\S+\s+/var/audit\s+\S+\s+)(?!.*\bnoexec\b)(\S+)(\s+\d+\s+\d+\s*)$'
-        replace: '\1\2,noexec\3'
+        regexp: '^(\S+\s+/var/audit\s+\S+\s+)(?!.*\bnoexec\b)(\S+)(\s+\d+\s+\d+)(\s*(?:#.*)?)$'
+        replace: '\1\2,noexec\3\4'
       when:
         - freebsd_cis_remediate | bool
         - cis_1_1_2_6_3_noexec.rc == 0
@@ -849,7 +849,7 @@
       ansible.builtin.lineinfile:
         path: /boot/loader.conf
         regexp: '^password='
-        line: "password={{ freebsd_cis_bootloader_password }}"
+        line: 'password="{{ freebsd_cis_bootloader_password }}"'
         create: true
         mode: '0600'
       no_log: true
