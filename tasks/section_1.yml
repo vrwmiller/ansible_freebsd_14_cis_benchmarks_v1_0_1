@@ -40,6 +40,9 @@
         regexp: '^ext2fs_load='
         line: 'ext2fs_load="NO"'
         create: true
+        owner: root
+        group: wheel
+        mode: '0600'
       when: freebsd_cis_remediate | bool
 
 # ---
@@ -76,6 +79,9 @@
         regexp: '^msdosfs_load='
         line: 'msdosfs_load="NO"'
         create: true
+        owner: root
+        group: wheel
+        mode: '0600'
       when: freebsd_cis_remediate | bool
 
 # ---
@@ -155,6 +161,9 @@
         regexp: '^zfs_load='
         line: 'zfs_load="NO"'
         create: true
+        owner: root
+        group: wheel
+        mode: '0600'
       when: freebsd_cis_remediate | bool
 
 # =============================================================
@@ -203,6 +212,17 @@
         - cis_1_1_2_1_1_mount.rc != 0
         - (cis_1_1_2_1_1_sysrc.stdout | default('')) | upper != 'YES'
       changed_when: true
+
+    - name: "1.1.2.1.1 | REMEDIATE | Warn — reboot required to mount /tmp as tmpfs"
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: tmpmfs=YES is already set in rc.conf but /tmp is not currently
+          a separate partition. A reboot is required for the setting to take effect.
+          No further automated remediation is possible until after the next boot.
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_2_1_1_mount.rc != 0
+        - (cis_1_1_2_1_1_sysrc.stdout | default('')) | upper == 'YES'
 
 # ---
 
@@ -851,6 +871,8 @@
         regexp: '^password='
         line: 'password="{{ freebsd_cis_bootloader_password }}"'
         create: true
+        owner: root
+        group: wheel
         mode: '0600'
       no_log: true
       when:
