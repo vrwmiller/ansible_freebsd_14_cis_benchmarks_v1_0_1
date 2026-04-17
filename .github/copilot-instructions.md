@@ -17,7 +17,7 @@ Python 3.11, Ansible 2.16, ansible-lint at production profile.
 
 ## Control Block Structure
 
-Every CIS control is one top-level block. Pattern (canonical form from section_2.yml):
+Every CIS control is one top-level block. Target pattern (see `docs/DESIGN.md`):
 
 ```yaml
 - name: "<id> | Ensure <description>"
