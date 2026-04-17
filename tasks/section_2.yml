@@ -141,10 +141,10 @@
         - freebsd_cis_remediate | bool
         - cis_2_2_2_inetd_ftp is changed
 
-    - name: "2.2.2 | REMEDIATE | Restart inetd after disabling ftpd"
+    - name: "2.2.2 | REMEDIATE | Reload inetd after disabling ftpd"
       ansible.builtin.service:
         name: inetd
-        state: restarted
+        state: reloaded
       when:
         - freebsd_cis_remediate | bool
         - cis_2_2_2_inetd_ftp is changed
@@ -437,10 +437,10 @@
         - freebsd_cis_remediate | bool
         - cis_2_2_8_inetd_telnet is changed
 
-    - name: "2.2.8 | REMEDIATE | Restart inetd after disabling telnet"
+    - name: "2.2.8 | REMEDIATE | Reload inetd after disabling telnet"
       ansible.builtin.service:
         name: inetd
-        state: restarted
+        state: reloaded
       when:
         - freebsd_cis_remediate | bool
         - cis_2_2_8_inetd_telnet is changed
@@ -491,10 +491,10 @@
         - freebsd_cis_remediate | bool
         - cis_2_2_9_inetd_tftp is changed
 
-    - name: "2.2.9 | REMEDIATE | Restart inetd after disabling tftpd"
+    - name: "2.2.9 | REMEDIATE | Reload inetd after disabling tftpd"
       ansible.builtin.service:
         name: inetd
-        state: restarted
+        state: reloaded
       when:
         - freebsd_cis_remediate | bool
         - cis_2_2_9_inetd_tftp is changed
