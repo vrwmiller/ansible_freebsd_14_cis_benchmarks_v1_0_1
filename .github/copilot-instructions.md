@@ -50,9 +50,10 @@ Every CIS control is one top-level block. Pattern (canonical form from section_2
 - `check_mode: false` on every audit task — audits must run under `--check`.
 - `failed_when: false` on audit tasks — non-compliance is not a task failure.
 - `changed_when` on audit tasks encodes the compliance signal: `changed` = NON-COMPLIANT.
-- Remediation `when` may use `result is changed` **or** raw `.rc`/`.stdout` — both are
-  acceptable; prefer `is changed` for multi-register controls for clarity. Do not mix both
-  styles within one control's remediation block.
+- Remediation `when` must use raw audit signals (`.rc`, `.stdout`, `.rc == 0` etc.) rather
+  than `result is changed`. `is changed` is a derived attribute — if `changed_when` is later
+  edited the gate silently diverges from the real compliance signal. See docs/DESIGN.md for
+  rationale. Do not use `is changed` as a remediation gate.
 - `freebsd_cis_remediate | bool` is always the first `when` condition on remediation tasks.
 - Never modify host state in an audit task.
 - `failed_when: false` is acceptable on remediation tasks when a "stop" may fail because the
@@ -62,7 +63,7 @@ Every CIS control is one top-level block. Pattern (canonical form from section_2
 
 ## Register Variable Naming
 
-Pattern: `cis_<section_underscored>_<purpose>` — all lowercase, underscores only.
+Pattern: `cis_<id_underscored>_<purpose>` — all lowercase, underscores only.
 
 Examples:
 - `cis_2_1_1_ntpd` — rc.conf enablement check for 2.1.1
@@ -74,7 +75,7 @@ Examples:
 
 ## Tags
 
-Every control block gets exactly three tags: `[rule_<id>, level1|level2, section_<N>]`.
+Every control block must include at least these three baseline tags: `[rule_<id>, level1|level2, section_<N>]`.
 Additional tags are allowed for special cases: `automated`, `manual`.
 - Add `automated` when remediation is fully automated.
 - Add `manual` when the control requires operator action (e.g. 2.2.12).
@@ -123,8 +124,8 @@ Skipped controls appear as `skipped` in Ansible output — do not use `ignore_er
 ## Lint
 
 Target: `ansible-lint tasks/section_<N>.yml` (production profile).
-Every section file must pass with 0 failures before merging. The comment `# lint-clean: production profile`
-at the top of a section file records that baseline.
+Every section file must pass with 0 failures before merging. Once a section file is verified
+lint-clean, add `# lint-clean: production profile` at the top to record that baseline.
 Run lint before committing any change to a `tasks/` file.
 
 ---
