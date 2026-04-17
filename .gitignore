@@ -27,6 +27,7 @@ htmlcov/
 .pyre/
 
 # Ansible local artifacts
+.ansible/
 *.retry
 ansible.log
 
