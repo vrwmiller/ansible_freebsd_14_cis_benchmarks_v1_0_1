@@ -1,0 +1,31 @@
+---
+# FreeBSD 14 CIS Benchmark v1.0.1 — Task Orchestrator
+
+- name: "Initialize | Merge exception lists"
+  ansible.builtin.set_fact:
+    active_exceptions: "{{ (freebsd_cis_global_exceptions + freebsd_cis_local_exceptions) | unique }}"
+  tags: [always]
+
+- name: "Section 1 | Initial Setup"
+  ansible.builtin.import_tasks: section_1.yml
+  tags: section_1
+
+- name: "Section 2 | Services"
+  ansible.builtin.import_tasks: section_2.yml
+  tags: section_2
+
+- name: "Section 3 | Network"
+  ansible.builtin.import_tasks: section_3.yml
+  tags: section_3
+
+- name: "Section 4 | Access, Authentication and Authorization"
+  ansible.builtin.import_tasks: section_4.yml
+  tags: section_4
+
+- name: "Section 5 | Logging and Auditing"
+  ansible.builtin.import_tasks: section_5.yml
+  tags: section_5
+
+- name: "Section 6 | System Maintenance"
+  ansible.builtin.import_tasks: section_6.yml
+  tags: section_6

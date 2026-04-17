@@ -13,7 +13,7 @@ Exception handling is initialized during role setup using a `set_fact` operation
 - **Global Exceptions**: Defined in `defaults/main.yml`.
 - **Local Exceptions**: Supplied via the playbook or `host_vars`.
 - **Merged Result**:  
-  `active_exceptions: "{{ role_defaults | union(playbook_vars) }}"`
+  `active_exceptions: "{{ (freebsd_cis_global_exceptions + freebsd_cis_local_exceptions) | unique }}"`
 
 ## Mode Definitions
 
@@ -26,6 +26,6 @@ Exception handling is initialized during role setup using a `set_fact` operation
 ## File Structure
 - `defaults/main.yml`: Contains global variables and default accepted states.
 - `vars/main.yml`: Stores internal benchmark-related metadata.
-- `tasks/main.yml`: Acts as the orchestrator—merging exceptions and including subtask files.
-- `tasks/audit/`: Holds audit logic organized by CIS sections.
-- `tasks/remediate/`: Contains remediation logic, executed conditionally.
+- `meta/main.yml`: Ansible Galaxy role metadata (platforms, min Ansible version, dependencies).
+- `tasks/main.yml`: Acts as the orchestrator—merging exceptions and importing section task files.
+- `tasks/section_N.yml`: One file per CIS section. Each file contains co-located audit and remediation blocks for every control in that section. Audit and remediation logic are grouped together in a single block per control; the `freebsd_cis_remediate` flag gates remediation execution.

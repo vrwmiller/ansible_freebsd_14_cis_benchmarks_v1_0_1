@@ -44,13 +44,12 @@ Effective set:
 - `docs/DESIGN.md`: implementation conventions and task pattern
 - `docs/ARCHITECTURE.md`: execution flow and file structure
 
-Expected role layout (as implementation expands):
+Expected role layout:
 
 - `defaults/main.yml`
 - `vars/main.yml`
 - `tasks/main.yml`
-- `tasks/audit/`
-- `tasks/remediate/`
+- `tasks/section_N.yml` (one file per CIS section; audit and remediation logic co-located)
 
 ## Requirements
 
