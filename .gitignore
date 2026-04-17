@@ -1,0 +1,48 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Packaging and build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Test and coverage artifacts
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Type checker and linter caches
+.mypy_cache/
+.ruff_cache/
+.pyre/
+
+# Ansible local artifacts
+*.retry
+ansible.log
+
+# IDE/editor metadata
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS filesystem noise
+.DS_Store
+
+# Environment and secret-like local files
+.env
+.env.*
+*.pem
+*.key
+*.crt
+
