@@ -79,7 +79,7 @@
 
     - name: "2.2.1 | REMEDIATE | Stop automount service"
       ansible.builtin.service:
-        name: automount
+        name: autofs
         state: stopped
       when:
         - freebsd_cis_remediate | bool
@@ -88,7 +88,7 @@
 
     - name: "2.2.1 | REMEDIATE | Disable automount service"
       ansible.builtin.service:
-        name: automount
+        name: autofs
         enabled: false
       when:
         - freebsd_cis_remediate | bool
@@ -137,7 +137,7 @@
     - name: "2.2.2 | REMEDIATE | Restart inetd after disabling ftpd"
       ansible.builtin.service:
         name: inetd
-        state: restarted
+        state: reloaded
       when:
         - freebsd_cis_remediate | bool
         - cis_2_2_2_inetd_ftp is changed
@@ -192,7 +192,7 @@
 
     - name: "2.2.3 | REMEDIATE | Stop cyrus_imapd service"
       ansible.builtin.service:
-        name: cyrus_imapd
+        name: cyrus-imapd
         state: stopped
       when:
         - freebsd_cis_remediate | bool
@@ -403,7 +403,7 @@
     - name: "2.2.8 | REMEDIATE | Restart inetd after disabling telnet"
       ansible.builtin.service:
         name: inetd
-        state: restarted
+        state: reloaded
       when:
         - freebsd_cis_remediate | bool
         - cis_2_2_8_inetd_telnet is changed
@@ -448,7 +448,7 @@
     - name: "2.2.9 | REMEDIATE | Restart inetd after disabling tftpd"
       ansible.builtin.service:
         name: inetd
-        state: restarted
+        state: reloaded
       when:
         - freebsd_cis_remediate | bool
         - cis_2_2_9_inetd_tftp is changed
