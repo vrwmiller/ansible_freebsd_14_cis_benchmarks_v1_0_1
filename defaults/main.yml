@@ -1,0 +1,14 @@
+---
+# FreeBSD 14 CIS Benchmark v1.0.1 — Role Defaults
+
+# Set to true to apply remediation for non-compliant controls.
+# Default is false (audit-only mode).
+freebsd_cis_remediate: false
+
+# Rule IDs to skip globally (defined at the role level).
+# Example: ["1.1.1.1", "3.2.1"]
+freebsd_cis_global_exceptions: []
+
+# Rule IDs to skip locally (defined at the playbook or host level).
+# Example: ["4.2.19"]
+freebsd_cis_local_exceptions: []

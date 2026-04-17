@@ -1,0 +1,5 @@
+---
+# FreeBSD 14 CIS Benchmark v1.0.1 — Internal Role Variables
+
+freebsd_cis_benchmark_name: "CIS FreeBSD 14 Benchmark"
+freebsd_cis_benchmark_version: "1.0.1"
