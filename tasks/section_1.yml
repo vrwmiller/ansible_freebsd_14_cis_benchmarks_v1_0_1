@@ -95,11 +95,34 @@
              if cis_1_1_1_3_kld.rc == 0
              else 'PASS: zfs kernel module is NOT loaded' }}
 
+    - name: "1.1.1.3 | REMEDIATE | Check for active ZFS pools before unloading"
+      ansible.builtin.command: zpool list -H
+      register: cis_1_1_1_3_zpools
+      changed_when: false
+      failed_when: false
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_1_3_kld.rc == 0
+
+    - name: "1.1.1.3 | REMEDIATE | Warn — ZFS pools active, skipping unload to prevent data loss"
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: ZFS pools are currently active. Skipping ZFS disable/unload
+          remediation to prevent data loss or system instability. Manually
+          migrate off ZFS before applying this control.
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_1_3_kld.rc == 0
+        - cis_1_1_1_3_zpools is defined
+        - cis_1_1_1_3_zpools.stdout | default('') | length > 0
+
     - name: "1.1.1.3 | REMEDIATE | Disable the zfs service"
       ansible.builtin.command: sysrc zfs_enable="NO"
       when:
         - freebsd_cis_remediate | bool
         - cis_1_1_1_3_kld.rc == 0
+        - cis_1_1_1_3_zpools is defined
+        - cis_1_1_1_3_zpools.stdout | default('') | length == 0
       changed_when: true
       failed_when: false
 
@@ -108,6 +131,8 @@
       when:
         - freebsd_cis_remediate | bool
         - cis_1_1_1_3_kld.rc == 0
+        - cis_1_1_1_3_zpools is defined
+        - cis_1_1_1_3_zpools.stdout | default('') | length == 0
       changed_when: true
       failed_when: false
 
@@ -116,6 +141,8 @@
       when:
         - freebsd_cis_remediate | bool
         - cis_1_1_1_3_kld.rc == 0
+        - cis_1_1_1_3_zpools is defined
+        - cis_1_1_1_3_zpools.stdout | default('') | length == 0
       changed_when: true
       failed_when: false
 
