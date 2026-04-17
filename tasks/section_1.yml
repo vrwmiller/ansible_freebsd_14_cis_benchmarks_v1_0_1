@@ -780,7 +780,6 @@
         - freebsd_cis_remediate | bool
         - cis_1_2_3_base.rc == 0
       changed_when: true
-      failed_when: false
 
     - name: "1.2.3 | REMEDIATE | Update pkg package index"
       ansible.builtin.command: pkg update
@@ -789,7 +788,6 @@
         - "'Your packages are up to date.' not in
            ((cis_1_2_3_pkg.stdout | default('')) ~ (cis_1_2_3_pkg.stderr | default('')))"
       changed_when: true
-      failed_when: false
 
     - name: "1.2.3 | REMEDIATE | Upgrade installed packages"
       ansible.builtin.command: pkg upgrade -y
@@ -798,7 +796,6 @@
         - "'Your packages are up to date.' not in
            ((cis_1_2_3_pkg.stdout | default('')) ~ (cis_1_2_3_pkg.stderr | default('')))"
       changed_when: true
-      failed_when: false
 
 # =============================================================
 # 1.3 Configure Secure Boot Settings
