@@ -70,8 +70,8 @@
       failed_when: false
       check_mode: false
 
-    - name: "2.2.1 | AUDIT | Check automount daemon process state"
-      ansible.builtin.command: pgrep -x automount
+    - name: "2.2.1 | AUDIT | Check automountd daemon process state"
+      ansible.builtin.command: pgrep -x automountd
       register: cis_2_2_1_automount_running
       changed_when: cis_2_2_1_automount_running.rc == 0
       failed_when: false
@@ -80,22 +80,22 @@
     - name: "2.2.1 | AUDIT | Report autofs state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'NON-COMPLIANT: autofs/automount is in use (enabled and/or running)'
+          {{ 'NON-COMPLIANT: autofs/automountd is in use (enabled and/or running)'
              if (cis_2_2_1_autofs is changed) or (cis_2_2_1_automount_running is changed)
-             else 'COMPLIANT: autofs/automount is not enabled and not running' }}
+             else 'COMPLIANT: autofs/automountd is not enabled and not running' }}
 
-    - name: "2.2.1 | REMEDIATE | Stop automount service"
+    - name: "2.2.1 | REMEDIATE | Stop autofs service"
       ansible.builtin.service:
-        name: automount
+        name: autofs
         state: stopped
       when:
         - freebsd_cis_remediate | bool
         - cis_2_2_1_autofs is changed or cis_2_2_1_automount_running is changed
       failed_when: false
 
-    - name: "2.2.1 | REMEDIATE | Disable automount service"
+    - name: "2.2.1 | REMEDIATE | Disable autofs service"
       ansible.builtin.service:
-        name: automount
+        name: autofs
         enabled: false
       when:
         - freebsd_cis_remediate | bool
@@ -206,9 +206,9 @@
         - cis_2_2_3_dovecot_pkg is changed
       failed_when: false
 
-    - name: "2.2.3 | REMEDIATE | Stop cyrus_imapd service"
+    - name: "2.2.3 | REMEDIATE | Stop cyrus-imapd service"
       ansible.builtin.service:
-        name: cyrus_imapd
+        name: cyrus-imapd
         state: stopped
       when:
         - freebsd_cis_remediate | bool
