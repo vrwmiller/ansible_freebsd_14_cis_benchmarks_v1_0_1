@@ -779,16 +779,24 @@
              if cis_1_4_1_aslr.stdout | default('0') | trim == '1'
              else 'FAIL: ASLR is disabled (kern.elf64.aslr.enable=' ~ (cis_1_4_1_aslr.stdout | default('unknown') | trim) ~ ')' }}
 
-    - name: "1.4.1 | REMEDIATE | Enable ASLR at runtime"
-      ansible.posix.sysctl:
-        name: kern.elf64.aslr.enable
-        value: '1'
-        state: present
-        sysctl_file: /etc/sysctl.conf
-        reload: true
+    - name: "1.4.1 | REMEDIATE | Persist ASLR setting in /etc/sysctl.conf"
+      ansible.builtin.lineinfile:
+        path: /etc/sysctl.conf
+        regexp: '^kern\.elf64\.aslr\.enable='
+        line: 'kern.elf64.aslr.enable=1'
+        create: true
+        mode: '0644'
       when:
         - freebsd_cis_remediate | bool
         - cis_1_4_1_aslr.stdout | default('0') | trim != '1'
+
+    - name: "1.4.1 | REMEDIATE | Enable ASLR at runtime"
+      ansible.builtin.command: sysctl kern.elf64.aslr.enable=1
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_4_1_aslr.stdout | default('0') | trim != '1'
+      changed_when: true
+      failed_when: false
 
 # ---
 
