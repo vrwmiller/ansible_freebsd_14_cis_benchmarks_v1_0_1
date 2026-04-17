@@ -851,6 +851,8 @@
         regexp: '^password='
         line: "password={{ freebsd_cis_bootloader_password }}"
         create: true
+        mode: '0600'
+      no_log: true
       when:
         - freebsd_cis_remediate | bool
         - freebsd_cis_bootloader_password | length > 0
