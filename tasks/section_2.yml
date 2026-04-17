@@ -70,12 +70,19 @@
       failed_when: false
       check_mode: false
 
+    - name: "2.2.1 | AUDIT | Check automount daemon process state"
+      ansible.builtin.command: pgrep -x automount
+      register: cis_2_2_1_automount_running
+      changed_when: cis_2_2_1_automount_running.rc == 0
+      failed_when: false
+      check_mode: false
+
     - name: "2.2.1 | AUDIT | Report autofs state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'NON-COMPLIANT: autofs_enable is set to YES — automounting is active'
-             if cis_2_2_1_autofs.stdout | trim | upper == 'YES'
-             else 'COMPLIANT: autofs is not enabled' }}
+          {{ 'NON-COMPLIANT: autofs/automount is in use (enabled and/or running)'
+             if (cis_2_2_1_autofs is changed) or (cis_2_2_1_automount_running is changed)
+             else 'COMPLIANT: autofs/automount is not enabled and not running' }}
 
     - name: "2.2.1 | REMEDIATE | Stop automount service"
       ansible.builtin.service:
@@ -83,7 +90,7 @@
         state: stopped
       when:
         - freebsd_cis_remediate | bool
-        - cis_2_2_1_autofs is changed
+        - cis_2_2_1_autofs is changed or cis_2_2_1_automount_running is changed
       failed_when: false
 
     - name: "2.2.1 | REMEDIATE | Disable automount service"
@@ -92,7 +99,7 @@
         enabled: false
       when:
         - freebsd_cis_remediate | bool
-        - cis_2_2_1_autofs is changed
+        - cis_2_2_1_autofs is changed or cis_2_2_1_automount_running is changed
 
 # ---
 
@@ -141,6 +148,15 @@
       when:
         - freebsd_cis_remediate | bool
         - cis_2_2_2_inetd_ftp is changed
+      failed_when: false
+
+    - name: "2.2.2 | REMEDIATE | Stop vsftpd service"
+      ansible.builtin.service:
+        name: vsftpd
+        state: stopped
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_2_vsftpd_pkg is changed
       failed_when: false
 
     - name: "2.2.2 | REMEDIATE | Remove vsftpd packages"
@@ -226,12 +242,19 @@
       failed_when: false
       check_mode: false
 
+    - name: "2.2.4 | AUDIT | Check nfsd daemon process state"
+      ansible.builtin.command: pgrep -x nfsd
+      register: cis_2_2_4_nfs_running
+      changed_when: cis_2_2_4_nfs_running.rc == 0
+      failed_when: false
+      check_mode: false
+
     - name: "2.2.4 | AUDIT | Report NFS server state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'NON-COMPLIANT: nfs_server_enable is set to YES — NFS server is active'
-             if cis_2_2_4_nfs.stdout | trim | upper == 'YES'
-             else 'COMPLIANT: NFS server is not enabled' }}
+          {{ 'NON-COMPLIANT: NFS server is in use (enabled and/or running)'
+             if (cis_2_2_4_nfs is changed) or (cis_2_2_4_nfs_running is changed)
+             else 'COMPLIANT: NFS server is not enabled and not running' }}
 
     - name: "2.2.4 | REMEDIATE | Stop nfsd service"
       ansible.builtin.service:
@@ -239,7 +262,7 @@
         state: stopped
       when:
         - freebsd_cis_remediate | bool
-        - cis_2_2_4_nfs is changed
+        - cis_2_2_4_nfs is changed or cis_2_2_4_nfs_running is changed
       failed_when: false
 
     - name: "2.2.4 | REMEDIATE | Disable nfsd service"
@@ -248,7 +271,7 @@
         enabled: false
       when:
         - freebsd_cis_remediate | bool
-        - cis_2_2_4_nfs is changed
+        - cis_2_2_4_nfs is changed or cis_2_2_4_nfs_running is changed
 
 # ---
 
@@ -263,12 +286,19 @@
       failed_when: false
       check_mode: false
 
+    - name: "2.2.5 | AUDIT | Check ypserv daemon process state"
+      ansible.builtin.command: pgrep -x ypserv
+      register: cis_2_2_5_ypserv_running
+      changed_when: cis_2_2_5_ypserv_running.rc == 0
+      failed_when: false
+      check_mode: false
+
     - name: "2.2.5 | AUDIT | Report NIS server state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'NON-COMPLIANT: nis_server_enable is set to YES — NIS/YP server is active'
-             if cis_2_2_5_nis.stdout | trim | upper == 'YES'
-             else 'COMPLIANT: NIS server is not enabled' }}
+          {{ 'NON-COMPLIANT: NIS/YP server is in use (enabled and/or running)'
+             if (cis_2_2_5_nis is changed) or (cis_2_2_5_ypserv_running is changed)
+             else 'COMPLIANT: NIS/YP server is not enabled and not running' }}
 
     - name: "2.2.5 | REMEDIATE | Stop ypserv service"
       ansible.builtin.service:
@@ -276,7 +306,7 @@
         state: stopped
       when:
         - freebsd_cis_remediate | bool
-        - cis_2_2_5_nis is changed
+        - cis_2_2_5_nis is changed or cis_2_2_5_ypserv_running is changed
       failed_when: false
 
     - name: "2.2.5 | REMEDIATE | Disable ypserv service"
@@ -285,7 +315,7 @@
         enabled: false
       when:
         - freebsd_cis_remediate | bool
-        - cis_2_2_5_nis is changed
+        - cis_2_2_5_nis is changed or cis_2_2_5_ypserv_running is changed
 
 # ---
 
@@ -300,12 +330,19 @@
       failed_when: false
       check_mode: false
 
+    - name: "2.2.6 | AUDIT | Check rpcbind daemon process state"
+      ansible.builtin.command: pgrep -x rpcbind
+      register: cis_2_2_6_rpcbind_running
+      changed_when: cis_2_2_6_rpcbind_running.rc == 0
+      failed_when: false
+      check_mode: false
+
     - name: "2.2.6 | AUDIT | Report rpcbind state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'NON-COMPLIANT: rpcbind_enable is set to YES — rpcbind is active'
-             if cis_2_2_6_rpcbind.stdout | trim | upper == 'YES'
-             else 'COMPLIANT: rpcbind is not enabled' }}
+          {{ 'NON-COMPLIANT: rpcbind is in use (enabled and/or running)'
+             if (cis_2_2_6_rpcbind is changed) or (cis_2_2_6_rpcbind_running is changed)
+             else 'COMPLIANT: rpcbind is not enabled and not running' }}
 
     - name: "2.2.6 | REMEDIATE | Stop rpcbind service"
       ansible.builtin.service:
@@ -313,7 +350,7 @@
         state: stopped
       when:
         - freebsd_cis_remediate | bool
-        - cis_2_2_6_rpcbind is changed
+        - cis_2_2_6_rpcbind is changed or cis_2_2_6_rpcbind_running is changed
       failed_when: false
 
     - name: "2.2.6 | REMEDIATE | Disable rpcbind service"
@@ -322,7 +359,7 @@
         enabled: false
       when:
         - freebsd_cis_remediate | bool
-        - cis_2_2_6_rpcbind is changed
+        - cis_2_2_6_rpcbind is changed or cis_2_2_6_rpcbind_running is changed
 
 # ---
 
@@ -408,6 +445,14 @@
         - freebsd_cis_remediate | bool
         - cis_2_2_8_inetd_telnet is changed
       failed_when: false
+
+    - name: "2.2.8 | REMEDIATE | Stop telnetd daemon process"
+      ansible.builtin.command: pkill -x telnetd
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_8_telnetd_pkg is changed
+      failed_when: false
+      changed_when: true
 
     - name: "2.2.8 | REMEDIATE | Remove freebsd-telnetd package"
       ansible.builtin.command: pkg remove -y freebsd-telnetd
