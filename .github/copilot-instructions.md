@@ -42,7 +42,7 @@ Every CIS control is one top-level block. Pattern (canonical form from section_2
         ...
       when:
         - freebsd_cis_remediate | bool
-        - <raw audit condition>   # e.g. cis_x_x_x_foo.rc != 0  OR  cis_x_x_x_foo is changed
+        - <raw audit condition>   # e.g. cis_x_x_x_foo.rc != 0 OR cis_x_x_x_foo.stdout != 'expected'
 ```
 
 ### Rules
