@@ -16,9 +16,9 @@ Each CIS control is defined as a block to keep audit and remediation logic group
   block:
     - name: "1.1.1 | Audit"
       shell: "mount | grep 'on /tmp '"
-      register: _cis_1_1_1_audit
+      register: cis_1_1_1_mount
       failed_when: false
-      changed_when: _cis_1_1_1_audit.rc != 0
+      changed_when: cis_1_1_1_mount.rc != 0
       check_mode: false  # Force execution even in --check mode
 
     - name: "1.1.1 | Remediate"
@@ -26,7 +26,7 @@ Each CIS control is defined as a block to keep audit and remediation logic group
         msg: "Applying fix for /tmp partition..."
       # Replace with actual remediation logic
       when: 
-        - _cis_1_1_1_audit.rc != 0   # Use .rc directly, not .changed
+        - cis_1_1_1_mount.rc != 0   # Use .rc directly, not .changed
         - freebsd_cis_remediate | bool
   when: "'1.1.1' not in active_exceptions"
   tags: [cis_1_1_1, section_1]
