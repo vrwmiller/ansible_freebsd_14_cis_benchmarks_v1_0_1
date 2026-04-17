@@ -40,7 +40,7 @@
     - name: "3.2.1 | AUDIT | Check whether sctp module is loaded"
       ansible.builtin.command: kldstat -q -m sctp
       register: cis_3_2_1_sctp
-      changed_when: false
+      changed_when: cis_3_2_1_sctp.rc == 0
       failed_when: false
       check_mode: false
 
@@ -51,15 +51,15 @@
              if cis_3_2_1_sctp.rc == 0
              else 'COMPLIANT: sctp kernel module is NOT loaded' }}
 
-    - name: "3.2.1 | REMEDIATE | Blacklist sctp module in loader.conf"
+    - name: "3.2.1 | REMEDIATE | Disable sctp module in loader.conf"
       ansible.builtin.lineinfile:
         path: /boot/loader.conf
-        regexp: '^module_blacklist='
-        line: 'module_blacklist="sctp"'
+        regexp: '^sctp_load='
+        line: 'sctp_load="NO"'
         create: true
         owner: root
         group: wheel
-        mode: '0644'
+        mode: '0600'
       when:
         - freebsd_cis_remediate | bool
         - cis_3_2_1_sctp.rc == 0
@@ -75,28 +75,28 @@
     - name: "3.3.1 | AUDIT | Check net.inet.ip.forwarding"
       ansible.builtin.command: sysctl -nq net.inet.ip.forwarding
       register: cis_3_3_1_ipv4_fwd
-      changed_when: false
+      changed_when: cis_3_3_1_ipv4_fwd.stdout | trim == '1'
       failed_when: false
       check_mode: false
 
     - name: "3.3.1 | AUDIT | Check net.inet6.ip6.forwarding"
       ansible.builtin.command: sysctl -nq net.inet6.ip6.forwarding
       register: cis_3_3_1_ipv6_fwd
-      changed_when: false
+      changed_when: cis_3_3_1_ipv6_fwd.stdout | trim == '1'
       failed_when: false
       check_mode: false
 
     - name: "3.3.1 | AUDIT | Check gateway_enable rc.conf setting"
       ansible.builtin.command: sysrc -q -n gateway_enable
       register: cis_3_3_1_gw
-      changed_when: false
+      changed_when: cis_3_3_1_gw.stdout | trim | upper == 'YES'
       failed_when: false
       check_mode: false
 
     - name: "3.3.1 | AUDIT | Check ipv6_gateway_enable rc.conf setting"
       ansible.builtin.command: sysrc -q -n ipv6_gateway_enable
       register: cis_3_3_1_ipv6_gw
-      changed_when: false
+      changed_when: cis_3_3_1_ipv6_gw.stdout | trim | upper == 'YES'
       failed_when: false
       check_mode: false
 
@@ -186,14 +186,14 @@
     - name: "3.3.2 | AUDIT | Check net.inet.ip.redirect"
       ansible.builtin.command: sysctl -nq net.inet.ip.redirect
       register: cis_3_3_2_ipv4_redirect
-      changed_when: false
+      changed_when: cis_3_3_2_ipv4_redirect.stdout | trim == '1'
       failed_when: false
       check_mode: false
 
     - name: "3.3.2 | AUDIT | Check net.inet6.ip6.redirect"
       ansible.builtin.command: sysctl -nq net.inet6.ip6.redirect
       register: cis_3_3_2_ipv6_redirect
-      changed_when: false
+      changed_when: cis_3_3_2_ipv6_redirect.stdout | trim == '1'
       failed_when: false
       check_mode: false
 
@@ -257,14 +257,14 @@
     - name: "3.3.3 | AUDIT | Check net.inet.icmp.bmcastecho"
       ansible.builtin.command: sysctl -nq net.inet.icmp.bmcastecho
       register: cis_3_3_3_bmcast
-      changed_when: false
+      changed_when: cis_3_3_3_bmcast.stdout | trim == '1'
       failed_when: false
       check_mode: false
 
     - name: "3.3.3 | AUDIT | Check net.inet.icmp.tstamprepl"
       ansible.builtin.command: sysctl -nq net.inet.icmp.tstamprepl
       register: cis_3_3_3_tstamp
-      changed_when: false
+      changed_when: cis_3_3_3_tstamp.stdout | trim == '1'
       failed_when: false
       check_mode: false
 
@@ -328,14 +328,14 @@
     - name: "3.3.4 | AUDIT | Check net.inet.icmp.drop_redirect"
       ansible.builtin.command: sysctl -nq net.inet.icmp.drop_redirect
       register: cis_3_3_4_drop_redirect
-      changed_when: false
+      changed_when: cis_3_3_4_drop_redirect.stdout | trim == '0'
       failed_when: false
       check_mode: false
 
     - name: "3.3.4 | AUDIT | Check net.inet6.icmp6.rediraccept"
       ansible.builtin.command: sysctl -nq net.inet6.icmp6.rediraccept
       register: cis_3_3_4_redir6
-      changed_when: false
+      changed_when: cis_3_3_4_redir6.stdout | trim == '1'
       failed_when: false
       check_mode: false
 
@@ -399,7 +399,7 @@
     - name: "3.3.5 | AUDIT | Check net.inet.ip.accept_sourceroute"
       ansible.builtin.command: sysctl -nq net.inet.ip.accept_sourceroute
       register: cis_3_3_5_srcroute
-      changed_when: false
+      changed_when: cis_3_3_5_srcroute.stdout | trim == '1'
       failed_when: false
       check_mode: false
 
@@ -439,7 +439,7 @@
     - name: "3.3.6 | AUDIT | Check net.inet.tcp.syncookies"
       ansible.builtin.command: sysctl -nq net.inet.tcp.syncookies
       register: cis_3_3_6_syncookies
-      changed_when: false
+      changed_when: cis_3_3_6_syncookies.stdout | trim == '0'
       failed_when: false
       check_mode: false
 
@@ -479,7 +479,7 @@
     - name: "3.3.7 | AUDIT | Check net.inet6.ip6.accept_rtadv"
       ansible.builtin.command: sysctl -nq net.inet6.ip6.accept_rtadv
       register: cis_3_3_7_rtadv
-      changed_when: false
+      changed_when: cis_3_3_7_rtadv.stdout | trim == '1'
       failed_when: false
       check_mode: false
 
@@ -522,7 +522,7 @@
     - name: "3.4.1.1 | AUDIT | Check firewall_enable rc.conf setting"
       ansible.builtin.command: sysrc -q -n firewall_enable
       register: cis_3_4_1_1_ipfw
-      changed_when: false
+      changed_when: cis_3_4_1_1_ipfw.stdout | trim | upper != 'YES'
       failed_when: false
       check_mode: false
 
