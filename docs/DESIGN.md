@@ -29,7 +29,7 @@ Each CIS control is defined as a block to keep audit and remediation logic group
         - cis_1_1_1_mount.rc != 0   # Use .rc directly, not .changed
         - freebsd_cis_remediate | bool
   when: "'1.1.1' not in active_exceptions"
-  tags: [cis_1_1_1, section_1]
+  tags: [rule_1.1.1, level1, section_1]
 ```
 
 ### Remediation gate: `.rc` vs `.changed`
