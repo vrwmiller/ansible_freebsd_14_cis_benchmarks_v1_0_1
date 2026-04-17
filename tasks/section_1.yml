@@ -650,6 +650,20 @@
              if cis_1_2_3_base.rc == 0
              else 'PASS: no pending base system updates' }}
 
+    - name: "1.2.3 | AUDIT | Check for pending pkg package upgrades"
+      ansible.builtin.command: pkg upgrade -n
+      register: cis_1_2_3_pkg
+      changed_when: false
+      failed_when: false
+
+    - name: "1.2.3 | AUDIT | Report pkg package update state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'PASS: installed pkg packages are current'
+             if 'Your packages are up to date.' in
+                ((cis_1_2_3_pkg.stdout | default('')) ~ (cis_1_2_3_pkg.stderr | default('')))
+             else 'FAIL: pkg package upgrades are available' }}
+
     - name: "1.2.3 | REMEDIATE | Fetch and install base system updates"
       ansible.builtin.command: freebsd-update fetch install
       when:
@@ -660,13 +674,19 @@
 
     - name: "1.2.3 | REMEDIATE | Update pkg package index"
       ansible.builtin.command: pkg update
-      when: freebsd_cis_remediate | bool
+      when:
+        - freebsd_cis_remediate | bool
+        - "'Your packages are up to date.' not in
+           ((cis_1_2_3_pkg.stdout | default('')) ~ (cis_1_2_3_pkg.stderr | default('')))"
       changed_when: true
       failed_when: false
 
     - name: "1.2.3 | REMEDIATE | Upgrade installed packages"
       ansible.builtin.command: pkg upgrade -y
-      when: freebsd_cis_remediate | bool
+      when:
+        - freebsd_cis_remediate | bool
+        - "'Your packages are up to date.' not in
+           ((cis_1_2_3_pkg.stdout | default('')) ~ (cis_1_2_3_pkg.stderr | default('')))"
       changed_when: true
       failed_when: false
 
