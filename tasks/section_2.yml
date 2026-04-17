@@ -2,4 +2,525 @@
 # FreeBSD 14 CIS Benchmark v1.0.1
 # Section 2 — Services
 # Controls: 2.1.1 – 2.2.12
-[]
+# lint-clean: production profile
+
+# =============================================================
+# 2.1 Configure Time Synchronization
+# =============================================================
+
+- name: "2.1.1 | Ensure time synchronization is in use"
+  when: "'2.1.1' not in active_exceptions"
+  tags: [rule_2.1.1, level1, section_2]
+  block:
+    - name: "2.1.1 | AUDIT | Check ntpd_enable rc.conf setting"
+      ansible.builtin.command: sysrc -q -n ntpd_enable
+      register: cis_2_1_1_ntpd
+      changed_when: false
+      failed_when: false
+
+    - name: "2.1.1 | AUDIT | Report time synchronization state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: ntpd is enabled (ntpd_enable=YES)'
+             if cis_2_1_1_ntpd.stdout | trim | upper == 'YES'
+             else 'NON-COMPLIANT: ntpd is not enabled — time synchronization must be configured' }}
+
+    - name: "2.1.1 | REMEDIATE | Enable and start ntpd"
+      ansible.builtin.service:
+        name: ntpd
+        state: started
+        enabled: true
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_1_1_ntpd.stdout | trim | upper != 'YES'
+
+    - name: "2.1.1 | REMEDIATE | Ensure ntpd syncs time on start"
+      ansible.builtin.command: sysrc ntpd_sync_on_start="YES"
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_1_1_ntpd.stdout | trim | upper != 'YES'
+      changed_when: true
+
+# =============================================================
+# 2.2 Configure Special Purpose Services
+# =============================================================
+
+# ---
+
+- name: "2.2.1 | Ensure autofs services are not in use"
+  when: "'2.2.1' not in active_exceptions"
+  tags: [rule_2.2.1, level1, section_2]
+  block:
+    - name: "2.2.1 | AUDIT | Check autofs_enable rc.conf setting"
+      ansible.builtin.command: sysrc -q -n autofs_enable
+      register: cis_2_2_1_autofs
+      changed_when: false
+      failed_when: false
+
+    - name: "2.2.1 | AUDIT | Report autofs state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: autofs_enable is set to YES — automounting is active'
+             if cis_2_2_1_autofs.stdout | trim | upper == 'YES'
+             else 'COMPLIANT: autofs is not enabled' }}
+
+    - name: "2.2.1 | REMEDIATE | Stop automount service"
+      ansible.builtin.service:
+        name: automount
+        state: stopped
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_1_autofs.stdout | trim | upper == 'YES'
+      failed_when: false
+
+    - name: "2.2.1 | REMEDIATE | Disable automount service"
+      ansible.builtin.service:
+        name: automount
+        enabled: false
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_1_autofs.stdout | trim | upper == 'YES'
+
+# ---
+
+- name: "2.2.2 | Ensure ftp server services are not in use"
+  when: "'2.2.2' not in active_exceptions"
+  tags: [rule_2.2.2, level1, section_2]
+  block:
+    - name: "2.2.2 | AUDIT | Check if ftpd is enabled through inetd"
+      ansible.builtin.command: grep -E '^ftp\s' /etc/inetd.conf
+      register: cis_2_2_2_inetd_ftp
+      changed_when: false
+      failed_when: false
+
+    - name: "2.2.2 | AUDIT | Check if vsftpd package is installed"
+      ansible.builtin.shell: pkg query -g %n 'vsftpd*'
+      register: cis_2_2_2_vsftpd_pkg
+      changed_when: false
+      failed_when: false
+
+    - name: "2.2.2 | AUDIT | Report ftp server state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ ['2.2.2 FTP audit:',
+              ('  inetd ftpd: NON-COMPLIANT — ftp entry present in /etc/inetd.conf'
+               if cis_2_2_2_inetd_ftp.rc == 0
+               else '  inetd ftpd: COMPLIANT — not enabled via inetd'),
+              ('  vsftpd: NON-COMPLIANT — package installed (' ~ cis_2_2_2_vsftpd_pkg.stdout | trim ~ ')'
+               if cis_2_2_2_vsftpd_pkg.stdout | trim | length > 0
+               else '  vsftpd: COMPLIANT — package not installed')] | join('\n') }}
+
+    - name: "2.2.2 | REMEDIATE | Comment out ftp entry in /etc/inetd.conf"
+      ansible.builtin.replace:
+        path: /etc/inetd.conf
+        regexp: '^(ftp\s)'
+        replace: '#\1'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_2_inetd_ftp.rc == 0
+
+    - name: "2.2.2 | REMEDIATE | Restart inetd after disabling ftpd"
+      ansible.builtin.service:
+        name: inetd
+        state: restarted
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_2_inetd_ftp.rc == 0
+      failed_when: false
+
+    - name: "2.2.2 | REMEDIATE | Remove vsftpd packages"
+      ansible.builtin.command: pkg remove -y -g 'vsftpd*'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_2_vsftpd_pkg.stdout | trim | length > 0
+      changed_when: true
+
+# ---
+
+- name: "2.2.3 | Ensure message access server services are not in use"
+  when: "'2.2.3' not in active_exceptions"
+  tags: [rule_2.2.3, level1, section_2]
+  block:
+    - name: "2.2.3 | AUDIT | Check if dovecot package is installed"
+      ansible.builtin.shell: pkg query -g %n 'dovecot*'
+      register: cis_2_2_3_dovecot_pkg
+      changed_when: false
+      failed_when: false
+
+    - name: "2.2.3 | AUDIT | Check if cyrus-imapd package is installed"
+      ansible.builtin.shell: pkg query -g %n 'cyrus-imapd*'
+      register: cis_2_2_3_cyrus_pkg
+      changed_when: false
+      failed_when: false
+
+    - name: "2.2.3 | AUDIT | Report IMAP/POP3 server state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ ['2.2.3 IMAP/POP3 audit:',
+              ('  dovecot: NON-COMPLIANT — package installed (' ~ cis_2_2_3_dovecot_pkg.stdout | trim ~ ')'
+               if cis_2_2_3_dovecot_pkg.stdout | trim | length > 0
+               else '  dovecot: COMPLIANT — package not installed'),
+              ('  cyrus-imapd: NON-COMPLIANT — package installed (' ~ cis_2_2_3_cyrus_pkg.stdout | trim ~ ')'
+               if cis_2_2_3_cyrus_pkg.stdout | trim | length > 0
+               else '  cyrus-imapd: COMPLIANT — package not installed')] | join('\n') }}
+
+    - name: "2.2.3 | REMEDIATE | Stop dovecot service"
+      ansible.builtin.service:
+        name: dovecot
+        state: stopped
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_3_dovecot_pkg.stdout | trim | length > 0
+      failed_when: false
+
+    - name: "2.2.3 | REMEDIATE | Stop cyrus_imapd service"
+      ansible.builtin.service:
+        name: cyrus_imapd
+        state: stopped
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_3_cyrus_pkg.stdout | trim | length > 0
+      failed_when: false
+
+    - name: "2.2.3 | REMEDIATE | Remove dovecot and cyrus-imapd packages"
+      ansible.builtin.command: pkg remove -y -g 'dovecot*' 'cyrus-imap*'
+      when:
+        - freebsd_cis_remediate | bool
+        - (cis_2_2_3_dovecot_pkg.stdout | trim | length > 0) or
+          (cis_2_2_3_cyrus_pkg.stdout | trim | length > 0)
+      changed_when: true
+
+# ---
+
+- name: "2.2.4 | Ensure network file system services are not in use"
+  when: "'2.2.4' not in active_exceptions"
+  tags: [rule_2.2.4, level1, section_2]
+  block:
+    - name: "2.2.4 | AUDIT | Check nfs_server_enable rc.conf setting"
+      ansible.builtin.command: sysrc -q -n nfs_server_enable
+      register: cis_2_2_4_nfs
+      changed_when: false
+      failed_when: false
+
+    - name: "2.2.4 | AUDIT | Report NFS server state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: nfs_server_enable is set to YES — NFS server is active'
+             if cis_2_2_4_nfs.stdout | trim | upper == 'YES'
+             else 'COMPLIANT: NFS server is not enabled' }}
+
+    - name: "2.2.4 | REMEDIATE | Stop nfsd service"
+      ansible.builtin.service:
+        name: nfsd
+        state: stopped
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_4_nfs.stdout | trim | upper == 'YES'
+      failed_when: false
+
+    - name: "2.2.4 | REMEDIATE | Disable nfsd service"
+      ansible.builtin.service:
+        name: nfsd
+        enabled: false
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_4_nfs.stdout | trim | upper == 'YES'
+
+# ---
+
+- name: "2.2.5 | Ensure nis server services are not in use"
+  when: "'2.2.5' not in active_exceptions"
+  tags: [rule_2.2.5, level1, section_2]
+  block:
+    - name: "2.2.5 | AUDIT | Check nis_server_enable rc.conf setting"
+      ansible.builtin.command: sysrc -q -n nis_server_enable
+      register: cis_2_2_5_nis
+      changed_when: false
+      failed_when: false
+
+    - name: "2.2.5 | AUDIT | Report NIS server state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: nis_server_enable is set to YES — NIS/YP server is active'
+             if cis_2_2_5_nis.stdout | trim | upper == 'YES'
+             else 'COMPLIANT: NIS server is not enabled' }}
+
+    - name: "2.2.5 | REMEDIATE | Stop ypserv service"
+      ansible.builtin.service:
+        name: ypserv
+        state: stopped
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_5_nis.stdout | trim | upper == 'YES'
+      failed_when: false
+
+    - name: "2.2.5 | REMEDIATE | Disable ypserv service"
+      ansible.builtin.service:
+        name: ypserv
+        enabled: false
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_5_nis.stdout | trim | upper == 'YES'
+
+# ---
+
+- name: "2.2.6 | Ensure rpcbind services are not in use"
+  when: "'2.2.6' not in active_exceptions"
+  tags: [rule_2.2.6, level1, section_2]
+  block:
+    - name: "2.2.6 | AUDIT | Check rpcbind_enable rc.conf setting"
+      ansible.builtin.command: sysrc -q -n rpcbind_enable
+      register: cis_2_2_6_rpcbind
+      changed_when: false
+      failed_when: false
+
+    - name: "2.2.6 | AUDIT | Report rpcbind state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: rpcbind_enable is set to YES — rpcbind is active'
+             if cis_2_2_6_rpcbind.stdout | trim | upper == 'YES'
+             else 'COMPLIANT: rpcbind is not enabled' }}
+
+    - name: "2.2.6 | REMEDIATE | Stop rpcbind service"
+      ansible.builtin.service:
+        name: rpcbind
+        state: stopped
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_6_rpcbind.stdout | trim | upper == 'YES'
+      failed_when: false
+
+    - name: "2.2.6 | REMEDIATE | Disable rpcbind service"
+      ansible.builtin.service:
+        name: rpcbind
+        enabled: false
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_6_rpcbind.stdout | trim | upper == 'YES'
+
+# ---
+
+- name: "2.2.7 | Ensure snmp services are not in use"
+  when: "'2.2.7' not in active_exceptions"
+  tags: [rule_2.2.7, level1, section_2]
+  block:
+    - name: "2.2.7 | AUDIT | Check if net-snmp package is installed"
+      ansible.builtin.command: pkg query %n net-snmp
+      register: cis_2_2_7_snmp_pkg
+      changed_when: false
+      failed_when: false
+
+    - name: "2.2.7 | AUDIT | Report SNMP state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: net-snmp package is installed'
+             if cis_2_2_7_snmp_pkg.rc == 0
+             else 'COMPLIANT: net-snmp package is not installed' }}
+
+    - name: "2.2.7 | REMEDIATE | Stop snmpd service"
+      ansible.builtin.service:
+        name: snmpd
+        state: stopped
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_7_snmp_pkg.rc == 0
+      failed_when: false
+
+    - name: "2.2.7 | REMEDIATE | Remove net-snmp package"
+      ansible.builtin.command: pkg remove -y net-snmp
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_7_snmp_pkg.rc == 0
+      changed_when: true
+
+# ---
+
+- name: "2.2.8 | Ensure telnet server services are not in use"
+  when: "'2.2.8' not in active_exceptions"
+  tags: [rule_2.2.8, level1, section_2]
+  block:
+    - name: "2.2.8 | AUDIT | Check if freebsd-telnetd package is installed"
+      ansible.builtin.command: pkg query %n freebsd-telnetd
+      register: cis_2_2_8_telnetd_pkg
+      changed_when: false
+      failed_when: false
+
+    - name: "2.2.8 | AUDIT | Check if telnet is enabled via inetd"
+      ansible.builtin.command: grep -E '^telnet\s' /etc/inetd.conf
+      register: cis_2_2_8_inetd_telnet
+      changed_when: false
+      failed_when: false
+
+    - name: "2.2.8 | AUDIT | Report telnet server state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ ['2.2.8 Telnet audit:',
+              ('  freebsd-telnetd: NON-COMPLIANT — package installed'
+               if cis_2_2_8_telnetd_pkg.rc == 0
+               else '  freebsd-telnetd: COMPLIANT — package not installed'),
+              ('  inetd telnet: NON-COMPLIANT — telnet entry present in /etc/inetd.conf'
+               if cis_2_2_8_inetd_telnet.rc == 0
+               else '  inetd telnet: COMPLIANT — not enabled via inetd')] | join('\n') }}
+
+    - name: "2.2.8 | REMEDIATE | Comment out telnet entry in /etc/inetd.conf"
+      ansible.builtin.replace:
+        path: /etc/inetd.conf
+        regexp: '^(telnet\s)'
+        replace: '#\1'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_8_inetd_telnet.rc == 0
+
+    - name: "2.2.8 | REMEDIATE | Restart inetd after disabling telnet"
+      ansible.builtin.service:
+        name: inetd
+        state: restarted
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_8_inetd_telnet.rc == 0
+      failed_when: false
+
+    - name: "2.2.8 | REMEDIATE | Remove freebsd-telnetd package"
+      ansible.builtin.command: pkg remove -y freebsd-telnetd
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_8_telnetd_pkg.rc == 0
+      changed_when: true
+
+# ---
+
+- name: "2.2.9 | Ensure tftp server services are not in use"
+  when: "'2.2.9' not in active_exceptions"
+  tags: [rule_2.2.9, level1, section_2]
+  block:
+    - name: "2.2.9 | AUDIT | Check if tftp is enabled via inetd"
+      ansible.builtin.command: grep -E '^tftp\s' /etc/inetd.conf
+      register: cis_2_2_9_inetd_tftp
+      changed_when: false
+      failed_when: false
+
+    - name: "2.2.9 | AUDIT | Report tftp server state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: tftp entry present in /etc/inetd.conf — tftpd is enabled via inetd'
+             if cis_2_2_9_inetd_tftp.rc == 0
+             else 'COMPLIANT: tftp is not enabled via inetd' }}
+
+    - name: "2.2.9 | REMEDIATE | Comment out tftp entry in /etc/inetd.conf"
+      ansible.builtin.replace:
+        path: /etc/inetd.conf
+        regexp: '^(tftp\s)'
+        replace: '#\1'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_9_inetd_tftp.rc == 0
+
+    - name: "2.2.9 | REMEDIATE | Restart inetd after disabling tftpd"
+      ansible.builtin.service:
+        name: inetd
+        state: restarted
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_9_inetd_tftp.rc == 0
+      failed_when: false
+
+# ---
+
+- name: "2.2.10 | Ensure web proxy server services are not in use"
+  when: "'2.2.10' not in active_exceptions"
+  tags: [rule_2.2.10, level1, section_2]
+  block:
+    - name: "2.2.10 | AUDIT | Check if squid package is installed"
+      ansible.builtin.shell: pkg query -g %n 'squid*'
+      register: cis_2_2_10_squid_pkg
+      changed_when: false
+      failed_when: false
+
+    - name: "2.2.10 | AUDIT | Report squid state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: squid package is installed (' ~ cis_2_2_10_squid_pkg.stdout | trim ~ ')'
+             if cis_2_2_10_squid_pkg.stdout | trim | length > 0
+             else 'COMPLIANT: squid package is not installed' }}
+
+    - name: "2.2.10 | REMEDIATE | Stop squid service"
+      ansible.builtin.service:
+        name: squid
+        state: stopped
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_10_squid_pkg.stdout | trim | length > 0
+      failed_when: false
+
+    - name: "2.2.10 | REMEDIATE | Remove squid package"
+      ansible.builtin.command: pkg remove -y squid
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_10_squid_pkg.stdout | trim | length > 0
+      changed_when: true
+
+# ---
+
+- name: "2.2.11 | Ensure mail transfer agents are configured for local-only mode"
+  when: "'2.2.11' not in active_exceptions"
+  tags: [rule_2.2.11, level1, section_2, automated]
+  block:
+    - name: "2.2.11 | AUDIT | List all listening sockets"
+      ansible.builtin.command: sockstat -46L
+      register: cis_2_2_11_sockstat
+      changed_when: false
+      failed_when: false
+
+    - name: "2.2.11 | AUDIT | Report MTA listener state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: MTA listeners detected on mail ports (25/465/587) — verify loopback-only'
+             if cis_2_2_11_sockstat.stdout is search(':25 |:465 |:587 ')
+             else 'COMPLIANT: No non-loopback MTA listeners detected on ports 25, 465, or 587' }}
+
+    - name: "2.2.11 | REMEDIATE | Check if postfix main.cf exists"
+      ansible.builtin.stat:
+        path: /usr/local/etc/postfix/main.cf
+      register: cis_2_2_11_postfix_cf
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_11_sockstat.stdout is search(':25 |:465 |:587 ')
+
+    - name: "2.2.11 | REMEDIATE | Restrict postfix to loopback-only"
+      ansible.builtin.lineinfile:
+        path: /usr/local/etc/postfix/main.cf
+        regexp: '^inet_interfaces\s*='
+        line: 'inet_interfaces = localhost'
+      register: cis_2_2_11_postfix_changed
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_11_sockstat.stdout is search(':25 |:465 |:587 ')
+        - cis_2_2_11_postfix_cf.stat.exists | default(false)
+
+    - name: "2.2.11 | REMEDIATE | Restart postfix to apply inet_interfaces change"
+      ansible.builtin.service:
+        name: postfix
+        state: restarted
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_2_2_11_postfix_changed is changed
+      failed_when: false
+
+# ---
+
+- name: "2.2.12 | Ensure only approved services are listening on a network interface"
+  when: "'2.2.12' not in active_exceptions"
+  tags: [rule_2.2.12, level1, section_2]
+  block:
+    - name: "2.2.12 | AUDIT | List all listening network sockets"
+      ansible.builtin.command: sockstat -46L
+      register: cis_2_2_12_sockstat
+      changed_when: false
+      failed_when: false
+
+    - name: "2.2.12 | AUDIT | Report listening services for manual review"
+      ansible.builtin.debug:
+        msg: >-
+          2.2.12 MANUAL REVIEW REQUIRED — verify all listed services are required and
+          approved by local site policy:
+          {{ cis_2_2_12_sockstat.stdout }}
