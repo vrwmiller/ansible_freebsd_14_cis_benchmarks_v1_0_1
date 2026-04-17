@@ -42,7 +42,9 @@
         owner: root
         group: wheel
         mode: '0600'
-      when: freebsd_cis_remediate | bool
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_1_1_kld.rc == 0
 
 # ---
 
@@ -80,7 +82,9 @@
         owner: root
         group: wheel
         mode: '0600'
-      when: freebsd_cis_remediate | bool
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_1_2_kld.rc == 0
 
 # ---
 
@@ -161,7 +165,11 @@
         owner: root
         group: wheel
         mode: '0600'
-      when: freebsd_cis_remediate | bool
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_1_3_kld.rc == 0
+        - cis_1_1_1_3_zpools is defined
+        - cis_1_1_1_3_zpools.stdout | default('') | length == 0
 
 # =============================================================
 # 1.1.2 Configure Filesystem Partitions
