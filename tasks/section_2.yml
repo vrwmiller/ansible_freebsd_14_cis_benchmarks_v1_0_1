@@ -548,4 +548,6 @@
 
     - name: "2.2.12 | AUDIT | Report listening services for manual review"
       ansible.builtin.debug:
-        msg: "{{ ['2.2.12 MANUAL REVIEW REQUIRED — verify all listed services are required and approved by local site policy:', ''] + (cis_2_2_12_sockstat.stdout_lines | default([])) }}"
+        msg: >-
+          {{ ['2.2.12 MANUAL REVIEW REQUIRED — verify all listed services are required and approved by local site policy:',
+               ''] + (cis_2_2_12_sockstat.stdout_lines | default([])) }}
