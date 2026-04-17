@@ -123,7 +123,7 @@
                else '  inetd ftpd: COMPLIANT — not enabled via inetd'),
               ('  vsftpd: NON-COMPLIANT — package installed (' ~ cis_2_2_2_vsftpd_pkg.stdout | trim ~ ')'
                if cis_2_2_2_vsftpd_pkg.stdout | trim | length > 0
-               else '  vsftpd: COMPLIANT — package not installed')] | join('\n') }}
+               else '  vsftpd: COMPLIANT — package not installed')] }}
 
     - name: "2.2.2 | REMEDIATE | Comment out ftp entry in /etc/inetd.conf"
       ansible.builtin.replace:
@@ -179,7 +179,7 @@
                else '  dovecot: COMPLIANT — package not installed'),
               ('  cyrus-imapd: NON-COMPLIANT — package installed (' ~ cis_2_2_3_cyrus_pkg.stdout | trim ~ ')'
                if cis_2_2_3_cyrus_pkg.stdout | trim | length > 0
-               else '  cyrus-imapd: COMPLIANT — package not installed')] | join('\n') }}
+               else '  cyrus-imapd: COMPLIANT — package not installed')] }}
 
     - name: "2.2.3 | REMEDIATE | Stop dovecot service"
       ansible.builtin.service:
@@ -389,7 +389,7 @@
                else '  freebsd-telnetd: COMPLIANT — package not installed'),
               ('  inetd telnet: NON-COMPLIANT — telnet entry present in /etc/inetd.conf'
                if cis_2_2_8_inetd_telnet.rc == 0
-               else '  inetd telnet: COMPLIANT — not enabled via inetd')] | join('\n') }}
+               else '  inetd telnet: COMPLIANT — not enabled via inetd')] }}
 
     - name: "2.2.8 | REMEDIATE | Comment out telnet entry in /etc/inetd.conf"
       ansible.builtin.replace:

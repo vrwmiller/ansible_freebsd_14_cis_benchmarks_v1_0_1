@@ -115,7 +115,7 @@
                else '  gateway_enable: COMPLIANT — not YES'),
               ('  ipv6_gateway_enable: NON-COMPLIANT — set to YES'
                if cis_3_3_1_ipv6_gw.stdout | trim | upper == 'YES'
-               else '  ipv6_gateway_enable: COMPLIANT — not YES')] | join('\n') }}
+               else '  ipv6_gateway_enable: COMPLIANT — not YES')] }}
 
     - name: "3.3.1 | REMEDIATE | Disable IPv4 forwarding in sysctl.conf"
       ansible.builtin.lineinfile:
@@ -206,7 +206,7 @@
                else '  net.inet.ip.redirect: COMPLIANT — set to 0'),
               ('  net.inet6.ip6.redirect: NON-COMPLIANT — set to 1 (redirects enabled)'
                if cis_3_3_2_ipv6_redirect.stdout | trim == '1'
-               else '  net.inet6.ip6.redirect: COMPLIANT — set to 0')] | join('\n') }}
+               else '  net.inet6.ip6.redirect: COMPLIANT — set to 0')] }}
 
     - name: "3.3.2 | REMEDIATE | Disable IPv4 redirect sending in sysctl.conf"
       ansible.builtin.lineinfile:
@@ -277,7 +277,7 @@
                else '  net.inet.icmp.bmcastecho: COMPLIANT — set to 0'),
               ('  net.inet.icmp.tstamprepl: NON-COMPLIANT — set to 1 (timestamp replies enabled)'
                if cis_3_3_3_tstamp.stdout | trim == '1'
-               else '  net.inet.icmp.tstamprepl: COMPLIANT — set to 0')] | join('\n') }}
+               else '  net.inet.icmp.tstamprepl: COMPLIANT — set to 0')] }}
 
     - name: "3.3.3 | REMEDIATE | Disable bmcastecho in sysctl.conf"
       ansible.builtin.lineinfile:
@@ -348,7 +348,7 @@
                else '  net.inet.icmp.drop_redirect: COMPLIANT — set to 1'),
               ('  net.inet6.icmp6.rediraccept: NON-COMPLIANT — set to 1 (IPv6 redirects accepted)'
                if cis_3_3_4_redir6.stdout | trim == '1'
-               else '  net.inet6.icmp6.rediraccept: COMPLIANT — set to 0')] | join('\n') }}
+               else '  net.inet6.icmp6.rediraccept: COMPLIANT — set to 0')] }}
 
     - name: "3.3.4 | REMEDIATE | Set drop_redirect=1 in sysctl.conf"
       ansible.builtin.lineinfile:
