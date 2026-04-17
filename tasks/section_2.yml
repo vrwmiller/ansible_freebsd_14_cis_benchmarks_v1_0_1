@@ -519,9 +519,9 @@
     - name: "2.2.11 | AUDIT | Report MTA listener state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'NON-COMPLIANT: non-loopback IPv4 MTA listeners detected on ports 25/465/587'
+          {{ 'NON-COMPLIANT: non-loopback MTA listeners detected on ports 25/465/587'
              if cis_2_2_11_non_loopback_eval is changed
-             else 'COMPLIANT: no non-loopback IPv4 MTA listeners detected on ports 25/465/587' }}
+             else 'COMPLIANT: no non-loopback MTA listeners detected on ports 25/465/587' }}
 
     - name: "2.2.11 | REMEDIATE | Manual remediation required for non-loopback MTA listeners"
       ansible.builtin.debug:
