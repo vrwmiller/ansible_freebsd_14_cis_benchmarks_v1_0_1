@@ -83,7 +83,7 @@
         state: stopped
       when:
         - freebsd_cis_remediate | bool
-        - cis_2_2_1_autofs is changed
+        - cis_2_2_1_autofs.stdout | trim | upper == 'YES'
       failed_when: false
 
     - name: "2.2.1 | REMEDIATE | Disable automount service"
@@ -92,7 +92,7 @@
         enabled: false
       when:
         - freebsd_cis_remediate | bool
-        - cis_2_2_1_autofs is changed
+        - cis_2_2_1_autofs.stdout | trim | upper == 'YES'
 
 # ---
 

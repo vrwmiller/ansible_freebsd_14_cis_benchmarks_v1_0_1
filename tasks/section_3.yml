@@ -44,6 +44,18 @@
       failed_when: false
       check_mode: false
 
+    - name: "3.2.1 | AUDIT | Check sctp boot-load setting in loader.conf"
+      ansible.builtin.command:
+        argv:
+          - grep
+          - -E
+          - '^[[:space:]]*sctp_load="NO"[[:space:]]*$'
+          - /boot/loader.conf
+      register: cis_3_2_1_sctp_loader_no
+      changed_when: cis_3_2_1_sctp_loader_no.rc != 0
+      failed_when: false
+      check_mode: false
+
     - name: "3.2.1 | AUDIT | Report sctp module state"
       ansible.builtin.debug:
         msg: >-
@@ -62,7 +74,7 @@
         mode: '0600'
       when:
         - freebsd_cis_remediate | bool
-        - cis_3_2_1_sctp.rc == 0
+        - cis_3_2_1_sctp.rc == 0 or cis_3_2_1_sctp_loader_no.rc != 0
 
 # =============================================================
 # 3.3 Configure Network Kernel Parameters
