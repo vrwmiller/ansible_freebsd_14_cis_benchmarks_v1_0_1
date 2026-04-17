@@ -26,11 +26,25 @@ Each CIS control is defined as a block to keep audit and remediation logic group
         msg: "Applying fix for /tmp partition..."
       # Replace with actual remediation logic
       when: 
-        - _cis_1_1_1_audit.changed
+        - _cis_1_1_1_audit.rc != 0   # Use .rc directly, not .changed
         - freebsd_cis_remediate | bool
   when: "'1.1.1' not in active_exceptions"
   tags: [cis_1_1_1, section_1]
 ```
+
+### Remediation gate: `.rc` vs `.changed`
+
+Remediation `when` conditions **must use the raw result variable directly** (e.g. `result.rc == 0`,
+`result.rc != 0`, `result.stdout | trim != '1'`) rather than `result.changed`.
+
+Rationale: `result.changed` is a derived Ansible attribute set by `changed_when` at task execution
+time. If `changed_when` is ever edited, or a task is refactored to a different module, the
+`.changed` gate can silently diverge from the actual compliance signal. Using `.rc` (or the
+appropriate raw output field) makes the remediation condition self-contained and explicit — it reads
+the same raw signal the audit task used, regardless of how `changed_when` is expressed.
+
+Both approaches are semantically equivalent when `changed_when` is set correctly, but `.rc`-based
+conditions are preferred for long-term maintainability in this role.
 
 ## Exception Handling Initialization
 
