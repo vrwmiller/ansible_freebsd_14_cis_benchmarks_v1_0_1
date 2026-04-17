@@ -32,7 +32,6 @@
         - freebsd_cis_remediate | bool
         - cis_1_1_1_1_kld.rc == 0
       changed_when: true
-      failed_when: false
 
     - name: "1.1.1.1 | REMEDIATE | Prevent ext2fs from loading at boot"
       ansible.builtin.lineinfile:
@@ -71,7 +70,6 @@
         - freebsd_cis_remediate | bool
         - cis_1_1_1_2_kld.rc == 0
       changed_when: true
-      failed_when: false
 
     - name: "1.1.1.2 | REMEDIATE | Prevent msdosfs from loading at boot"
       ansible.builtin.lineinfile:
@@ -153,7 +151,6 @@
         - cis_1_1_1_3_zpools is defined
         - cis_1_1_1_3_zpools.stdout | default('') | length == 0
       changed_when: true
-      failed_when: false
 
     - name: "1.1.1.3 | REMEDIATE | Prevent zfs from loading at boot"
       ansible.builtin.lineinfile:
