@@ -1144,12 +1144,13 @@
           {% if not cis_1_6_5_stat.stat.exists %}
           N/A: /etc/issue does not exist
           {% elif (cis_1_6_5_stat.stat.mode | int(base=8)) <= 0o644 and
-                  cis_1_6_5_stat.stat.pw_name == 'root' %}
+                  cis_1_6_5_stat.stat.pw_name == 'root' and
+                  cis_1_6_5_stat.stat.gr_name == 'wheel' %}
           PASS: /etc/issue permissions are acceptable
           {% else %}
           FAIL: /etc/issue — mode={{ cis_1_6_5_stat.stat.mode }}
           owner={{ cis_1_6_5_stat.stat.pw_name }}:{{ cis_1_6_5_stat.stat.gr_name }}
-          (expected mode <=0644, owner root)
+          (expected mode <=0644, owner root:wheel)
           {% endif %}
 
     - name: "1.6.5 | REMEDIATE | Set /etc/issue permissions"
