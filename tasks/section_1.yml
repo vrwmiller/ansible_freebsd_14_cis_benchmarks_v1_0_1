@@ -19,6 +19,18 @@
       failed_when: false
       check_mode: false
 
+    - name: "1.1.1.1 | AUDIT | Check ext2fs boot-load setting in loader.conf"
+      ansible.builtin.command:
+        argv:
+          - grep
+          - -E
+          - '^[[:space:]]*ext2fs_load="NO"[[:space:]]*$'
+          - /boot/loader.conf
+      register: cis_1_1_1_1_loader_no
+      changed_when: cis_1_1_1_1_loader_no.rc != 0
+      failed_when: false
+      check_mode: false
+
     - name: "1.1.1.1 | AUDIT | Report ext2fs module state"
       ansible.builtin.debug:
         msg: >-
@@ -30,7 +42,7 @@
       ansible.builtin.command: kldunload -f ext2fs
       when:
         - freebsd_cis_remediate | bool
-        - cis_1_1_1_1_kld.rc == 0
+        - cis_1_1_1_1_kld.rc == 0 or cis_1_1_1_1_loader_no.rc != 0
       changed_when: true
 
     - name: "1.1.1.1 | REMEDIATE | Prevent ext2fs from loading at boot"
@@ -59,6 +71,18 @@
       failed_when: false
       check_mode: false
 
+    - name: "1.1.1.2 | AUDIT | Check msdosfs boot-load setting in loader.conf"
+      ansible.builtin.command:
+        argv:
+          - grep
+          - -E
+          - '^[[:space:]]*msdosfs_load="NO"[[:space:]]*$'
+          - /boot/loader.conf
+      register: cis_1_1_1_2_loader_no
+      changed_when: cis_1_1_1_2_loader_no.rc != 0
+      failed_when: false
+      check_mode: false
+
     - name: "1.1.1.2 | AUDIT | Report msdosfs module state"
       ansible.builtin.debug:
         msg: >-
@@ -70,7 +94,7 @@
       ansible.builtin.command: kldunload -f msdosfs
       when:
         - freebsd_cis_remediate | bool
-        - cis_1_1_1_2_kld.rc == 0
+        - cis_1_1_1_2_kld.rc == 0 or cis_1_1_1_2_loader_no.rc != 0
       changed_when: true
 
     - name: "1.1.1.2 | REMEDIATE | Prevent msdosfs from loading at boot"
@@ -96,6 +120,18 @@
       ansible.builtin.command: kldstat -q -m zfs
       register: cis_1_1_1_3_kld
       changed_when: cis_1_1_1_3_kld.rc == 0
+      failed_when: false
+      check_mode: false
+
+    - name: "1.1.1.3 | AUDIT | Check zfs boot-load setting in loader.conf"
+      ansible.builtin.command:
+        argv:
+          - grep
+          - -E
+          - '^[[:space:]]*zfs_load="NO"[[:space:]]*$'
+          - /boot/loader.conf
+      register: cis_1_1_1_3_loader_no
+      changed_when: cis_1_1_1_3_loader_no.rc != 0
       failed_when: false
       check_mode: false
 
@@ -125,7 +161,20 @@
         - freebsd_cis_remediate | bool
         - cis_1_1_1_3_kld.rc == 0
         - cis_1_1_1_3_zpools is defined
+        - cis_1_1_1_3_zpools.rc == 0
         - cis_1_1_1_3_zpools.stdout | default('') | length > 0
+
+    - name: "1.1.1.3 | REMEDIATE | Warn — unable to verify ZFS pool state"
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: Unable to verify active ZFS pool state (`zpool list -H` failed).
+          Skipping ZFS disable/unload remediation to avoid applying destructive
+          changes on unknown storage state.
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_1_1_1_3_kld.rc == 0
+        - cis_1_1_1_3_zpools is defined
+        - cis_1_1_1_3_zpools.rc != 0
 
     - name: "1.1.1.3 | REMEDIATE | Disable the zfs service"
       ansible.builtin.command: sysrc zfs_enable="NO"
@@ -133,6 +182,7 @@
         - freebsd_cis_remediate | bool
         - cis_1_1_1_3_kld.rc == 0
         - cis_1_1_1_3_zpools is defined
+        - cis_1_1_1_3_zpools.rc == 0
         - cis_1_1_1_3_zpools.stdout | default('') | length == 0
       changed_when: true
       failed_when: false
@@ -143,6 +193,7 @@
         - freebsd_cis_remediate | bool
         - cis_1_1_1_3_kld.rc == 0
         - cis_1_1_1_3_zpools is defined
+        - cis_1_1_1_3_zpools.rc == 0
         - cis_1_1_1_3_zpools.stdout | default('') | length == 0
       changed_when: true
       failed_when: false
@@ -153,6 +204,7 @@
         - freebsd_cis_remediate | bool
         - cis_1_1_1_3_kld.rc == 0
         - cis_1_1_1_3_zpools is defined
+        - cis_1_1_1_3_zpools.rc == 0
         - cis_1_1_1_3_zpools.stdout | default('') | length == 0
       changed_when: true
 
@@ -167,9 +219,12 @@
         mode: '0600'
       when:
         - freebsd_cis_remediate | bool
-        - cis_1_1_1_3_kld.rc == 0
-        - cis_1_1_1_3_zpools is defined
-        - cis_1_1_1_3_zpools.stdout | default('') | length == 0
+        - cis_1_1_1_3_loader_no.rc != 0
+        - cis_1_1_1_3_kld.rc != 0 or (
+            cis_1_1_1_3_zpools is defined and
+            cis_1_1_1_3_zpools.rc == 0 and
+            cis_1_1_1_3_zpools.stdout | default('') | length == 0
+          )
 
 # =============================================================
 # 1.1.2 Configure Filesystem Partitions
@@ -748,7 +803,12 @@
   tags: [rule_1.2.1, level1, section_1]
   block:
     - name: "1.2.1 | AUDIT | Read KeyPrint from freebsd-update.conf"
-      ansible.builtin.command: grep KeyPrint /etc/freebsd-update.conf
+      ansible.builtin.command:
+        argv:
+          - grep
+          - -E
+          - '^[[:space:]]*KeyPrint([[:space:]]|$)'
+          - /etc/freebsd-update.conf
       register: cis_1_2_1_keyprint
       changed_when: cis_1_2_1_keyprint.rc != 0
       failed_when: false
