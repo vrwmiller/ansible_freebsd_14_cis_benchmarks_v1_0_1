@@ -135,7 +135,7 @@
     - name: "2.2.2 | REMEDIATE | Comment out ftp entry in /etc/inetd.conf"
       ansible.builtin.replace:
         path: /etc/inetd.conf
-        regexp: '^([[:space:]]*ftp[[:space:]])'
+        regexp: '^(\s*ftp\s)'
         replace: '#\1'
       when:
         - freebsd_cis_remediate | bool
@@ -431,7 +431,7 @@
     - name: "2.2.8 | REMEDIATE | Comment out telnet entry in /etc/inetd.conf"
       ansible.builtin.replace:
         path: /etc/inetd.conf
-        regexp: '^([[:space:]]*telnet[[:space:]])'
+        regexp: '^(\s*telnet\s)'
         replace: '#\1'
       when:
         - freebsd_cis_remediate | bool
@@ -485,7 +485,7 @@
     - name: "2.2.9 | REMEDIATE | Comment out tftp entry in /etc/inetd.conf"
       ansible.builtin.replace:
         path: /etc/inetd.conf
-        regexp: '^([[:space:]]*tftp[[:space:]])'
+        regexp: '^(\s*tftp\s)'
         replace: '#\1'
       when:
         - freebsd_cis_remediate | bool
