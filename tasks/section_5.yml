@@ -403,6 +403,7 @@
     path: /etc/security/audit_control
   register: cis_audit_control_stat
   check_mode: false
+  tags: [always]
 
 - name: "5.2 | PRE-FLIGHT | Warn — /etc/security/audit_control absent"
   ansible.builtin.debug:
@@ -411,6 +412,7 @@
       tasks that modify this file will be skipped. Restore from a trusted
       FreeBSD base system source before re-running.
   when: not cis_audit_control_stat.stat.exists
+  tags: [always]
 
 - name: "5.2.1.1 | Ensure auditd service is enabled"
   when:
