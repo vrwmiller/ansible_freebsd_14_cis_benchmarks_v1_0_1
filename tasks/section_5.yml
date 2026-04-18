@@ -960,7 +960,7 @@
   tags: [rule_5.2.4.1, level2, section_5, manual]
   block:
     - name: "5.2.4.1 | AUDIT | Get audit log directory path"
-      ansible.builtin.shell: "awk -F: '/^dir/ {print $2}' /etc/security/audit_control"
+      ansible.builtin.shell: "awk -F: '/^dir:/ {print $2; exit}' /etc/security/audit_control"
       register: cis_5_2_4_1_dir
       changed_when: cis_5_2_4_1_dir.stdout | trim == ''
       failed_when: false
@@ -970,7 +970,10 @@
       ansible.builtin.stat:
         path: "{{ cis_5_2_4_1_dir.stdout | trim }}"
       register: cis_5_2_4_1_stat
-      changed_when: (cis_5_2_4_1_stat.stat.mode | int(base=8)) > 488
+      changed_when: >-
+        (not cis_5_2_4_1_stat.stat.exists) or
+        ((cis_5_2_4_1_stat.stat.mode | int(base=8)) > 488)
+      failed_when: false
       check_mode: false
       when: cis_5_2_4_1_dir.stdout | trim != ''
 
@@ -978,6 +981,16 @@
       ansible.builtin.debug:
         msg: "NON-COMPLIANT: could not determine audit log directory from audit_control"
       when: cis_5_2_4_1_dir.stdout | trim == ''
+
+    - name: "5.2.4.1 | AUDIT | Report audit log directory not on disk"
+      ansible.builtin.debug:
+        msg: >-
+          NON-COMPLIANT: audit log directory {{ cis_5_2_4_1_dir.stdout | trim }}
+          is specified in audit_control but does not exist on disk
+      when:
+        - cis_5_2_4_1_dir.stdout | trim != ''
+        - cis_5_2_4_1_stat is defined
+        - not cis_5_2_4_1_stat.stat.exists
 
     - name: "5.2.4.1 | AUDIT | Report audit log directory permissions"
       ansible.builtin.debug:
@@ -991,6 +1004,7 @@
       when:
         - cis_5_2_4_1_dir.stdout | trim != ''
         - cis_5_2_4_1_stat is defined
+        - cis_5_2_4_1_stat.stat.exists
 
     - name: "5.2.4.1 | REMEDIATE | Set audit log directory to 0750"
       ansible.builtin.file:
@@ -1000,6 +1014,7 @@
         - freebsd_cis_remediate | bool
         - cis_5_2_4_1_dir.stdout | trim != ''
         - cis_5_2_4_1_stat is defined
+        - cis_5_2_4_1_stat.stat.exists
         - (cis_5_2_4_1_stat.stat.mode | int(base=8)) > 488
 
 # ---
@@ -1011,7 +1026,7 @@
   tags: [rule_5.2.4.2, level2, section_5, manual]
   block:
     - name: "5.2.4.2 | AUDIT | Get audit log directory path"
-      ansible.builtin.shell: "awk -F: '/^dir/ {print $2}' /etc/security/audit_control"
+      ansible.builtin.shell: "awk -F: '/^dir:/ {print $2; exit}' /etc/security/audit_control"
       register: cis_5_2_4_2_dir
       changed_when: cis_5_2_4_2_dir.stdout | trim == ''
       failed_when: false
@@ -1064,7 +1079,7 @@
   tags: [rule_5.2.4.3, level2, section_5, manual]
   block:
     - name: "5.2.4.3 | AUDIT | Get audit log directory path"
-      ansible.builtin.shell: "awk -F: '/^dir/ {print $2}' /etc/security/audit_control"
+      ansible.builtin.shell: "awk -F: '/^dir:/ {print $2; exit}' /etc/security/audit_control"
       register: cis_5_2_4_3_dir
       changed_when: cis_5_2_4_3_dir.stdout | trim == ''
       failed_when: false
@@ -1112,7 +1127,7 @@
   tags: [rule_5.2.4.4, level2, section_5, manual]
   block:
     - name: "5.2.4.4 | AUDIT | Get audit log directory path"
-      ansible.builtin.shell: "awk -F: '/^dir/ {print $2}' /etc/security/audit_control"
+      ansible.builtin.shell: "awk -F: '/^dir:/ {print $2; exit}' /etc/security/audit_control"
       register: cis_5_2_4_4_dir
       changed_when: cis_5_2_4_4_dir.stdout | trim == ''
       failed_when: false
