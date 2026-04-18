@@ -355,6 +355,7 @@
       when:
         - freebsd_cis_remediate | bool
         - freebsd_cis_log_files_to_fix | length > 0
+        - cis_5_1_3_world_read.stdout | trim != '' or cis_5_1_3_owner.stdout | trim != ''
 
     - name: "5.1.3 | REMEDIATE | Fix permissions on existing key log files"
       ansible.builtin.file:
@@ -373,6 +374,7 @@
       when:
         - freebsd_cis_remediate | bool
         - freebsd_cis_log_files_to_fix | length > 0
+        - cis_5_1_3_world_read.stdout | trim != '' or cis_5_1_3_owner.stdout | trim != ''
 
 # =============================================================
 # 5.2 Configure System Accounting (auditd)
@@ -1118,8 +1120,8 @@
 
     - name: "5.2.4.4 | AUDIT | Find audit log files with wrong group"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
-        stat -L -f "%Sg" "{{ cis_5_2_4_4_dir.stdout | trim }}"/* 2>/dev/null
-        | grep -Ev '^(audit|wheel)$' | head -20 || true
+        stat -L -f "%N %Sg" "{{ cis_5_2_4_4_dir.stdout | trim }}"/* 2>/dev/null
+        | grep -Ev '\s(audit|wheel)$' | head -20 || true
       register: cis_5_2_4_4_group
       changed_when: cis_5_2_4_4_group.stdout | trim != ''
       failed_when: false
@@ -1138,6 +1140,13 @@
              if (cis_5_2_4_4_group.stdout | default('')) | trim == ''
              else 'NON-COMPLIANT: audit log files found with unauthorized group ownership' }}
       when: cis_5_2_4_4_dir.stdout | trim != ''
+
+    - name: "5.2.4.4 | AUDIT | Show audit log files with non-compliant group"
+      ansible.builtin.debug:
+        msg: "{{ ['Audit log files with unauthorized group (path group):'] + cis_5_2_4_4_group.stdout_lines }}"
+      when:
+        - cis_5_2_4_4_dir.stdout | trim != ''
+        - (cis_5_2_4_4_group.stdout | default('')) | trim != ''
 
     - name: "5.2.4.4 | REMEDIATE | Set audit log files and directory group to audit"
       ansible.builtin.shell: >-
