@@ -294,6 +294,7 @@
         path: /etc/newsyslog.conf
       register: cis_5_1_2_newsyslog
       changed_when: not cis_5_1_2_newsyslog.stat.exists
+      failed_when: false
       check_mode: false
 
     - name: "5.1.2 | AUDIT | Report newsyslog.conf state"
@@ -1049,7 +1050,9 @@
       changed_when: cis_5_2_4_2_files.stdout | trim != ''
       failed_when: false
       check_mode: false
-      when: cis_5_2_4_2_dir.stdout | trim != ''
+      when:
+        - cis_5_2_4_2_dir.stdout | trim != ''
+        - cis_5_2_4_2_dir.stdout | trim | regex_search('^/[a-zA-Z0-9/_.-]+$')
 
     - name: "5.2.4.2 | AUDIT | Report audit log file permissions"
       ansible.builtin.debug:
@@ -1103,7 +1106,9 @@
       changed_when: cis_5_2_4_3_owner.stdout | trim != ''
       failed_when: false
       check_mode: false
-      when: cis_5_2_4_3_dir.stdout | trim != ''
+      when:
+        - cis_5_2_4_3_dir.stdout | trim != ''
+        - cis_5_2_4_3_dir.stdout | trim | regex_search('^/[a-zA-Z0-9/_.-]+$')
 
     - name: "5.2.4.3 | AUDIT | Report audit log file ownership"
       ansible.builtin.debug:
@@ -1193,6 +1198,7 @@
         path: /etc/security/audit_warn
       register: cis_5_2_4_5_warn
       changed_when: not cis_5_2_4_5_warn.stat.exists or cis_5_2_4_5_warn.stat.mode != '0500'
+      failed_when: false
       check_mode: false
 
     - name: "5.2.4.5 | AUDIT | Check audit_control and audit_user modes"  # noqa: risky-shell-pipe
@@ -1499,6 +1505,13 @@
              if cis_5_3_2_cron.stdout | trim != ''
              else 'NON-COMPLIANT: no AIDE cron job found in root crontab — filesystem integrity is not periodically verified' }}
 
+    - name: "5.3.2 | AUDIT | Check AIDE binary is present"
+      ansible.builtin.stat:
+        path: /usr/local/bin/aide
+      register: cis_5_3_2_aide_bin
+      failed_when: false
+      check_mode: false
+
     - name: "5.3.2 | REMEDIATE | Add AIDE daily check to root crontab"
       ansible.builtin.cron:
         name: "CIS 5.3.2 AIDE daily filesystem integrity check"
@@ -1509,3 +1522,14 @@
       when:
         - freebsd_cis_remediate | bool
         - cis_5_3_2_cron.stdout | trim == ''
+        - cis_5_3_2_aide_bin.stat.exists
+
+    - name: "5.3.2 | REMEDIATE | Warn — AIDE not installed, cannot schedule cron"
+      ansible.builtin.debug:
+        msg: >-
+          REMEDIATION SKIPPED: /usr/local/bin/aide not found.
+          Install AIDE (see 5.3.1) before scheduling the integrity check cron job.
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_3_2_cron.stdout | trim == ''
+        - not cis_5_3_2_aide_bin.stat.exists
