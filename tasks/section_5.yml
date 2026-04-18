@@ -1468,6 +1468,7 @@
     - name: "5.3.2 | AUDIT | Check root crontab for aide --check or --update"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
         crontab -l -u root 2>/dev/null
+        | grep -Ev '^[[:space:]]*#'
         | grep -Es 'aide[[:space:]]+(--?[A-Za-z]+[[:space:]]+)*(--check|--update)([[:space:]]|$)' || true
       register: cis_5_3_2_cron
       changed_when: cis_5_3_2_cron.stdout | trim == ''
