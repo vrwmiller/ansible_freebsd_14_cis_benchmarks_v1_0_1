@@ -259,9 +259,9 @@
       - -C
       - "user=root"
       - -C
-      - "host={{ ansible_hostname }}"
+      - "host={{ ansible_facts['hostname'] }}"
       - -C
-      - "addr={{ ansible_default_ipv4.address | default('127.0.0.1') }}"
+      - "addr={{ ansible_facts['default_ipv4']['address'] | default('127.0.0.1') }}"
   register: cis_4_2_sshd_config_dump
   changed_when: false
   failed_when: false
