@@ -114,6 +114,7 @@
       ansible.builtin.stat:
         path: /etc/syslog.conf
       register: cis_5_1_1_4_syslog_conf
+      changed_when: not cis_5_1_1_4_syslog_conf.stat.exists
       check_mode: false
 
     - name: "5.1.1.4 | AUDIT | Report syslog.conf state"
@@ -216,7 +217,7 @@
         - freebsd_cis_remediate | bool
         - not cis_5_1_1_5_remote_configured
         - freebsd_cis_syslog_remote_host | length > 0
-      notify: restart syslogd
+      notify: Restart syslogd
 
     - name: "5.1.1.5 | REMEDIATE | Warn — no remote logging and freebsd_cis_syslog_remote_host is unset"
       ansible.builtin.debug:
@@ -245,6 +246,7 @@
     - name: "5.1.1.6 | AUDIT | Evaluate -s flag presence"
       ansible.builtin.set_fact:
         cis_5_1_1_6_secure: "{{ '-s' in (cis_5_1_1_6_flags.stdout | default('')) }}"
+      changed_when: not ('-s' in (cis_5_1_1_6_flags.stdout | default('')))
 
     - name: "5.1.1.6 | AUDIT | Report syslogd remote receive state"
       ansible.builtin.debug:
@@ -259,7 +261,7 @@
         - freebsd_cis_remediate | bool
         - not cis_5_1_1_6_secure
       changed_when: true
-      notify: restart syslogd
+      notify: Restart syslogd
 
 # =============================================================
 # 5.1.2 Ensure newsyslog is configured
@@ -273,6 +275,7 @@
       ansible.builtin.stat:
         path: /etc/newsyslog.conf
       register: cis_5_1_2_newsyslog
+      changed_when: not cis_5_1_2_newsyslog.stat.exists
       check_mode: false
 
     - name: "5.1.2 | AUDIT | Report newsyslog.conf state"
@@ -324,16 +327,31 @@
         msg: "{{ ['Non-root-owned log files:'] + cis_5_1_3_owner.stdout_lines }}"
       when: cis_5_1_3_owner.stdout | trim != ''
 
-    - name: "5.1.3 | REMEDIATE | Fix permissions on key log files"
+    - name: "5.1.3 | REMEDIATE | Stat key log files before fixing permissions"
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop: "{{ freebsd_cis_log_files_to_fix }}"
+      loop_control:
+        label: "{{ item }}"
+      register: cis_5_1_3_log_stats
+      when:
+        - freebsd_cis_remediate | bool
+        - freebsd_cis_log_files_to_fix | length > 0
+
+    - name: "5.1.3 | REMEDIATE | Fix permissions on existing key log files"
       ansible.builtin.file:
         path: "{{ item }}"
         owner: root
         group: wheel
         mode: '0640'
-      loop: "{{ freebsd_cis_log_files_to_fix }}"
+      loop: >-
+        {{ (cis_5_1_3_log_stats.results | default([]))
+           | selectattr('stat.exists', 'defined')
+           | selectattr('stat.exists')
+           | map(attribute='item')
+           | list }}
       loop_control:
         label: "{{ item }}"
-      failed_when: false
       when:
         - freebsd_cis_remediate | bool
         - freebsd_cis_log_files_to_fix | length > 0
@@ -523,6 +541,7 @@
             | reject('in', cis_5_2_3_2_flags.stdout | default(''))
             | list
           }}
+      changed_when: cis_5_2_3_2_missing | length > 0
 
     - name: "5.2.3.2 | AUDIT | Report file event flags state"
       ansible.builtin.debug:
@@ -770,6 +789,7 @@
       ansible.builtin.stat:
         path: "{{ cis_5_2_4_1_dir.stdout | trim }}"
       register: cis_5_2_4_1_stat
+      changed_when: (cis_5_2_4_1_stat.stat.mode | int(base=8)) > 488
       check_mode: false
       when: cis_5_2_4_1_dir.stdout | trim != ''
 
@@ -783,7 +803,7 @@
         msg: >-
           {{ 'COMPLIANT: ' ~ cis_5_2_4_1_dir.stdout | trim ~ ' has mode '
              ~ cis_5_2_4_1_stat.stat.mode ~ ' (0750 or more restrictive)'
-             if (cis_5_2_4_1_stat.stat.mode | string) <= '0750'
+             if (cis_5_2_4_1_stat.stat.mode | int(base=8)) <= 488
              else 'NON-COMPLIANT: ' ~ cis_5_2_4_1_dir.stdout | trim
                   ~ ' has mode ' ~ cis_5_2_4_1_stat.stat.mode
                   ~ ' — must be 0750 or more restrictive' }}
@@ -799,7 +819,7 @@
         - freebsd_cis_remediate | bool
         - cis_5_2_4_1_dir.stdout | trim != ''
         - cis_5_2_4_1_stat is defined
-        - (cis_5_2_4_1_stat.stat.mode | string) > '0750'
+        - (cis_5_2_4_1_stat.stat.mode | int(base=8)) > 488
 
 # ---
 
@@ -912,7 +932,7 @@
     - name: "5.2.4.4 | AUDIT | Find audit log files with wrong group"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
         stat -L -f "%Sg" "{{ cis_5_2_4_4_dir.stdout | trim }}"/* 2>/dev/null
-        | grep -Ev '^(audit|wheel)' | head -20 || true
+        | grep -Ev '^(audit|wheel)$' | head -20 || true
       register: cis_5_2_4_4_group
       changed_when: cis_5_2_4_4_group.stdout | trim != ''
       failed_when: false
@@ -948,6 +968,7 @@
       ansible.builtin.stat:
         path: /etc/security/audit_warn
       register: cis_5_2_4_5_warn
+      changed_when: cis_5_2_4_5_warn.stat.exists and cis_5_2_4_5_warn.stat.mode != '0500'
       check_mode: false
 
     - name: "5.2.4.5 | AUDIT | Check audit_control and audit_user modes"  # noqa: risky-shell-pipe
@@ -1092,7 +1113,7 @@
     - name: "5.2.4.8 | AUDIT | Check audit tool modes"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
         stat -Lf '%N %Lp' /usr/sbin/*audit* 2>/dev/null
-        | grep -Ev -- '^[[:space:]]*[^[:space:]]+[[:space:]]+([0-5][0145][0145])[[:space:]]*$' | head -10 || true
+        | grep -Ev -- '^[[:space:]]*[^[:space:]]+[[:space:]]+([0145][0145][0145])[[:space:]]*$' | head -10 || true
       register: cis_5_2_4_8_mode
       changed_when: cis_5_2_4_8_mode.stdout | trim != ''
       failed_when: false
@@ -1154,7 +1175,7 @@
     - name: "5.2.4.10 | AUDIT | Check audit tool ownership and group"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
         stat -Lf '%N %Lp %Su %Sg' /usr/sbin/*audit* 2>/dev/null
-        | grep -Ev -- '^[[:space:]]*[^[:space:]]+[[:space:]]+([0-5][0145][0145])[[:space:]]+root[[:space:]]+wheel[[:space:]]*$' | head -10 || true
+        | grep -Ev -- '^[[:space:]]*[^[:space:]]+[[:space:]]+([0145][0145][0145])[[:space:]]+root[[:space:]]+wheel[[:space:]]*$' | head -10 || true
       register: cis_5_2_4_10_group
       changed_when: cis_5_2_4_10_group.stdout | trim != ''
       failed_when: false

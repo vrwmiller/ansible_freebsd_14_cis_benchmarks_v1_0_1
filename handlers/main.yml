@@ -18,8 +18,8 @@
         state: reloaded
       failed_when: false  # acceptable: sshd may not be running
 
-- name: restart syslogd
+- name: Restart syslogd
   ansible.builtin.service:
     name: syslogd
-    state: restarted
-  failed_when: false  # acceptable: syslogd may not currently be running
+    state: reloaded
+  failed_when: false  # acceptable: syslogd may not be running; reload sends SIGHUP without starting the service
