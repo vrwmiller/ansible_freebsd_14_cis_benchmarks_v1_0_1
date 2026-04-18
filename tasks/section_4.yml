@@ -46,7 +46,10 @@
         mode: '0600'
       when:
         - freebsd_cis_remediate | bool
-        - cis_4_1_1_1_crontab is changed
+        - cis_4_1_1_1_crontab.stat.exists
+        - cis_4_1_1_1_crontab.stat.pw_name != 'root' or
+          cis_4_1_1_1_crontab.stat.gr_name != 'wheel' or
+          (cis_4_1_1_1_crontab.stat.mode | int(base=8)) % 64 != 0
 
 # ---
 
@@ -86,7 +89,10 @@
         mode: '0700'
       when:
         - freebsd_cis_remediate | bool
-        - cis_4_1_1_2_crond is changed
+        - cis_4_1_1_2_crond.stat.exists
+        - cis_4_1_1_2_crond.stat.pw_name != 'root' or
+          cis_4_1_1_2_crond.stat.gr_name != 'wheel' or
+          (cis_4_1_1_2_crond.stat.mode | int(base=8)) % 64 != 0
 
 # ---
 
@@ -267,6 +273,15 @@
   failed_when: false
   check_mode: false
 
+- name: "4.2 | GATHER | Report sshd -T query status"
+  ansible.builtin.debug:
+    msg: >-
+      {{ 'NON-COMPLIANT: sshd -T query failed (rc=' ~ cis_4_2_sshd_config_dump.rc ~
+         ') — effective configuration unavailable; dependent controls 4.2.4–4.2.21 may report incorrect results'
+         if cis_4_2_sshd_config_dump.rc != 0
+         else 'sshd -T: effective configuration query succeeded' }}
+  changed_when: cis_4_2_sshd_config_dump.rc != 0
+
 # ---
 
 - name: "4.2.1 | Ensure permissions on /etc/ssh/sshd_config are configured"
@@ -305,7 +320,10 @@
         mode: '0600'
       when:
         - freebsd_cis_remediate | bool
-        - cis_4_2_1_sshdcfg is changed
+        - cis_4_2_1_sshdcfg.stat.exists
+        - cis_4_2_1_sshdcfg.stat.pw_name != 'root' or
+          cis_4_2_1_sshdcfg.stat.gr_name != 'wheel' or
+          (cis_4_2_1_sshdcfg.stat.mode | int(base=8)) % 64 != 0
 
 # ---
 
@@ -346,6 +364,18 @@
       loop: "{{ cis_4_2_2_privkey_stats.results }}"
       loop_control:
         label: "{{ item.stat.path }}"
+
+    - name: "4.2.2 | AUDIT | Summarize private key compliance"
+      ansible.builtin.set_fact:
+        cis_4_2_2_non_compliant: >-
+          {{ (cis_4_2_2_privkey_stats.results
+              | selectattr('stat.pw_name', 'ne', 'root') | list | length > 0)
+             or (cis_4_2_2_privkey_stats.results
+              | selectattr('stat.gr_name', 'ne', 'wheel') | list | length > 0)
+             or (cis_4_2_2_privkey_stats.results
+              | rejectattr('stat.mode', 'match', '^0[0-7]00$') | list | length > 0) }}
+      changed_when: cis_4_2_2_non_compliant | bool
+      check_mode: false
 
     - name: "4.2.2 | REMEDIATE | Fix SSH private host key file permissions"
       ansible.builtin.file:
@@ -402,6 +432,18 @@
       loop: "{{ cis_4_2_3_pubkey_stats.results }}"
       loop_control:
         label: "{{ item.stat.path }}"
+
+    - name: "4.2.3 | AUDIT | Summarize public key compliance"
+      ansible.builtin.set_fact:
+        cis_4_2_3_non_compliant: >-
+          {{ (cis_4_2_3_pubkey_stats.results
+              | selectattr('stat.pw_name', 'ne', 'root') | list | length > 0)
+             or (cis_4_2_3_pubkey_stats.results
+              | selectattr('stat.gr_name', 'ne', 'wheel') | list | length > 0)
+             or (cis_4_2_3_pubkey_stats.results
+              | rejectattr('stat.mode', 'match', '^0[0-7][04][04]$') | list | length > 0) }}
+      changed_when: cis_4_2_3_non_compliant | bool
+      check_mode: false
 
     - name: "4.2.3 | REMEDIATE | Fix SSH public host key file permissions"
       ansible.builtin.file:
@@ -541,18 +583,19 @@
 
     - name: "4.2.6 | AUDIT | Extract effective cipher list"
       ansible.builtin.set_fact:
-        cis_4_2_6_ciphers: >-
-          {{ cis_4_2_sshd_config_dump.stdout_lines | default([])
+        cis_4_2_6_cipher_list: >-
+          {{ (cis_4_2_sshd_config_dump.stdout_lines | default([])
              | select('match', '^ciphers\s')
              | list | first | default('ciphers')
-             | regex_replace('^ciphers\s+', '') | trim }}
+             | regex_replace('^ciphers\s+', '') | trim).split(',')
+             | map('trim') | list }}
       check_mode: false
 
     - name: "4.2.6 | AUDIT | Check for weak ciphers"
       ansible.builtin.set_fact:
         cis_4_2_6_weak_found: >-
           {{ freebsd_cis_sshd_weak_ciphers.split(',')
-             | select('in', cis_4_2_6_ciphers) | list }}
+             | map('trim') | select('in', cis_4_2_6_cipher_list) | list }}
       changed_when: cis_4_2_6_weak_found | length > 0
       check_mode: false
 
@@ -755,18 +798,19 @@
 
     - name: "4.2.11 | AUDIT | Extract effective KexAlgorithms"
       ansible.builtin.set_fact:
-        cis_4_2_11_kex: >-
-          {{ cis_4_2_sshd_config_dump.stdout_lines | default([])
+        cis_4_2_11_kex_list: >-
+          {{ (cis_4_2_sshd_config_dump.stdout_lines | default([])
              | select('match', '^kexalgorithms\s')
              | list | first | default('kexalgorithms')
-             | regex_replace('^kexalgorithms\s+', '') | trim }}
+             | regex_replace('^kexalgorithms\s+', '') | trim).split(',')
+             | map('trim') | list }}
       check_mode: false
 
     - name: "4.2.11 | AUDIT | Check for weak KexAlgorithms"
       ansible.builtin.set_fact:
         cis_4_2_11_weak_found: >-
           {{ freebsd_cis_sshd_weak_kex.split(',')
-             | select('in', cis_4_2_11_kex) | list }}
+             | map('trim') | select('in', cis_4_2_11_kex_list) | list }}
       changed_when: cis_4_2_11_weak_found | length > 0
       check_mode: false
 
@@ -874,18 +918,19 @@
 
     - name: "4.2.14 | AUDIT | Extract effective MACs list"
       ansible.builtin.set_fact:
-        cis_4_2_14_macs: >-
-          {{ cis_4_2_sshd_config_dump.stdout_lines | default([])
+        cis_4_2_14_macs_list: >-
+          {{ (cis_4_2_sshd_config_dump.stdout_lines | default([])
              | select('match', '^macs\s')
              | list | first | default('macs')
-             | regex_replace('^macs\s+', '') | trim }}
+             | regex_replace('^macs\s+', '') | trim).split(',')
+             | map('trim') | list }}
       check_mode: false
 
     - name: "4.2.14 | AUDIT | Check for weak MACs"
       ansible.builtin.set_fact:
         cis_4_2_14_weak_found: >-
           {{ freebsd_cis_sshd_weak_macs.split(',')
-             | select('in', cis_4_2_14_macs) | list }}
+             | map('trim') | select('in', cis_4_2_14_macs_list) | list }}
       changed_when: cis_4_2_14_weak_found | length > 0
       check_mode: false
 
