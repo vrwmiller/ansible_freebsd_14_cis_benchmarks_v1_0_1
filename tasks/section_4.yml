@@ -1115,8 +1115,10 @@
     - name: "4.2.17 | AUDIT | Parse MaxStartups components"
       ansible.builtin.set_fact:
         cis_4_2_17_start: "{{ cis_4_2_17_val.split(':')[0] | int }}"
-        cis_4_2_17_rate: "{{ cis_4_2_17_val.split(':')[1] | int if ':' in cis_4_2_17_val else 100 }}"
-        cis_4_2_17_full: "{{ cis_4_2_17_val.split(':')[2] | int if cis_4_2_17_val.split(':') | length > 2 else 100 }}"
+        cis_4_2_17_rate: "{{ cis_4_2_17_val.split(':')[1] | int if ':' in cis_4_2_17_val else 0 }}"
+        cis_4_2_17_full: >-
+          {{ cis_4_2_17_val.split(':')[2] | int if cis_4_2_17_val.split(':') | length > 2
+             else (cis_4_2_17_val | int if ':' not in cis_4_2_17_val else 100) }}
       changed_when: >-
         (cis_4_2_17_start | int) > 10 or
         (cis_4_2_17_rate | int) > 30 or
