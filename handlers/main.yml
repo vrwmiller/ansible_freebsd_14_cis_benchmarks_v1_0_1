@@ -2,7 +2,18 @@
 # FreeBSD 14 CIS Benchmark v1.0.1 — Role Handlers
 
 - name: Reload sshd
-  ansible.builtin.service:
-    name: "{{ freebsd_cis_sshd_service }}"
-    state: reloaded
-  failed_when: false
+  block:
+    - name: Reload sshd | Validate sshd configuration
+      ansible.builtin.command:
+        argv:
+          - "{{ freebsd_cis_sshd_bin }}"
+          - -t
+          - -f
+          - "{{ freebsd_cis_sshd_config }}"
+      changed_when: false
+
+    - name: Reload sshd | Reload service
+      ansible.builtin.service:
+        name: "{{ freebsd_cis_sshd_service }}"
+        state: reloaded
+      failed_when: false  # acceptable: sshd may not be running

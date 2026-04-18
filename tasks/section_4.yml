@@ -23,7 +23,8 @@
         not cis_4_1_1_1_crontab.stat.exists or
         cis_4_1_1_1_crontab.stat.pw_name != 'root' or
         cis_4_1_1_1_crontab.stat.gr_name != 'wheel' or
-        (cis_4_1_1_1_crontab.stat.mode | int(base=8)) % 64 != 0
+        (cis_4_1_1_1_crontab.stat.mode | int(base=8)) % 64 != 0 or
+        ((cis_4_1_1_1_crontab.stat.mode | int(base=8)) // 64) % 8 not in [4, 6]
       failed_when: false
       check_mode: false
 
@@ -49,7 +50,8 @@
         - cis_4_1_1_1_crontab.stat.exists
         - cis_4_1_1_1_crontab.stat.pw_name != 'root' or
           cis_4_1_1_1_crontab.stat.gr_name != 'wheel' or
-          (cis_4_1_1_1_crontab.stat.mode | int(base=8)) % 64 != 0
+          (cis_4_1_1_1_crontab.stat.mode | int(base=8)) % 64 != 0 or
+          ((cis_4_1_1_1_crontab.stat.mode | int(base=8)) // 64) % 8 not in [4, 6]
 
 # ---
 
@@ -266,6 +268,8 @@
     argv:
       - "{{ freebsd_cis_sshd_bin }}"
       - -T
+      - -f
+      - "{{ freebsd_cis_sshd_config }}"
       - -C
       - "user=root"
       - -C
