@@ -2,4 +2,1198 @@
 # FreeBSD 14 CIS Benchmark v1.0.1
 # Section 5 — Logging and Auditing
 # Controls: 5.1.1.1 – 5.3.2
-[]
+# lint-clean: production profile
+
+# =============================================================
+# 5.1 Configure Logging
+# 5.1.1 Configure syslog
+# =============================================================
+
+- name: "5.1.1.1 | Ensure syslog is installed"
+  when: "'5.1.1.1' not in active_exceptions"
+  tags: [rule_5.1.1.1, level1, section_5, manual]
+  block:
+    - name: "5.1.1.1 | AUDIT | Check syslogd_enable rc.conf setting"
+      ansible.builtin.command: sysrc -q -n syslogd_enable
+      register: cis_5_1_1_1_syslogd
+      changed_when: cis_5_1_1_1_syslogd.stdout | trim | upper != 'YES'
+      failed_when: false
+      check_mode: false
+
+    - name: "5.1.1.1 | AUDIT | Report syslogd installed state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: syslogd is enabled in rc.conf'
+             if cis_5_1_1_1_syslogd.stdout | trim | upper == 'YES'
+             else 'NON-COMPLIANT: syslogd is not enabled in rc.conf' }}
+
+    - name: "5.1.1.1 | REMEDIATE | Start syslogd if not enabled"
+      ansible.builtin.service:
+        name: syslogd
+        state: started
+        enabled: true
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_1_1_1_syslogd.stdout | trim | upper != 'YES'
+
+# ---
+
+- name: "5.1.1.2 | Ensure syslogd service is enabled"
+  when: "'5.1.1.2' not in active_exceptions"
+  tags: [rule_5.1.1.2, level1, section_5, manual]
+  block:
+    - name: "5.1.1.2 | AUDIT | Check syslogd_enable rc.conf setting"
+      ansible.builtin.command: sysrc -q -n syslogd_enable
+      register: cis_5_1_1_2_syslogd
+      changed_when: cis_5_1_1_2_syslogd.stdout | trim | upper != 'YES'
+      failed_when: false
+      check_mode: false
+
+    - name: "5.1.1.2 | AUDIT | Report syslogd enabled state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: syslogd_enable is YES'
+             if cis_5_1_1_2_syslogd.stdout | trim | upper == 'YES'
+             else 'NON-COMPLIANT: syslogd_enable is not YES — syslogd will not start on boot' }}
+
+    - name: "5.1.1.2 | REMEDIATE | Enable syslogd at boot"
+      ansible.builtin.service:
+        name: syslogd
+        enabled: true
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_1_1_2_syslogd.stdout | trim | upper != 'YES'
+
+# ---
+
+- name: "5.1.1.3 | Ensure syslogd default file permissions are configured"
+  when: "'5.1.1.3' not in active_exceptions"
+  tags: [rule_5.1.1.3, level1, section_5, manual]
+  block:
+    - name: "5.1.1.3 | AUDIT | Check newsyslog.conf for overly permissive modes"
+      ansible.builtin.shell: >-
+        grep -Ei '\s\s[0,2,4,6,7][0,2,4,6,7][0,2,4,6,7]\b' /etc/newsyslog.conf 2>/dev/null || true
+      register: cis_5_1_1_3_perms
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "5.1.1.3 | AUDIT | Report newsyslog.conf permission state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: no obviously over-permissive log modes found in newsyslog.conf'
+             if cis_5_1_1_3_perms.stdout | trim == ''
+             else 'NON-COMPLIANT: review the following newsyslog.conf entries for modes more permissive than 644' }}
+
+    - name: "5.1.1.3 | AUDIT | Show entries requiring review"
+      ansible.builtin.debug:
+        msg: "{{ ['Entries to review:'] + cis_5_1_1_3_perms.stdout_lines }}"
+      when: cis_5_1_1_3_perms.stdout | trim != ''
+
+# ---
+
+- name: "5.1.1.4 | Ensure logging is configured"
+  when: "'5.1.1.4' not in active_exceptions"
+  tags: [rule_5.1.1.4, level1, section_5, manual]
+  block:
+    - name: "5.1.1.4 | AUDIT | List syslog.conf files present"
+      ansible.builtin.shell: >-
+        ls -1 /etc/syslog.conf 2>/dev/null;
+        ls -1 /etc/syslog.d/*.conf 2>/dev/null || true;
+        ls -1 /usr/local/etc/syslog.d/*.conf 2>/dev/null || true
+      register: cis_5_1_1_4_conf
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "5.1.1.4 | AUDIT | Check that /etc/syslog.conf exists"
+      ansible.builtin.stat:
+        path: /etc/syslog.conf
+      register: cis_5_1_1_4_syslog_conf
+      check_mode: false
+
+    - name: "5.1.1.4 | AUDIT | Report syslog.conf state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: /etc/syslog.conf exists — review it manually to verify appropriate logging rules'
+             if cis_5_1_1_4_syslog_conf.stat.exists
+             else 'NON-COMPLIANT: /etc/syslog.conf does not exist — syslog logging may not be configured' }}
+
+    - name: "5.1.1.4 | AUDIT | Show config files found"
+      ansible.builtin.debug:
+        msg: "{{ ['syslog config files found:'] + cis_5_1_1_4_conf.stdout_lines }}"
+      when: cis_5_1_1_4_conf.stdout | trim != ''
+
+    - name: "5.1.1.4 | REMEDIATE | Deploy baseline syslog.conf if absent"
+      ansible.builtin.template:
+        src: syslog.conf.j2
+        dest: /etc/syslog.conf
+        owner: root
+        group: wheel
+        mode: '0640'
+      when:
+        - freebsd_cis_remediate | bool
+        - not cis_5_1_1_4_syslog_conf.stat.exists
+      notify: restart syslogd
+
+# ---
+
+- name: "5.1.1.5 | Ensure syslog is configured to send logs to a remote log host"
+  when: "'5.1.1.5' not in active_exceptions"
+  tags: [rule_5.1.1.5, level1, section_5, manual]
+  block:
+    # --- Detection: syslog @remote entries ---
+    - name: "5.1.1.5 | AUDIT | Check syslog.conf files for remote forwarding entries"
+      ansible.builtin.shell: >-
+        { grep -E '^[^#].*@' /etc/syslog.conf 2>/dev/null || true; }
+        { grep -rE '^[^#].*@' /etc/syslog.d/ 2>/dev/null || true; }
+        { grep -rE '^[^#].*@' /usr/local/etc/syslog.d/ 2>/dev/null || true; }
+      register: cis_5_1_1_5_syslog_remote
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    # --- Detection: Splunk Universal Forwarder ---
+    - name: "5.1.1.5 | AUDIT | Check for Splunk Universal Forwarder process"
+      ansible.builtin.command: pgrep -x splunkd
+      register: cis_5_1_1_5_splunk
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    # --- Detection: rsyslog or syslog-ng installed ---
+    - name: "5.1.1.5 | AUDIT | Check for rsyslog or syslog-ng packages"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        pkg query '%n-%v' 2>/dev/null | grep -E '^(rsyslog|syslog-ng)-' | head -5 || true
+      register: cis_5_1_1_5_alt_daemon
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    # --- Aggregate ---
+    - name: "5.1.1.5 | AUDIT | Evaluate overall remote logging state"
+      ansible.builtin.set_fact:
+        cis_5_1_1_5_remote_configured: >-
+          {{
+            (cis_5_1_1_5_syslog_remote.stdout | trim != '') or
+            (cis_5_1_1_5_splunk.rc == 0) or
+            (cis_5_1_1_5_alt_daemon.stdout | trim != '')
+          }}
+
+    - name: "5.1.1.5 | AUDIT | Report remote logging state"
+      ansible.builtin.debug:
+        msg: >-
+          {% if cis_5_1_1_5_syslog_remote.stdout | trim != '' %}
+          COMPLIANT: syslog forwarding to remote host configured
+          {% elif cis_5_1_1_5_splunk.rc == 0 %}
+          COMPLIANT: Splunk Universal Forwarder (splunkd) is running — remote log shipping is active and satisfies the intent of this control
+          {% elif cis_5_1_1_5_alt_daemon.stdout | trim != '' %}
+          COMPLIANT: alternative remote syslog daemon installed ({{ cis_5_1_1_5_alt_daemon.stdout | trim }}) — verify it is actively forwarding logs offhost
+          {% else %}
+          NON-COMPLIANT: no remote logging mechanism detected (no syslog @remote entry, no Splunk forwarder, no rsyslog/syslog-ng)
+          {% endif %}
+
+    - name: "5.1.1.5 | AUDIT | Show syslog remote forwarding entries"
+      ansible.builtin.debug:
+        msg: "{{ ['syslog remote forwarding entries:'] + cis_5_1_1_5_syslog_remote.stdout_lines }}"
+      when: cis_5_1_1_5_syslog_remote.stdout | trim != ''
+
+    - name: "5.1.1.5 | REMEDIATE | Add remote log host entry to syslog.conf"
+      ansible.builtin.lineinfile:
+        path: /etc/syslog.conf
+        regexp: '^\*\.\*\s+@'
+        line: "*.* @{{ freebsd_cis_syslog_remote_host }}"
+        create: false
+      when:
+        - freebsd_cis_remediate | bool
+        - not cis_5_1_1_5_remote_configured
+        - freebsd_cis_syslog_remote_host | length > 0
+      notify: restart syslogd
+
+    - name: "5.1.1.5 | REMEDIATE | Warn — no remote logging and freebsd_cis_syslog_remote_host is unset"
+      ansible.builtin.debug:
+        msg: >-
+          REMEDIATION SKIPPED: no remote logging detected but freebsd_cis_syslog_remote_host is not set.
+          Configure syslog remote forwarding, install Splunk UF, or set freebsd_cis_syslog_remote_host
+          to enable automated remediation.
+      when:
+        - freebsd_cis_remediate | bool
+        - not cis_5_1_1_5_remote_configured
+        - freebsd_cis_syslog_remote_host | length == 0
+
+# ---
+
+- name: "5.1.1.6 | Ensure rsyslog is not configured to receive logs from a remote client"
+  when: "'5.1.1.6' not in active_exceptions"
+  tags: [rule_5.1.1.6, level1, section_5, manual]
+  block:
+    - name: "5.1.1.6 | AUDIT | Check syslogd_flags for -s flag"
+      ansible.builtin.command: sysrc -q -n syslogd_flags
+      register: cis_5_1_1_6_flags
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "5.1.1.6 | AUDIT | Evaluate -s flag presence"
+      ansible.builtin.set_fact:
+        cis_5_1_1_6_secure: "{{ '-s' in (cis_5_1_1_6_flags.stdout | default('')) }}"
+
+    - name: "5.1.1.6 | AUDIT | Report syslogd remote receive state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: syslogd_flags contains -s — not accepting remote logs'
+             if cis_5_1_1_6_secure
+             else 'NON-COMPLIANT: syslogd_flags does not contain -s — may accept remote logs' }}
+
+    - name: "5.1.1.6 | REMEDIATE | Add -s flag to syslogd_flags"
+      ansible.builtin.command: sysrc syslogd_flags+=" -s"
+      when:
+        - freebsd_cis_remediate | bool
+        - not cis_5_1_1_6_secure
+      changed_when: true
+      notify: restart syslogd
+
+# =============================================================
+# 5.1.2 Ensure newsyslog is configured
+# =============================================================
+
+- name: "5.1.2 | Ensure newsyslog is configured"
+  when: "'5.1.2' not in active_exceptions"
+  tags: [rule_5.1.2, level1, section_5, manual]
+  block:
+    - name: "5.1.2 | AUDIT | Check newsyslog.conf exists"
+      ansible.builtin.stat:
+        path: /etc/newsyslog.conf
+      register: cis_5_1_2_newsyslog
+      check_mode: false
+
+    - name: "5.1.2 | AUDIT | Report newsyslog.conf state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: /etc/newsyslog.conf exists — review content manually to verify rotation meets site policy'
+             if cis_5_1_2_newsyslog.stat.exists
+             else 'NON-COMPLIANT: /etc/newsyslog.conf does not exist — log rotation is not configured' }}
+
+# =============================================================
+# 5.1.3 Ensure all logfiles have appropriate access configured
+# =============================================================
+
+- name: "5.1.3 | Ensure all logfiles have appropriate access configured"
+  when: "'5.1.3' not in active_exceptions"
+  tags: [rule_5.1.3, level1, section_5, manual]
+  block:
+
+    - name: "5.1.3 | AUDIT | Find log files with world-readable permissions"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        find /var/log -maxdepth 1 -type f -perm /o+r -exec stat -Lf "%N %Lp %Su %Sg" {} + 2>/dev/null | head -40 || true
+      register: cis_5_1_3_world_read
+      changed_when: cis_5_1_3_world_read.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+
+    - name: "5.1.3 | AUDIT | Find log files not owned by root"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        find /var/log -maxdepth 1 -type f ! -user root -exec stat -Lf "%N %Su %Sg" {} + 2>/dev/null | head -40 || true
+      register: cis_5_1_3_owner
+      changed_when: cis_5_1_3_owner.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+
+    - name: "5.1.3 | AUDIT | Report log file access state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: no obviously mis-permissioned log files found in /var/log'
+             if (cis_5_1_3_world_read.stdout | trim == '') and (cis_5_1_3_owner.stdout | trim == '')
+             else 'NON-COMPLIANT: log files found with excessive permissions or wrong owner — review details' }}
+
+    - name: "5.1.3 | AUDIT | Show world-readable log files"
+      ansible.builtin.debug:
+        msg: "{{ ['World-readable log files:'] + cis_5_1_3_world_read.stdout_lines }}"
+      when: cis_5_1_3_world_read.stdout | trim != ''
+
+    - name: "5.1.3 | AUDIT | Show non-root-owned log files"
+      ansible.builtin.debug:
+        msg: "{{ ['Non-root-owned log files:'] + cis_5_1_3_owner.stdout_lines }}"
+      when: cis_5_1_3_owner.stdout | trim != ''
+
+    - name: "5.1.3 | REMEDIATE | Fix permissions on key log files"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        owner: root
+        group: wheel
+        mode: '0640'
+      loop: "{{ freebsd_cis_log_files_to_fix }}"
+      loop_control:
+        label: "{{ item }}"
+      when:
+        - freebsd_cis_remediate | bool
+        - freebsd_cis_log_files_to_fix | length > 0
+
+# =============================================================
+# 5.2 Configure System Accounting (auditd)
+# 5.2.1 Ensure auditing is enabled
+# =============================================================
+
+- name: "5.2.1.1 | Ensure auditd service is enabled"
+  when:
+    - "'5.2.1.1' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_5.2.1.1, level2, section_5, manual]
+  block:
+    - name: "5.2.1.1 | AUDIT | Check auditd_enable rc.conf setting"
+      ansible.builtin.command: sysrc -q -n auditd_enable
+      register: cis_5_2_1_1_auditd
+      changed_when: cis_5_2_1_1_auditd.stdout | trim | upper != 'YES'
+      failed_when: false
+      check_mode: false
+
+    - name: "5.2.1.1 | AUDIT | Report auditd enabled state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: auditd_enable is YES'
+             if cis_5_2_1_1_auditd.stdout | trim | upper == 'YES'
+             else 'NON-COMPLIANT: auditd_enable is not YES — kernel auditing will not start on boot' }}
+
+    - name: "5.2.1.1 | REMEDIATE | Enable and start auditd"
+      ansible.builtin.service:
+        name: auditd
+        state: started
+        enabled: true
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_1_1_auditd.stdout | trim | upper != 'YES'
+
+# =============================================================
+# 5.2.2 Configure Data Retention
+# =============================================================
+
+- name: "5.2.2.1 | Ensure audit log storage size is configured"
+  when:
+    - "'5.2.2.1' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_5.2.2.1, level2, section_5, manual]
+  block:
+    - name: "5.2.2.1 | AUDIT | Check filesz in audit_control"
+      ansible.builtin.command: grep "^filesz:" /etc/security/audit_control
+      register: cis_5_2_2_1_filesz
+      changed_when: cis_5_2_2_1_filesz.rc != 0
+      failed_when: false
+      check_mode: false
+
+    - name: "5.2.2.1 | AUDIT | Report filesz state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: filesz is configured — ' ~ cis_5_2_2_1_filesz.stdout
+             if cis_5_2_2_1_filesz.rc == 0
+             else 'NON-COMPLIANT: filesz directive not found in /etc/security/audit_control' }}
+
+    - name: "5.2.2.1 | REMEDIATE | Set filesz in audit_control"
+      ansible.builtin.lineinfile:
+        path: /etc/security/audit_control
+        regexp: '^filesz:'
+        line: "filesz:{{ freebsd_cis_audit_filesz }}"
+        create: false
+        backup: true
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_2_1_filesz.rc != 0
+
+# ---
+
+- name: "5.2.2.2 | Ensure audit logs are not automatically deleted"
+  when:
+    - "'5.2.2.2' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_5.2.2.2, level2, section_5, manual]
+  block:
+    - name: "5.2.2.2 | AUDIT | Check expire-after in audit_control"
+      ansible.builtin.command: grep "^expire-after:" /etc/security/audit_control
+      register: cis_5_2_2_2_expire
+      changed_when: cis_5_2_2_2_expire.rc != 0
+      failed_when: false
+      check_mode: false
+
+    - name: "5.2.2.2 | AUDIT | Report expire-after state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: expire-after is configured — ' ~ cis_5_2_2_2_expire.stdout
+             if cis_5_2_2_2_expire.rc == 0
+             else 'NON-COMPLIANT: expire-after directive not found in /etc/security/audit_control — logs may accumulate without bound' }}
+
+    - name: "5.2.2.2 | REMEDIATE | Set expire-after in audit_control"
+      ansible.builtin.lineinfile:
+        path: /etc/security/audit_control
+        regexp: '^expire-after:'
+        line: "expire-after:{{ freebsd_cis_audit_expire_after }}"
+        create: false
+        backup: true
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_2_2_expire.rc != 0
+
+# =============================================================
+# 5.2.3 Configure auditd rules
+# =============================================================
+
+- name: "5.2.3.1 | Ensure actions as another user are always logged"
+  when:
+    - "'5.2.3.1' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_5.2.3.1, level2, section_5, manual]
+  block:
+    - name: "5.2.3.1 | AUDIT | Check audit_control flags for aa"
+      ansible.builtin.command: grep "^flags:.*aa" /etc/security/audit_control
+      register: cis_5_2_3_1_flags
+      changed_when: cis_5_2_3_1_flags.rc != 0
+      failed_when: false
+      check_mode: false
+
+    - name: "5.2.3.1 | AUDIT | Report aa flag state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: audit flags include aa — ' ~ cis_5_2_3_1_flags.stdout
+             if cis_5_2_3_1_flags.rc == 0
+             else 'NON-COMPLIANT: aa flag not found in audit_control flags — sudo actions may not be audited' }}
+
+    - name: "5.2.3.1 | REMEDIATE | Add aa to audit_control flags"
+      ansible.builtin.replace:
+        path: /etc/security/audit_control
+        regexp: '^(flags:.*)$'
+        replace: '\1,aa'
+        backup: true
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_3_1_flags.rc != 0
+
+# ---
+
+- name: "5.2.3.2 | Ensure events that modify the sudo log file are collected"
+  when:
+    - "'5.2.3.2' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_5.2.3.2, level2, section_5, manual]
+  block:
+    - name: "5.2.3.2 | AUDIT | Check audit_control flags for file event classes"
+      ansible.builtin.command: grep "^flags:" /etc/security/audit_control
+      register: cis_5_2_3_2_flags
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "5.2.3.2 | AUDIT | Evaluate required file event flags"
+      ansible.builtin.set_fact:
+        cis_5_2_3_2_missing: >-
+          {{
+            ['fa', 'fc', 'fd', 'fm', 'fr', 'fw']
+            | reject('in', cis_5_2_3_2_flags.stdout | default(''))
+            | list
+          }}
+
+    - name: "5.2.3.2 | AUDIT | Report file event flags state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: all required file event flags present — ' ~ cis_5_2_3_2_flags.stdout
+             if cis_5_2_3_2_missing | length == 0
+             else 'NON-COMPLIANT: missing audit flags: ' ~ (cis_5_2_3_2_missing | join(', ')) }}
+
+    - name: "5.2.3.2 | REMEDIATE | Add missing file event flags to audit_control"
+      ansible.builtin.replace:
+        path: /etc/security/audit_control
+        regexp: '^(flags:.*)$'
+        replace: '\1,{{ cis_5_2_3_2_missing | join(",") }}'
+        backup: true
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_3_2_missing | length > 0
+
+# ---
+
+- name: "5.2.3.3 | Ensure use of privileged commands are collected"
+  when:
+    - "'5.2.3.3' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_5.2.3.3, level2, section_5, manual]
+  block:
+    - name: "5.2.3.3 | AUDIT | Check audit_control flags for pc"
+      ansible.builtin.command: grep "^flags:.*pc" /etc/security/audit_control
+      register: cis_5_2_3_3_flags
+      changed_when: cis_5_2_3_3_flags.rc != 0
+      failed_when: false
+      check_mode: false
+
+    - name: "5.2.3.3 | AUDIT | Report pc flag state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: audit flags include pc — ' ~ cis_5_2_3_3_flags.stdout
+             if cis_5_2_3_3_flags.rc == 0
+             else 'NON-COMPLIANT: pc flag not found in audit_control flags — privileged command use may not be audited' }}
+
+    - name: "5.2.3.3 | REMEDIATE | Add pc to audit_control flags"
+      ansible.builtin.replace:
+        path: /etc/security/audit_control
+        regexp: '^(flags:.*)$'
+        replace: '\1,pc'
+        backup: true
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_3_3_flags.rc != 0
+
+# ---
+
+- name: "5.2.3.4 | Ensure discretionary access control permission modification events are collected"
+  when:
+    - "'5.2.3.4' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_5.2.3.4, level2, section_5, manual]
+  block:
+    - name: "5.2.3.4 | AUDIT | Check audit_control flags for fm"
+      ansible.builtin.command: grep "^flags:.*fm" /etc/security/audit_control
+      register: cis_5_2_3_4_flags
+      changed_when: cis_5_2_3_4_flags.rc != 0
+      failed_when: false
+      check_mode: false
+
+    - name: "5.2.3.4 | AUDIT | Report fm flag state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: audit flags include fm — ' ~ cis_5_2_3_4_flags.stdout
+             if cis_5_2_3_4_flags.rc == 0
+             else 'NON-COMPLIANT: fm flag not found in audit_control flags — DAC permission modification events not collected' }}
+
+    - name: "5.2.3.4 | REMEDIATE | Add fm to audit_control flags"
+      ansible.builtin.replace:
+        path: /etc/security/audit_control
+        regexp: '^(flags:.*)$'
+        replace: '\1,fm'
+        backup: true
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_3_4_flags.rc != 0
+
+# ---
+
+- name: "5.2.3.5 | Ensure successful file system mounts are collected"
+  when:
+    - "'5.2.3.5' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_5.2.3.5, level2, section_5, manual]
+  block:
+    - name: "5.2.3.5 | AUDIT | Check audit_control flags for ad"
+      ansible.builtin.command: grep "^flags:.*ad" /etc/security/audit_control
+      register: cis_5_2_3_5_flags
+      changed_when: cis_5_2_3_5_flags.rc != 0
+      failed_when: false
+      check_mode: false
+
+    - name: "5.2.3.5 | AUDIT | Report ad flag state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: audit flags include ad — ' ~ cis_5_2_3_5_flags.stdout
+             if cis_5_2_3_5_flags.rc == 0
+             else 'NON-COMPLIANT: ad flag not found in audit_control flags — administrative events (including mounts) not collected' }}
+
+    - name: "5.2.3.5 | REMEDIATE | Add ad to audit_control flags"
+      ansible.builtin.replace:
+        path: /etc/security/audit_control
+        regexp: '^(flags:.*)$'
+        replace: '\1,ad'
+        backup: true
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_3_5_flags.rc != 0
+
+# ---
+
+- name: "5.2.3.6 | Ensure login and logout events are collected"
+  when:
+    - "'5.2.3.6' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_5.2.3.6, level2, section_5, manual]
+  block:
+    - name: "5.2.3.6 | AUDIT | Check audit_control flags for lo"
+      ansible.builtin.command: grep "^flags:.*lo" /etc/security/audit_control
+      register: cis_5_2_3_6_flags
+      changed_when: cis_5_2_3_6_flags.rc != 0
+      failed_when: false
+      check_mode: false
+
+    - name: "5.2.3.6 | AUDIT | Report lo flag state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: audit flags include lo — ' ~ cis_5_2_3_6_flags.stdout
+             if cis_5_2_3_6_flags.rc == 0
+             else 'NON-COMPLIANT: lo flag not found in audit_control flags — login/logout events not collected' }}
+
+    - name: "5.2.3.6 | REMEDIATE | Add lo to audit_control flags"
+      ansible.builtin.replace:
+        path: /etc/security/audit_control
+        regexp: '^(flags:.*)$'
+        replace: '\1,lo'
+        backup: true
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_3_6_flags.rc != 0
+
+# ---
+
+- name: "5.2.3.7 | Ensure file deletion events by users are collected"
+  when:
+    - "'5.2.3.7' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_5.2.3.7, level2, section_5, manual]
+  block:
+    - name: "5.2.3.7 | AUDIT | Check audit_control flags for fd"
+      ansible.builtin.command: grep "^flags:.*fd" /etc/security/audit_control
+      register: cis_5_2_3_7_flags
+      changed_when: cis_5_2_3_7_flags.rc != 0
+      failed_when: false
+      check_mode: false
+
+    - name: "5.2.3.7 | AUDIT | Report fd flag state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: audit flags include fd — ' ~ cis_5_2_3_7_flags.stdout
+             if cis_5_2_3_7_flags.rc == 0
+             else 'NON-COMPLIANT: fd flag not found in audit_control flags — file deletion events not collected' }}
+
+    - name: "5.2.3.7 | REMEDIATE | Add fd to audit_control flags"
+      ansible.builtin.replace:
+        path: /etc/security/audit_control
+        regexp: '^(flags:.*)$'
+        replace: '\1,fd'
+        backup: true
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_3_7_flags.rc != 0
+
+# ---
+
+- name: "5.2.3.8 | Ensure successful and unsuccessful attempts to use the usermod command are recorded"
+  when:
+    - "'5.2.3.8' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_5.2.3.8, level2, section_5, manual]
+  block:
+    - name: "5.2.3.8 | AUDIT | Check audit_control flags for ad (usermod)"
+      ansible.builtin.command: grep "^flags:.*ad" /etc/security/audit_control
+      register: cis_5_2_3_8_flags
+      changed_when: cis_5_2_3_8_flags.rc != 0
+      failed_when: false
+      check_mode: false
+
+    - name: "5.2.3.8 | AUDIT | Report ad flag state for usermod coverage"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: audit flags include ad — usermod events covered by administrative class'
+             if cis_5_2_3_8_flags.rc == 0
+             else 'NON-COMPLIANT: ad flag not found in audit_control flags — usermod events not collected' }}
+
+    - name: "5.2.3.8 | REMEDIATE | Add ad to audit_control flags for usermod coverage"
+      ansible.builtin.replace:
+        path: /etc/security/audit_control
+        regexp: '^(flags:.*)$'
+        replace: '\1,ad'
+        backup: true
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_3_8_flags.rc != 0
+
+# =============================================================
+# 5.2.4 Configure auditd file access
+# =============================================================
+
+- name: "5.2.4.1 | Ensure the audit log directory is 0750 or more restrictive"
+  when:
+    - "'5.2.4.1' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_5.2.4.1, level2, section_5, manual]
+  block:
+    - name: "5.2.4.1 | AUDIT | Get audit log directory path"
+      ansible.builtin.shell: "awk -F: '/^dir/ {print $2}' /etc/security/audit_control"
+      register: cis_5_2_4_1_dir
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "5.2.4.1 | AUDIT | Check audit log directory permissions"
+      ansible.builtin.stat:
+        path: "{{ cis_5_2_4_1_dir.stdout | trim }}"
+      register: cis_5_2_4_1_stat
+      check_mode: false
+      when: cis_5_2_4_1_dir.stdout | trim != ''
+
+    - name: "5.2.4.1 | AUDIT | Report audit log directory not found"
+      ansible.builtin.debug:
+        msg: "NON-COMPLIANT: could not determine audit log directory from audit_control"
+      when: cis_5_2_4_1_dir.stdout | trim == ''
+
+    - name: "5.2.4.1 | AUDIT | Report audit log directory permissions"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: ' ~ cis_5_2_4_1_dir.stdout | trim ~ ' has mode '
+             ~ cis_5_2_4_1_stat.stat.mode ~ ' (0750 or more restrictive)'
+             if (cis_5_2_4_1_stat.stat.mode | string) <= '0750'
+             else 'NON-COMPLIANT: ' ~ cis_5_2_4_1_dir.stdout | trim
+                  ~ ' has mode ' ~ cis_5_2_4_1_stat.stat.mode
+                  ~ ' — must be 0750 or more restrictive' }}
+      when:
+        - cis_5_2_4_1_dir.stdout | trim != ''
+        - cis_5_2_4_1_stat is defined
+
+    - name: "5.2.4.1 | REMEDIATE | Set audit log directory to 0750"
+      ansible.builtin.file:
+        path: "{{ cis_5_2_4_1_dir.stdout | trim }}"
+        mode: 'g-w,o-rwx'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_4_1_dir.stdout | trim != ''
+        - cis_5_2_4_1_stat is defined
+        - (cis_5_2_4_1_stat.stat.mode | string) > '0750'
+
+# ---
+
+- name: "5.2.4.2 | Ensure audit log files are mode 0640 or less permissive"
+  when:
+    - "'5.2.4.2' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_5.2.4.2, level2, section_5, manual]
+  block:
+    - name: "5.2.4.2 | AUDIT | Get audit log directory path"
+      ansible.builtin.shell: "awk -F: '/^dir/ {print $2}' /etc/security/audit_control"
+      register: cis_5_2_4_2_dir
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "5.2.4.2 | AUDIT | Find over-permissive audit log files"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        find "{{ cis_5_2_4_2_dir.stdout | trim }}" -type f
+        \( ! -perm 600 -a ! -perm 0400 -a ! -perm 0200 -a ! -perm 0000
+           -a ! -perm 0640 -a ! -perm 0440 -a ! -perm 0040 \)
+        -exec stat -Lf "%N %Lp" {} + 2>/dev/null | head -20 || true
+      register: cis_5_2_4_2_files
+      changed_when: cis_5_2_4_2_files.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+      when: cis_5_2_4_2_dir.stdout | trim != ''
+
+    - name: "5.2.4.2 | AUDIT | Report audit log file permissions"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: all audit log files are 0640 or more restrictive'
+             if (cis_5_2_4_2_files.stdout | default('')) | trim == ''
+             else 'NON-COMPLIANT: over-permissive audit log files found' }}
+
+    - name: "5.2.4.2 | AUDIT | Show over-permissive audit log files"
+      ansible.builtin.debug:
+        msg: "{{ ['Over-permissive audit log files:'] + cis_5_2_4_2_files.stdout_lines }}"
+      when: (cis_5_2_4_2_files.stdout | default('')) | trim != ''
+
+    - name: "5.2.4.2 | REMEDIATE | Fix over-permissive audit log file modes"
+      ansible.builtin.shell: >-
+        find "{{ cis_5_2_4_2_dir.stdout | trim }}" -type f
+        \( ! -perm 600 -a ! -perm 0400 -a ! -perm 0200 -a ! -perm 0000
+           -a ! -perm 0640 -a ! -perm 0440 -a ! -perm 0040 \)
+        -exec chmod u-x,g-wx,o-rwx {} + 2>/dev/null || true
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_4_2_dir.stdout | trim != ''
+        - (cis_5_2_4_2_files.stdout | default('')) | trim != ''
+      changed_when: true
+
+# ---
+
+- name: "5.2.4.3 | Ensure only authorized users own audit log files"
+  when:
+    - "'5.2.4.3' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_5.2.4.3, level2, section_5, manual]
+  block:
+    - name: "5.2.4.3 | AUDIT | Get audit log directory path"
+      ansible.builtin.shell: "awk -F: '/^dir/ {print $2}' /etc/security/audit_control"
+      register: cis_5_2_4_3_dir
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "5.2.4.3 | AUDIT | Find non-root-owned audit log files"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        find "{{ cis_5_2_4_3_dir.stdout | trim }}" -type f ! -user root
+        -exec stat -Lf "%N %Su" {} + 2>/dev/null | head -20 || true
+      register: cis_5_2_4_3_owner
+      changed_when: cis_5_2_4_3_owner.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+      when: cis_5_2_4_3_dir.stdout | trim != ''
+
+    - name: "5.2.4.3 | AUDIT | Report audit log file ownership"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: all audit log files are owned by root'
+             if (cis_5_2_4_3_owner.stdout | default('')) | trim == ''
+             else 'NON-COMPLIANT: audit log files found not owned by root' }}
+
+    - name: "5.2.4.3 | REMEDIATE | Fix non-root-owned audit log files"
+      ansible.builtin.shell: >-
+        find "{{ cis_5_2_4_3_dir.stdout | trim }}" -type f ! -user root
+        -exec chown root {} + 2>/dev/null || true
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_4_3_dir.stdout | trim != ''
+        - (cis_5_2_4_3_owner.stdout | default('')) | trim != ''
+      changed_when: true
+
+# ---
+
+- name: "5.2.4.4 | Ensure only authorized groups are assigned ownership of audit log files"
+  when:
+    - "'5.2.4.4' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_5.2.4.4, level2, section_5, manual]
+  block:
+    - name: "5.2.4.4 | AUDIT | Get audit log directory path"
+      ansible.builtin.shell: "awk -F: '/^dir/ {print $2}' /etc/security/audit_control"
+      register: cis_5_2_4_4_dir
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "5.2.4.4 | AUDIT | Find audit log files with wrong group"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        stat -L -f "%Sg" "{{ cis_5_2_4_4_dir.stdout | trim }}"/* 2>/dev/null
+        | grep -Ev '^(audit|wheel)' | head -20 || true
+      register: cis_5_2_4_4_group
+      changed_when: cis_5_2_4_4_group.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+      when: cis_5_2_4_4_dir.stdout | trim != ''
+
+    - name: "5.2.4.4 | AUDIT | Report audit log file group ownership"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: all audit log files belong to audit or wheel group'
+             if (cis_5_2_4_4_group.stdout | default('')) | trim == ''
+             else 'NON-COMPLIANT: audit log files found with unauthorized group ownership' }}
+
+    - name: "5.2.4.4 | REMEDIATE | Set audit log directory group to audit"
+      ansible.builtin.file:
+        path: "{{ cis_5_2_4_4_dir.stdout | trim }}"
+        group: audit
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_4_4_dir.stdout | trim != ''
+        - (cis_5_2_4_4_group.stdout | default('')) | trim != ''
+
+# ---
+
+- name: "5.2.4.5 | Ensure audit configuration files are restrictive"
+  when:
+    - "'5.2.4.5' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_5.2.4.5, level2, section_5, manual]
+  block:
+    - name: "5.2.4.5 | AUDIT | Check audit_warn mode"
+      ansible.builtin.stat:
+        path: /etc/security/audit_warn
+      register: cis_5_2_4_5_warn
+      check_mode: false
+
+    - name: "5.2.4.5 | AUDIT | Check audit_control and audit_user modes"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        stat -Lf '%N %Lp' /etc/security/audit_control /etc/security/audit_user 2>/dev/null
+        | grep -Ev -- '^\s*\S+\s+600\s*$' | head -10 || true
+      register: cis_5_2_4_5_control
+      changed_when: cis_5_2_4_5_control.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+
+    - name: "5.2.4.5 | AUDIT | Check audit_event and audit_class modes"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        stat -Lf '%N %Lp' /etc/security/audit_event /etc/security/audit_class 2>/dev/null
+        | grep -Ev -- '^\s*\S+\s+444\s*$' | head -10 || true
+      register: cis_5_2_4_5_class
+      changed_when: cis_5_2_4_5_class.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+
+    - name: "5.2.4.5 | AUDIT | Report audit config file permissions"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: audit configuration files have correct modes'
+             if (cis_5_2_4_5_control.stdout | trim == '') and (cis_5_2_4_5_class.stdout | trim == '')
+             else 'NON-COMPLIANT: audit configuration files have incorrect modes — review details' }}
+
+    - name: "5.2.4.5 | AUDIT | Show control/user mismatches"
+      ansible.builtin.debug:
+        msg: "{{ ['Files with incorrect mode (expected 600):'] + cis_5_2_4_5_control.stdout_lines }}"
+      when: cis_5_2_4_5_control.stdout | trim != ''
+
+    - name: "5.2.4.5 | AUDIT | Show event/class mismatches"
+      ansible.builtin.debug:
+        msg: "{{ ['Files with incorrect mode (expected 444):'] + cis_5_2_4_5_class.stdout_lines }}"
+      when: cis_5_2_4_5_class.stdout | trim != ''
+
+    - name: "5.2.4.5 | REMEDIATE | Set audit_event and audit_class to 444"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        mode: '0444'
+      loop:
+        - /etc/security/audit_event
+        - /etc/security/audit_class
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_4_5_class.stdout | trim != ''
+
+    - name: "5.2.4.5 | REMEDIATE | Set audit_warn to 500"
+      ansible.builtin.file:
+        path: /etc/security/audit_warn
+        mode: '0500'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_4_5_warn.stat.exists
+        - (cis_5_2_4_5_warn.stat.mode | default('0500')) != '0500'
+
+    - name: "5.2.4.5 | REMEDIATE | Set audit_control and audit_user to 600"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        mode: '0600'
+      loop:
+        - /etc/security/audit_control
+        - /etc/security/audit_user
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_4_5_control.stdout | trim != ''
+
+# ---
+
+- name: "5.2.4.6 | Ensure audit configuration files are owned by root"
+  when:
+    - "'5.2.4.6' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_5.2.4.6, level2, section_5, manual]
+  block:
+    - name: "5.2.4.6 | AUDIT | Find audit config files not owned by root"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        find /etc/security -type f -name 'audit*' ! -user root 2>/dev/null | head -10 || true
+      register: cis_5_2_4_6_owner
+      changed_when: cis_5_2_4_6_owner.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+
+    - name: "5.2.4.6 | AUDIT | Report audit config file ownership"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: all audit configuration files are owned by root'
+             if cis_5_2_4_6_owner.stdout | trim == ''
+             else 'NON-COMPLIANT: audit config files not owned by root: ' ~ cis_5_2_4_6_owner.stdout }}
+
+    - name: "5.2.4.6 | REMEDIATE | Fix audit config file ownership"
+      ansible.builtin.shell: >-
+        find /etc/security -type f -name 'audit*' ! -user root -exec chown root {} + 2>/dev/null || true
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_4_6_owner.stdout | trim != ''
+      changed_when: true
+
+# ---
+
+- name: "5.2.4.7 | Ensure audit configuration files belong to group wheel"
+  when:
+    - "'5.2.4.7' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_5.2.4.7, level2, section_5, manual]
+  block:
+    - name: "5.2.4.7 | AUDIT | Find audit config files not in group wheel"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        find /etc/security -type f -name 'audit*' ! -group wheel 2>/dev/null | head -10 || true
+      register: cis_5_2_4_7_group
+      changed_when: cis_5_2_4_7_group.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+
+    - name: "5.2.4.7 | AUDIT | Report audit config file group"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: all audit configuration files belong to group wheel'
+             if cis_5_2_4_7_group.stdout | trim == ''
+             else 'NON-COMPLIANT: audit config files not in group wheel: ' ~ cis_5_2_4_7_group.stdout }}
+
+    - name: "5.2.4.7 | REMEDIATE | Fix audit config file group"
+      ansible.builtin.shell: >-
+        find /etc/security -type f -name 'audit*' ! -group wheel -exec chgrp wheel {} + 2>/dev/null || true
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_4_7_group.stdout | trim != ''
+      changed_when: true
+
+# ---
+
+- name: "5.2.4.8 | Ensure audit tools are 555 or more restrictive"
+  when:
+    - "'5.2.4.8' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_5.2.4.8, level2, section_5, manual]
+  block:
+    - name: "5.2.4.8 | AUDIT | Check audit tool modes"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        stat -Lf '%N %Lp' /usr/sbin/*audit* 2>/dev/null
+        | grep -Ev -- '^\s*\S+\s+([0-5][0,1,4,5][0,1,4,5])\s*$' | head -10 || true
+      register: cis_5_2_4_8_mode
+      changed_when: cis_5_2_4_8_mode.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+
+    - name: "5.2.4.8 | AUDIT | Report audit tool modes"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: all audit tools are 555 or more restrictive'
+             if cis_5_2_4_8_mode.stdout | trim == ''
+             else 'NON-COMPLIANT: audit tools with over-permissive mode found' }}
+
+    - name: "5.2.4.8 | REMEDIATE | Set audit tools to 555"
+      ansible.builtin.shell: chmod 555 /usr/sbin/*audit* 2>/dev/null || true
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_4_8_mode.stdout | trim != ''
+      changed_when: true
+
+# ---
+
+- name: "5.2.4.9 | Ensure audit tools are owned by root"
+  when:
+    - "'5.2.4.9' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_5.2.4.9, level2, section_5, manual]
+  block:
+    - name: "5.2.4.9 | AUDIT | Find audit tools not owned by root"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        stat -Lf '%N %Su' /usr/sbin/*audit* 2>/dev/null
+        | grep -Ev -- '^\s*\S+\s+root\s*$' | head -10 || true
+      register: cis_5_2_4_9_owner
+      changed_when: cis_5_2_4_9_owner.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+
+    - name: "5.2.4.9 | AUDIT | Report audit tool ownership"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: all audit tools are owned by root'
+             if cis_5_2_4_9_owner.stdout | trim == ''
+             else 'NON-COMPLIANT: audit tools not owned by root: ' ~ cis_5_2_4_9_owner.stdout }}
+
+    - name: "5.2.4.9 | REMEDIATE | Fix audit tool ownership"
+      ansible.builtin.shell: chown root /usr/sbin/*audit* 2>/dev/null || true
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_4_9_owner.stdout | trim != ''
+      changed_when: true
+
+# ---
+
+- name: "5.2.4.10 | Ensure audit tools belong to group wheel"
+  when:
+    - "'5.2.4.10' not in active_exceptions"
+    - freebsd_cis_level | int >= 2
+  tags: [rule_5.2.4.10, level2, section_5, manual]
+  block:
+    - name: "5.2.4.10 | AUDIT | Check audit tool ownership and group"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        stat -Lf '%N %Lp %Su %Sg' /usr/sbin/*audit* 2>/dev/null
+        | grep -Ev -- '^\s*\S+\s+([0-5][0,1,4,5][0,1,4,5])\s+root\s+wheel\s*$' | head -10 || true
+      register: cis_5_2_4_10_group
+      changed_when: cis_5_2_4_10_group.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+
+    - name: "5.2.4.10 | AUDIT | Report audit tool group"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: all audit tools are owned root:wheel at mode 555 or more restrictive'
+             if cis_5_2_4_10_group.stdout | trim == ''
+             else 'NON-COMPLIANT: audit tools with wrong owner/group/mode found' }}
+
+    - name: "5.2.4.10 | REMEDIATE | Fix audit tool owner and group"
+      ansible.builtin.shell: chown root:wheel /usr/sbin/*audit* && chmod 555 /usr/sbin/*audit* 2>/dev/null || true
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_4_10_group.stdout | trim != ''
+      changed_when: true
+
+# =============================================================
+# 5.3 Configure Integrity Checking
+# =============================================================
+
+- name: "5.3.1 | Ensure AIDE is installed"
+  when: "'5.3.1' not in active_exceptions"
+  tags: [rule_5.3.1, level1, section_5, manual]
+  block:
+    - name: "5.3.1 | AUDIT | Check if aide package is installed"
+      ansible.builtin.command: pkg query -g %n 'aide*'
+      register: cis_5_3_1_aide
+      changed_when: cis_5_3_1_aide.rc != 0
+      failed_when: false
+      check_mode: false
+
+    - name: "5.3.1 | AUDIT | Report AIDE installation state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: AIDE is installed — ' ~ cis_5_3_1_aide.stdout
+             if cis_5_3_1_aide.rc == 0
+             else 'NON-COMPLIANT: AIDE is not installed — file integrity monitoring is not available' }}
+
+    - name: "5.3.1 | REMEDIATE | Install AIDE"
+      ansible.builtin.command: pkg install -y aide
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_3_1_aide.rc != 0
+      changed_when: true
+
+    - name: "5.3.1 | REMEDIATE | Initialize AIDE database"
+      ansible.builtin.command: aide --init
+      args:
+        creates: /var/lib/aide/aide.db.new.gz
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_3_1_aide.rc != 0
+
+    - name: "5.3.1 | REMEDIATE | Move AIDE database into place"
+      ansible.builtin.command: mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz
+      args:
+        creates: /var/lib/aide/aide.db.gz
+        removes: /var/lib/aide/aide.db.new.gz
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_3_1_aide.rc != 0
+
+# ---
+
+- name: "5.3.2 | Ensure filesystem integrity is regularly checked"
+  when: "'5.3.2' not in active_exceptions"
+  tags: [rule_5.3.2, level1, section_5, manual]
+  block:
+    - name: "5.3.2 | AUDIT | Check root crontab for aide --check or --update"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        crontab -l -u root 2>/dev/null
+        | grep -Es 'aide[[:space:]]+(--?[A-Za-z]+[[:space:]]+)*(--check|--update)\b' || true
+      register: cis_5_3_2_cron
+      changed_when: cis_5_3_2_cron.stdout | trim == ''
+      failed_when: false
+      check_mode: false
+
+    - name: "5.3.2 | AUDIT | Report AIDE cron state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: AIDE integrity check is scheduled in root crontab — ' ~ cis_5_3_2_cron.stdout
+             if cis_5_3_2_cron.stdout | trim != ''
+             else 'NON-COMPLIANT: no AIDE cron job found in root crontab — filesystem integrity is not periodically verified' }}
+
+    - name: "5.3.2 | REMEDIATE | Add AIDE daily check to root crontab"
+      ansible.builtin.cron:
+        name: "CIS 5.3.2 AIDE daily filesystem integrity check"
+        user: root
+        special_time: daily
+        job: "/usr/bin/lockf -s -t 0 /var/run/aide.lock /usr/local/bin/aide --check"
+        state: present
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_3_2_cron.stdout | trim == ''

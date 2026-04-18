@@ -17,3 +17,9 @@
         name: "{{ freebsd_cis_sshd_service }}"
         state: reloaded
       failed_when: false  # acceptable: sshd may not be running
+
+- name: restart syslogd
+  ansible.builtin.service:
+    name: syslogd
+    state: restarted
+  failed_when: false  # acceptable: syslogd may not currently be running
