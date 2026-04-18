@@ -23,6 +23,7 @@
         not cis_4_1_1_1_crontab.stat.exists or
         cis_4_1_1_1_crontab.stat.pw_name != 'root' or
         cis_4_1_1_1_crontab.stat.gr_name != 'wheel' or
+        ((cis_4_1_1_1_crontab.stat.mode | int(base=8)) // 64) % 8 not in [4, 6] or
         (cis_4_1_1_1_crontab.stat.mode | int(base=8)) % 64 != 0
       failed_when: false
       check_mode: false
@@ -49,6 +50,7 @@
         - cis_4_1_1_1_crontab.stat.exists
         - cis_4_1_1_1_crontab.stat.pw_name != 'root' or
           cis_4_1_1_1_crontab.stat.gr_name != 'wheel' or
+          ((cis_4_1_1_1_crontab.stat.mode | int(base=8)) // 64) % 8 not in [4, 6] or
           (cis_4_1_1_1_crontab.stat.mode | int(base=8)) % 64 != 0
 
 # ---
@@ -66,6 +68,7 @@
         not cis_4_1_1_2_crond.stat.exists or
         cis_4_1_1_2_crond.stat.pw_name != 'root' or
         cis_4_1_1_2_crond.stat.gr_name != 'wheel' or
+        ((cis_4_1_1_2_crond.stat.mode | int(base=8)) // 64) % 8 != 7 or
         (cis_4_1_1_2_crond.stat.mode | int(base=8)) % 64 != 0
       failed_when: false
       check_mode: false
@@ -92,6 +95,7 @@
         - cis_4_1_1_2_crond.stat.exists
         - cis_4_1_1_2_crond.stat.pw_name != 'root' or
           cis_4_1_1_2_crond.stat.gr_name != 'wheel' or
+          ((cis_4_1_1_2_crond.stat.mode | int(base=8)) // 64) % 8 != 7 or
           (cis_4_1_1_2_crond.stat.mode | int(base=8)) % 64 != 0
 
 # ---
@@ -120,13 +124,15 @@
              cis_4_1_1_3_allow.stat.pw_name == 'root' and
              cis_4_1_1_3_allow.stat.gr_name == 'wheel' and
              (cis_4_1_1_3_allow.stat.mode | int(base=8)) % 8 == 0 and
-             ((cis_4_1_1_3_allow.stat.mode | int(base=8)) // 8) % 8 <= 4 }}
+             ((cis_4_1_1_3_allow.stat.mode | int(base=8)) // 8) % 8 in [0, 4] and
+             ((cis_4_1_1_3_allow.stat.mode | int(base=8)) // 64) % 8 in [4, 6] }}
         cis_4_1_1_3_deny_ok: >-
           {{ not cis_4_1_1_3_deny.stat.exists or
              (cis_4_1_1_3_deny.stat.pw_name == 'root' and
               cis_4_1_1_3_deny.stat.gr_name == 'wheel' and
               (cis_4_1_1_3_deny.stat.mode | int(base=8)) % 8 == 0 and
-              ((cis_4_1_1_3_deny.stat.mode | int(base=8)) // 8) % 8 <= 4) }}
+              ((cis_4_1_1_3_deny.stat.mode | int(base=8)) // 8) % 8 in [0, 4] and
+              ((cis_4_1_1_3_deny.stat.mode | int(base=8)) // 64) % 8 in [4, 6]) }}
       changed_when: not (cis_4_1_1_3_allow_ok | bool) or not (cis_4_1_1_3_deny_ok | bool)
       check_mode: false
 
@@ -199,13 +205,15 @@
              cis_4_1_2_1_allow.stat.pw_name in ['root', 'daemon'] and
              cis_4_1_2_1_allow.stat.gr_name == 'wheel' and
              (cis_4_1_2_1_allow.stat.mode | int(base=8)) % 8 == 0 and
-             ((cis_4_1_2_1_allow.stat.mode | int(base=8)) // 8) % 8 <= 4 }}
+             ((cis_4_1_2_1_allow.stat.mode | int(base=8)) // 8) % 8 in [0, 4] and
+             ((cis_4_1_2_1_allow.stat.mode | int(base=8)) // 64) % 8 in [4, 6] }}
         cis_4_1_2_1_deny_ok: >-
           {{ not cis_4_1_2_1_deny.stat.exists or
              (cis_4_1_2_1_deny.stat.pw_name in ['root', 'daemon'] and
               cis_4_1_2_1_deny.stat.gr_name == 'wheel' and
               (cis_4_1_2_1_deny.stat.mode | int(base=8)) % 8 == 0 and
-              ((cis_4_1_2_1_deny.stat.mode | int(base=8)) // 8) % 8 <= 4) }}
+              ((cis_4_1_2_1_deny.stat.mode | int(base=8)) // 8) % 8 in [0, 4] and
+              ((cis_4_1_2_1_deny.stat.mode | int(base=8)) // 64) % 8 in [4, 6]) }}
       changed_when: not (cis_4_1_2_1_allow_ok | bool) or not (cis_4_1_2_1_deny_ok | bool)
       check_mode: false
 
@@ -277,7 +285,10 @@
     ('4.2.19' not in active_exceptions) or
     ('4.2.20' not in active_exceptions) or
     ('4.2.21' not in active_exceptions)
-  tags: [section_4]
+  tags: [rule_4.2.4, rule_4.2.5, rule_4.2.6, rule_4.2.7, rule_4.2.8, rule_4.2.9,
+         rule_4.2.10, rule_4.2.11, rule_4.2.12, rule_4.2.13, rule_4.2.14, rule_4.2.15,
+         rule_4.2.16, rule_4.2.17, rule_4.2.18, rule_4.2.19, rule_4.2.20, rule_4.2.21,
+         section_4]
   ansible.builtin.command:
     argv:
       - "{{ freebsd_cis_sshd_bin }}"
@@ -296,6 +307,29 @@
   check_mode: false
 
 - name: "4.2 | GATHER | Report sshd -T query status"
+  when: >-
+    ('4.2.4' not in active_exceptions) or
+    ('4.2.5' not in active_exceptions) or
+    ('4.2.6' not in active_exceptions) or
+    ('4.2.7' not in active_exceptions) or
+    ('4.2.8' not in active_exceptions) or
+    ('4.2.9' not in active_exceptions) or
+    ('4.2.10' not in active_exceptions) or
+    ('4.2.11' not in active_exceptions) or
+    ('4.2.12' not in active_exceptions) or
+    ('4.2.13' not in active_exceptions) or
+    ('4.2.14' not in active_exceptions) or
+    ('4.2.15' not in active_exceptions) or
+    ('4.2.16' not in active_exceptions) or
+    ('4.2.17' not in active_exceptions) or
+    ('4.2.18' not in active_exceptions) or
+    ('4.2.19' not in active_exceptions) or
+    ('4.2.20' not in active_exceptions) or
+    ('4.2.21' not in active_exceptions)
+  tags: [rule_4.2.4, rule_4.2.5, rule_4.2.6, rule_4.2.7, rule_4.2.8, rule_4.2.9,
+         rule_4.2.10, rule_4.2.11, rule_4.2.12, rule_4.2.13, rule_4.2.14, rule_4.2.15,
+         rule_4.2.16, rule_4.2.17, rule_4.2.18, rule_4.2.19, rule_4.2.20, rule_4.2.21,
+         section_4]
   ansible.builtin.debug:
     msg: >-
       {{ 'NON-COMPLIANT: sshd -T query failed (rc=' ~ cis_4_2_sshd_config_dump.rc ~
@@ -319,6 +353,7 @@
         not cis_4_2_1_sshdcfg.stat.exists or
         cis_4_2_1_sshdcfg.stat.pw_name != 'root' or
         cis_4_2_1_sshdcfg.stat.gr_name != 'wheel' or
+        ((cis_4_2_1_sshdcfg.stat.mode | int(base=8)) // 64) % 8 not in [4, 6] or
         (cis_4_2_1_sshdcfg.stat.mode | int(base=8)) % 64 != 0
       failed_when: false
       check_mode: false
@@ -345,6 +380,7 @@
         - cis_4_2_1_sshdcfg.stat.exists
         - cis_4_2_1_sshdcfg.stat.pw_name != 'root' or
           cis_4_2_1_sshdcfg.stat.gr_name != 'wheel' or
+          ((cis_4_2_1_sshdcfg.stat.mode | int(base=8)) // 64) % 8 not in [4, 6] or
           (cis_4_2_1_sshdcfg.stat.mode | int(base=8)) % 64 != 0
 
 # ---
@@ -414,6 +450,7 @@
         - freebsd_cis_remediate | bool
         - item.stat.pw_name != 'root' or
           item.stat.gr_name != 'wheel' or
+          ((item.stat.mode | int(base=8)) // 64) % 8 not in [4, 6] or
           (item.stat.mode | int(base=8)) % 64 != 0
 
 # ---
@@ -484,6 +521,7 @@
         - freebsd_cis_remediate | bool
         - item.stat.pw_name != 'root' or
           item.stat.gr_name != 'wheel' or
+          ((item.stat.mode | int(base=8)) // 64) % 8 not in [4, 6] or
           (item.stat.mode | int(base=8)) % 8 not in [0, 4] or
           ((item.stat.mode | int(base=8)) // 8) % 8 not in [0, 4]
 
@@ -853,6 +891,7 @@
              | list | first | default('kexalgorithms')
              | regex_replace('^kexalgorithms\s+', '') | trim).split(',')
              | map('trim') | list }}
+      changed_when: false
       check_mode: false
 
     - name: "4.2.11 | AUDIT | Check for weak KexAlgorithms"
@@ -979,6 +1018,7 @@
              | list | first | default('macs')
              | regex_replace('^macs\s+', '') | trim).split(',')
              | map('trim') | list }}
+      changed_when: false
       check_mode: false
 
     - name: "4.2.14 | AUDIT | Check for weak MACs"
@@ -1110,7 +1150,7 @@
       ansible.builtin.set_fact:
         cis_4_2_17_start: "{{ cis_4_2_17_val.split(':')[0] | int }}"
         cis_4_2_17_rate: "{{ cis_4_2_17_val.split(':')[1] | int if ':' in cis_4_2_17_val else 0 }}"
-        cis_4_2_17_full: "{{ cis_4_2_17_val.split(':')[2] | int if cis_4_2_17_val.split(':') | length > 2 else 100 }}"
+        cis_4_2_17_full: "{{ cis_4_2_17_val.split(':')[2] | int if cis_4_2_17_val.split(':') | length > 2 else (cis_4_2_17_val.split(':')[0] | int) }}"
       changed_when: >-
         (cis_4_2_17_start | int) > 10 or
         (cis_4_2_17_rate | int) > 30 or
@@ -1411,7 +1451,7 @@
     - name: "4.3.4 | AUDIT | Check for NOPASSWD in sudoers"
       ansible.builtin.command: grep -r '^[^#].*NOPASSWD' /usr/local/etc/sudoers
       register: cis_4_3_4_nopasswd
-      changed_when: cis_4_3_4_nopasswd.rc == 0
+      changed_when: cis_4_3_4_nopasswd.rc != 1
       failed_when: false
       check_mode: false
 
@@ -1421,7 +1461,10 @@
           {{ ['NON-COMPLIANT: NOPASSWD entries found — review and remove:']
              + cis_4_3_4_nopasswd.stdout_lines
              if cis_4_3_4_nopasswd.rc == 0
-             else 'COMPLIANT: no NOPASSWD entries found in sudoers' }}
+             else ('NON-COMPLIANT: grep error (rc=' ~ cis_4_3_4_nopasswd.rc ~
+                   ') — sudoers missing or unreadable'
+                   if cis_4_3_4_nopasswd.rc != 1
+                   else 'COMPLIANT: no NOPASSWD entries found in sudoers') }}
 
 # ---
 
@@ -1433,7 +1476,7 @@
     - name: "4.3.5 | AUDIT | Check for !authenticate in sudoers"
       ansible.builtin.command: grep -r '^[^#].*!authenticate' /usr/local/etc/sudoers
       register: cis_4_3_5_noauth
-      changed_when: cis_4_3_5_noauth.rc == 0
+      changed_when: cis_4_3_5_noauth.rc != 1
       failed_when: false
       check_mode: false
 
@@ -1443,7 +1486,10 @@
           {{ ['NON-COMPLIANT: !authenticate entries found — review and remove:']
              + cis_4_3_5_noauth.stdout_lines
              if cis_4_3_5_noauth.rc == 0
-             else 'COMPLIANT: no !authenticate entries found in sudoers' }}
+             else ('NON-COMPLIANT: grep error (rc=' ~ cis_4_3_5_noauth.rc ~
+                   ') — sudoers missing or unreadable'
+                   if cis_4_3_5_noauth.rc != 1
+                   else 'COMPLIANT: no !authenticate entries found in sudoers') }}
 
 # ---
 
@@ -1922,7 +1968,7 @@
     - name: "4.5.2.3 | AUDIT | Check system accounts with interactive shells"
       ansible.builtin.command:
         cmd: >-
-          awk -F: '($1!~/^(root|toor|uucp)$/ || $3 == 65533) &&
+          awk -F: '($3 < 1000 && $1!~/^(root|toor|uucp)$/) &&
           $7!~/^(\/usr)?\/sbin\/nologin$/ { print $1 }' /etc/passwd
       register: cis_4_5_2_3_shell
       changed_when: cis_4_5_2_3_shell.stdout != ''
@@ -1932,7 +1978,7 @@
     - name: "4.5.2.3 | AUDIT | Check nologin accounts with non-locked passwords"
       ansible.builtin.command:
         cmd: >-
-          awk -F: '($2!="*" && $7~/^(\/usr)?\/sbin\/nologin$/) { print $1 }'
+          awk -F: '($2!~/^\*/ && $7~/^(\/usr)?\/sbin\/nologin$/) { print $1 }'
           /etc/master.passwd
       register: cis_4_5_2_3_passwd
       changed_when: cis_4_5_2_3_passwd.stdout != ''
