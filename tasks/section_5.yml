@@ -13,28 +13,30 @@
   when: "'5.1.1.1' not in active_exceptions"
   tags: [rule_5.1.1.1, level1, section_5, manual]
   block:
-    - name: "5.1.1.1 | AUDIT | Check syslogd_enable rc.conf setting"
-      ansible.builtin.command: sysrc -q -n syslogd_enable
+    - name: "5.1.1.1 | AUDIT | Check syslogd binary and rc.d script are present"
+      ansible.builtin.command: >-
+        /bin/sh -c 'test -x /usr/sbin/syslogd && test -x /etc/rc.d/syslogd'
       register: cis_5_1_1_1_syslogd
-      changed_when: cis_5_1_1_1_syslogd.stdout | trim | upper != 'YES'
+      changed_when: cis_5_1_1_1_syslogd.rc != 0
       failed_when: false
       check_mode: false
 
     - name: "5.1.1.1 | AUDIT | Report syslogd installed state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'COMPLIANT: syslogd is enabled in rc.conf'
-             if cis_5_1_1_1_syslogd.stdout | trim | upper == 'YES'
-             else 'NON-COMPLIANT: syslogd is not enabled in rc.conf' }}
+          {{ 'COMPLIANT: syslogd binary and rc.d service script are present'
+             if cis_5_1_1_1_syslogd.rc == 0
+             else 'NON-COMPLIANT: syslogd binary or rc.d service script is missing' }}
 
-    - name: "5.1.1.1 | REMEDIATE | Start syslogd if not enabled"
-      ansible.builtin.service:
-        name: syslogd
-        state: started
-        enabled: true
+    - name: "5.1.1.1 | REMEDIATE | Report manual remediation required"
+      ansible.builtin.debug:
+        msg: >-
+          REMEDIATION SKIPPED: syslogd is a FreeBSD base component — restore
+          /usr/sbin/syslogd and /etc/rc.d/syslogd from a trusted base system
+          source before re-running this audit.
       when:
         - freebsd_cis_remediate | bool
-        - cis_5_1_1_1_syslogd.stdout | trim | upper != 'YES'
+        - cis_5_1_1_1_syslogd.rc != 0
 
 # ---
 
@@ -71,8 +73,7 @@
   tags: [rule_5.1.1.3, level1, section_5, manual]
   block:
     - name: "5.1.1.3 | AUDIT | Check newsyslog.conf for overly permissive modes"
-      ansible.builtin.shell: >-
-        grep -Ei '\s\s[0,2,4,6,7][0,2,4,6,7][0,2,4,6,7]\b' /etc/newsyslog.conf 2>/dev/null || true
+      ansible.builtin.shell: "grep -E '[[:space:]]{2}[02467]{3}([[:space:]]|$)' /etc/newsyslog.conf 2>/dev/null || true"  # noqa: risky-shell-pipe
       register: cis_5_1_1_3_perms
       changed_when: false
       failed_when: false
@@ -124,17 +125,15 @@
         msg: "{{ ['syslog config files found:'] + cis_5_1_1_4_conf.stdout_lines }}"
       when: cis_5_1_1_4_conf.stdout | trim != ''
 
-    - name: "5.1.1.4 | REMEDIATE | Deploy baseline syslog.conf if absent"
-      ansible.builtin.template:
-        src: syslog.conf.j2
-        dest: /etc/syslog.conf
-        owner: root
-        group: wheel
-        mode: '0640'
+    - name: "5.1.1.4 | REMEDIATE | Warn — syslog.conf absent, manual action required"
+      ansible.builtin.debug:
+        msg: >-
+          REMEDIATION SKIPPED: /etc/syslog.conf is absent. On a stock FreeBSD
+          installation syslog.conf should be present. Restore it from a trusted
+          base system source and re-run the audit.
       when:
         - freebsd_cis_remediate | bool
         - not cis_5_1_1_4_syslog_conf.stat.exists
-      notify: restart syslogd
 
 # ---
 
@@ -145,9 +144,9 @@
     # --- Detection: syslog @remote entries ---
     - name: "5.1.1.5 | AUDIT | Check syslog.conf files for remote forwarding entries"
       ansible.builtin.shell: >-
-        { grep -E '^[^#].*@' /etc/syslog.conf 2>/dev/null || true; }
-        { grep -rE '^[^#].*@' /etc/syslog.d/ 2>/dev/null || true; }
-        { grep -rE '^[^#].*@' /usr/local/etc/syslog.d/ 2>/dev/null || true; }
+        { grep -E '^[[:space:]]*[^#[:space:]].*@' /etc/syslog.conf 2>/dev/null || true; }
+        { grep -rE '^[[:space:]]*[^#[:space:]].*@' /etc/syslog.d/ 2>/dev/null || true; }
+        { grep -rE '^[[:space:]]*[^#[:space:]].*@' /usr/local/etc/syslog.d/ 2>/dev/null || true; }
       register: cis_5_1_1_5_syslog_remote
       changed_when: false
       failed_when: false
@@ -325,6 +324,7 @@
       loop: "{{ freebsd_cis_log_files_to_fix }}"
       loop_control:
         label: "{{ item }}"
+      failed_when: false
       when:
         - freebsd_cis_remediate | bool
         - freebsd_cis_log_files_to_fix | length > 0
@@ -496,11 +496,27 @@
              if cis_5_2_3_2_missing | length == 0
              else 'NON-COMPLIANT: missing audit flags: ' ~ (cis_5_2_3_2_missing | join(', ')) }}
 
-    - name: "5.2.3.2 | REMEDIATE | Add missing file event flags to audit_control"
-      ansible.builtin.replace:
+    - name: "5.2.3.2 | REMEDIATE | Build merged flags line for audit_control"
+      ansible.builtin.set_fact:
+        cis_5_2_3_2_new_flags: >-
+          {{ ((cis_5_2_3_2_flags.stdout
+               | regex_replace('^flags:[[:space:]]*', '')
+               | split(',')
+               | map('trim')
+               | reject('equalto', '')
+               | list)
+              + cis_5_2_3_2_missing)
+             | unique | join(',') }}
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_3_2_missing | length > 0
+
+    - name: "5.2.3.2 | REMEDIATE | Ensure required file event flags in audit_control"
+      ansible.builtin.lineinfile:
         path: /etc/security/audit_control
-        regexp: '^(flags:.*)$'
-        replace: '\1,{{ cis_5_2_3_2_missing | join(",") }}'
+        regexp: '^flags:'
+        line: "flags:{{ cis_5_2_3_2_new_flags }}"
+        insertbefore: '^naflags:'
         backup: true
       when:
         - freebsd_cis_remediate | bool
@@ -875,14 +891,15 @@
              if (cis_5_2_4_4_group.stdout | default('')) | trim == ''
              else 'NON-COMPLIANT: audit log files found with unauthorized group ownership' }}
 
-    - name: "5.2.4.4 | REMEDIATE | Set audit log directory group to audit"
-      ansible.builtin.file:
-        path: "{{ cis_5_2_4_4_dir.stdout | trim }}"
-        group: audit
+    - name: "5.2.4.4 | REMEDIATE | Set audit log files and directory group to audit"
+      ansible.builtin.shell: >-
+        find "{{ cis_5_2_4_4_dir.stdout | trim }}" \( -type f -o -type d \)
+        ! -group audit ! -group wheel -exec chgrp audit {} + 2>/dev/null || true
       when:
         - freebsd_cis_remediate | bool
         - cis_5_2_4_4_dir.stdout | trim != ''
         - (cis_5_2_4_4_group.stdout | default('')) | trim != ''
+      changed_when: true
 
 # ---
 
@@ -901,7 +918,7 @@
     - name: "5.2.4.5 | AUDIT | Check audit_control and audit_user modes"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
         stat -Lf '%N %Lp' /etc/security/audit_control /etc/security/audit_user 2>/dev/null
-        | grep -Ev -- '^\s*\S+\s+600\s*$' | head -10 || true
+        | grep -Ev -- '^[[:space:]]*[^[:space:]]+[[:space:]]+600[[:space:]]*$' | head -10 || true
       register: cis_5_2_4_5_control
       changed_when: cis_5_2_4_5_control.stdout | trim != ''
       failed_when: false
@@ -910,7 +927,7 @@
     - name: "5.2.4.5 | AUDIT | Check audit_event and audit_class modes"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
         stat -Lf '%N %Lp' /etc/security/audit_event /etc/security/audit_class 2>/dev/null
-        | grep -Ev -- '^\s*\S+\s+444\s*$' | head -10 || true
+        | grep -Ev -- '^[[:space:]]*[^[:space:]]+[[:space:]]+444[[:space:]]*$' | head -10 || true
       register: cis_5_2_4_5_class
       changed_when: cis_5_2_4_5_class.stdout | trim != ''
       failed_when: false
@@ -1037,7 +1054,7 @@
     - name: "5.2.4.8 | AUDIT | Check audit tool modes"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
         stat -Lf '%N %Lp' /usr/sbin/*audit* 2>/dev/null
-        | grep -Ev -- '^\s*\S+\s+([0-5][0,1,4,5][0,1,4,5])\s*$' | head -10 || true
+        | grep -Ev -- '^[[:space:]]*[^[:space:]]+[[:space:]]+([0-5][0145][0145])[[:space:]]*$' | head -10 || true
       register: cis_5_2_4_8_mode
       changed_when: cis_5_2_4_8_mode.stdout | trim != ''
       failed_when: false
@@ -1050,8 +1067,8 @@
              if cis_5_2_4_8_mode.stdout | trim == ''
              else 'NON-COMPLIANT: audit tools with over-permissive mode found' }}
 
-    - name: "5.2.4.8 | REMEDIATE | Set audit tools to 555"
-      ansible.builtin.shell: chmod 555 /usr/sbin/*audit* 2>/dev/null || true
+    - name: "5.2.4.8 | REMEDIATE | Remove write bits from over-permissive audit tools"
+      ansible.builtin.shell: chmod a-w /usr/sbin/*audit* 2>/dev/null || true
       when:
         - freebsd_cis_remediate | bool
         - cis_5_2_4_8_mode.stdout | trim != ''
@@ -1068,7 +1085,7 @@
     - name: "5.2.4.9 | AUDIT | Find audit tools not owned by root"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
         stat -Lf '%N %Su' /usr/sbin/*audit* 2>/dev/null
-        | grep -Ev -- '^\s*\S+\s+root\s*$' | head -10 || true
+        | grep -Ev -- '^[[:space:]]*[^[:space:]]+[[:space:]]+root[[:space:]]*$' | head -10 || true
       register: cis_5_2_4_9_owner
       changed_when: cis_5_2_4_9_owner.stdout | trim != ''
       failed_when: false
@@ -1099,7 +1116,7 @@
     - name: "5.2.4.10 | AUDIT | Check audit tool ownership and group"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
         stat -Lf '%N %Lp %Su %Sg' /usr/sbin/*audit* 2>/dev/null
-        | grep -Ev -- '^\s*\S+\s+([0-5][0,1,4,5][0,1,4,5])\s+root\s+wheel\s*$' | head -10 || true
+        | grep -Ev -- '^[[:space:]]*[^[:space:]]+[[:space:]]+([0-5][0145][0145])[[:space:]]+root[[:space:]]+wheel[[:space:]]*$' | head -10 || true
       register: cis_5_2_4_10_group
       changed_when: cis_5_2_4_10_group.stdout | trim != ''
       failed_when: false
@@ -1112,8 +1129,8 @@
              if cis_5_2_4_10_group.stdout | trim == ''
              else 'NON-COMPLIANT: audit tools with wrong owner/group/mode found' }}
 
-    - name: "5.2.4.10 | REMEDIATE | Fix audit tool owner and group"
-      ansible.builtin.shell: chown root:wheel /usr/sbin/*audit* && chmod 555 /usr/sbin/*audit* 2>/dev/null || true
+    - name: "5.2.4.10 | REMEDIATE | Fix audit tool owner, group, and write bits"
+      ansible.builtin.shell: chown root:wheel /usr/sbin/*audit* && chmod a-w /usr/sbin/*audit* 2>/dev/null || true
       when:
         - freebsd_cis_remediate | bool
         - cis_5_2_4_10_group.stdout | trim != ''
@@ -1130,22 +1147,22 @@
     - name: "5.3.1 | AUDIT | Check if aide package is installed"
       ansible.builtin.command: pkg query -g %n 'aide*'
       register: cis_5_3_1_aide
-      changed_when: cis_5_3_1_aide.rc != 0
+      changed_when: cis_5_3_1_aide.stdout | trim == ''
       failed_when: false
       check_mode: false
 
     - name: "5.3.1 | AUDIT | Report AIDE installation state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'COMPLIANT: AIDE is installed — ' ~ cis_5_3_1_aide.stdout
-             if cis_5_3_1_aide.rc == 0
+          {{ 'COMPLIANT: AIDE is installed — ' ~ cis_5_3_1_aide.stdout | trim
+             if cis_5_3_1_aide.stdout | trim != ''
              else 'NON-COMPLIANT: AIDE is not installed — file integrity monitoring is not available' }}
 
     - name: "5.3.1 | REMEDIATE | Install AIDE"
       ansible.builtin.command: pkg install -y aide
       when:
         - freebsd_cis_remediate | bool
-        - cis_5_3_1_aide.rc != 0
+        - cis_5_3_1_aide.stdout | trim == ''
       changed_when: true
 
     - name: "5.3.1 | REMEDIATE | Initialize AIDE database"
@@ -1154,7 +1171,7 @@
         creates: /var/lib/aide/aide.db.new.gz
       when:
         - freebsd_cis_remediate | bool
-        - cis_5_3_1_aide.rc != 0
+        - cis_5_3_1_aide.stdout | trim == ''
 
     - name: "5.3.1 | REMEDIATE | Move AIDE database into place"
       ansible.builtin.command: mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz
@@ -1163,7 +1180,7 @@
         removes: /var/lib/aide/aide.db.new.gz
       when:
         - freebsd_cis_remediate | bool
-        - cis_5_3_1_aide.rc != 0
+        - cis_5_3_1_aide.stdout | trim == ''
 
 # ---
 
@@ -1174,7 +1191,7 @@
     - name: "5.3.2 | AUDIT | Check root crontab for aide --check or --update"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
         crontab -l -u root 2>/dev/null
-        | grep -Es 'aide[[:space:]]+(--?[A-Za-z]+[[:space:]]+)*(--check|--update)\b' || true
+        | grep -Es 'aide[[:space:]]+(--?[A-Za-z]+[[:space:]]+)*(--check|--update)([[:space:]]|$)' || true
       register: cis_5_3_2_cron
       changed_when: cis_5_3_2_cron.stdout | trim == ''
       failed_when: false
