@@ -398,6 +398,7 @@
         patterns: "ssh_host_*_key"
         file_type: file
       register: cis_4_2_2_privkeys
+      failed_when: false
       check_mode: false
 
     - name: "4.2.2 | AUDIT | Check private key permissions"
@@ -467,6 +468,7 @@
         patterns: "ssh_host_*_key.pub"
         file_type: file
       register: cis_4_2_3_pubkeys
+      failed_when: false
       check_mode: false
 
     - name: "4.2.3 | AUDIT | Check public key permissions"
@@ -553,6 +555,8 @@
         path: "{{ freebsd_cis_sshd_config }}"
         regexp: '^\s*#?\s*AllowUsers\s'
         line: "AllowUsers {{ freebsd_cis_sshd_allow_users }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
         owner: root
         group: wheel
         mode: '0600'
@@ -566,6 +570,8 @@
         path: "{{ freebsd_cis_sshd_config }}"
         regexp: '^\s*#?\s*AllowGroups\s'
         line: "AllowGroups {{ freebsd_cis_sshd_allow_groups }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
         owner: root
         group: wheel
         mode: '0600'
@@ -579,6 +585,8 @@
         path: "{{ freebsd_cis_sshd_config }}"
         regexp: '^\s*#?\s*DenyUsers\s'
         line: "DenyUsers {{ freebsd_cis_sshd_deny_users }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
         owner: root
         group: wheel
         mode: '0600'
@@ -592,6 +600,8 @@
         path: "{{ freebsd_cis_sshd_config }}"
         regexp: '^\s*#?\s*DenyGroups\s'
         line: "DenyGroups {{ freebsd_cis_sshd_deny_groups }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
         owner: root
         group: wheel
         mode: '0600'
@@ -630,6 +640,8 @@
         path: "{{ freebsd_cis_sshd_config }}"
         regexp: '^\s*#?\s*Banner\s'
         line: "Banner {{ freebsd_cis_sshd_banner }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
         owner: root
         group: wheel
         mode: '0600'
@@ -676,6 +688,8 @@
         path: "{{ freebsd_cis_sshd_config }}"
         regexp: '^\s*#?\s*Ciphers\s'
         line: "Ciphers -{{ freebsd_cis_sshd_weak_ciphers }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
         owner: root
         group: wheel
         mode: '0600'
@@ -722,6 +736,8 @@
         path: "{{ freebsd_cis_sshd_config }}"
         regexp: '^\s*#?\s*ClientAliveInterval\s'
         line: "ClientAliveInterval {{ freebsd_cis_sshd_client_alive_interval }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
         owner: root
         group: wheel
         mode: '0600'
@@ -735,6 +751,8 @@
         path: "{{ freebsd_cis_sshd_config }}"
         regexp: '^\s*#?\s*ClientAliveCountMax\s'
         line: "ClientAliveCountMax {{ freebsd_cis_sshd_client_alive_count_max }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
         owner: root
         group: wheel
         mode: '0600'
@@ -772,6 +790,8 @@
         path: "{{ freebsd_cis_sshd_config }}"
         regexp: '^\s*#?\s*DisableForwarding\s'
         line: 'DisableForwarding yes'
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
         owner: root
         group: wheel
         mode: '0600'
@@ -809,6 +829,8 @@
         path: "{{ freebsd_cis_sshd_config }}"
         regexp: '^\s*#?\s*HostbasedAuthentication\s'
         line: 'HostbasedAuthentication no'
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
         owner: root
         group: wheel
         mode: '0600'
@@ -846,6 +868,8 @@
         path: "{{ freebsd_cis_sshd_config }}"
         regexp: '^\s*#?\s*IgnoreRhosts\s'
         line: 'IgnoreRhosts yes'
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
         owner: root
         group: wheel
         mode: '0600'
@@ -892,6 +916,8 @@
         path: "{{ freebsd_cis_sshd_config }}"
         regexp: '^\s*#?\s*KexAlgorithms\s'
         line: "KexAlgorithms -{{ freebsd_cis_sshd_weak_kex }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
         owner: root
         group: wheel
         mode: '0600'
@@ -930,6 +956,8 @@
         path: "{{ freebsd_cis_sshd_config }}"
         regexp: '^\s*#?\s*LoginGraceTime\s'
         line: "LoginGraceTime {{ freebsd_cis_sshd_login_grace_time }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
         owner: root
         group: wheel
         mode: '0600'
@@ -967,6 +995,8 @@
         path: "{{ freebsd_cis_sshd_config }}"
         regexp: '^\s*#?\s*LogLevel\s'
         line: "LogLevel {{ freebsd_cis_sshd_log_level }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
         owner: root
         group: wheel
         mode: '0600'
@@ -1013,6 +1043,8 @@
         path: "{{ freebsd_cis_sshd_config }}"
         regexp: '^\s*#?\s*MACs\s'
         line: "MACs -{{ freebsd_cis_sshd_weak_macs }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
         owner: root
         group: wheel
         mode: '0600'
@@ -1050,6 +1082,8 @@
         path: "{{ freebsd_cis_sshd_config }}"
         regexp: '^\s*#?\s*MaxAuthTries\s'
         line: "MaxAuthTries {{ freebsd_cis_sshd_max_auth_tries }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
         owner: root
         group: wheel
         mode: '0600'
@@ -1087,6 +1121,8 @@
         path: "{{ freebsd_cis_sshd_config }}"
         regexp: '^\s*#?\s*MaxSessions\s'
         line: "MaxSessions {{ freebsd_cis_sshd_max_sessions }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
         owner: root
         group: wheel
         mode: '0600'
@@ -1140,6 +1176,8 @@
         path: "{{ freebsd_cis_sshd_config }}"
         regexp: '^\s*#?\s*MaxStartups\s'
         line: "MaxStartups {{ freebsd_cis_sshd_max_startups }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
         owner: root
         group: wheel
         mode: '0600'
@@ -1179,6 +1217,8 @@
         path: "{{ freebsd_cis_sshd_config }}"
         regexp: '^\s*#?\s*PermitEmptyPasswords\s'
         line: 'PermitEmptyPasswords no'
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
         owner: root
         group: wheel
         mode: '0600'
@@ -1216,6 +1256,8 @@
         path: "{{ freebsd_cis_sshd_config }}"
         regexp: '^\s*#?\s*PermitRootLogin\s'
         line: 'PermitRootLogin no'
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
         owner: root
         group: wheel
         mode: '0600'
@@ -1253,6 +1295,8 @@
         path: "{{ freebsd_cis_sshd_config }}"
         regexp: '^\s*#?\s*PermitUserEnvironment\s'
         line: 'PermitUserEnvironment no'
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
         owner: root
         group: wheel
         mode: '0600'
@@ -1290,6 +1334,8 @@
         path: "{{ freebsd_cis_sshd_config }}"
         regexp: '^\s*#?\s*UsePAM\s'
         line: 'UsePAM yes'
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
         owner: root
         group: wheel
         mode: '0600'
