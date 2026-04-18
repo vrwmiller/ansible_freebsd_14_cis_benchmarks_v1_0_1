@@ -1317,8 +1317,9 @@
 
     - name: "5.2.4.5 | AUDIT | Check audit_control and audit_user modes"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
-        stat -Lf '%N %Lp' /etc/security/audit_control /etc/security/audit_user 2>/dev/null
-        | grep -Ev -- '^[[:space:]]*[^[:space:]]+[[:space:]]+600[[:space:]]*$' | head -10 || true
+        for f in /etc/security/audit_control /etc/security/audit_user;
+        do stat -Lf '%N %Lp' "$f" 2>/dev/null || echo "MISSING $f"; done
+        | grep -Ev -- '^[[:space:]]*[^[:space:]]+[[:space:]]+600[[:space:]]*$' | head -10
       register: cis_5_2_4_5_control
       changed_when: cis_5_2_4_5_control.stdout | trim != ''
       failed_when: false
@@ -1326,8 +1327,9 @@
 
     - name: "5.2.4.5 | AUDIT | Check audit_event and audit_class modes"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
-        stat -Lf '%N %Lp' /etc/security/audit_event /etc/security/audit_class 2>/dev/null
-        | grep -Ev -- '^[[:space:]]*[^[:space:]]+[[:space:]]+444[[:space:]]*$' | head -10 || true
+        for f in /etc/security/audit_event /etc/security/audit_class;
+        do stat -Lf '%N %Lp' "$f" 2>/dev/null || echo "MISSING $f"; done
+        | grep -Ev -- '^[[:space:]]*[^[:space:]]+[[:space:]]+444[[:space:]]*$' | head -10
       register: cis_5_2_4_5_class
       changed_when: cis_5_2_4_5_class.stdout | trim != ''
       failed_when: false
@@ -1345,12 +1347,12 @@
 
     - name: "5.2.4.5 | AUDIT | Show control/user mismatches"
       ansible.builtin.debug:
-        msg: "{{ ['Files with incorrect mode (expected 600):'] + cis_5_2_4_5_control.stdout_lines }}"
+        msg: "{{ ['Files with incorrect mode or absent (expected mode 600):'] + cis_5_2_4_5_control.stdout_lines }}"
       when: cis_5_2_4_5_control.stdout | trim != ''
 
     - name: "5.2.4.5 | AUDIT | Show event/class mismatches"
       ansible.builtin.debug:
-        msg: "{{ ['Files with incorrect mode (expected 444):'] + cis_5_2_4_5_class.stdout_lines }}"
+        msg: "{{ ['Files with incorrect mode or absent (expected mode 444):'] + cis_5_2_4_5_class.stdout_lines }}"
       when: cis_5_2_4_5_class.stdout | trim != ''
 
     - name: "5.2.4.5 | REMEDIATE | Set audit_event and audit_class to 444"
@@ -1466,8 +1468,10 @@
   block:
     - name: "5.2.4.8 | AUDIT | Check audit tool modes"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
-        stat -Lf '%N %Lp' /usr/sbin/*audit* 2>/dev/null
-        | grep -Ev -- '^[[:space:]]*[^[:space:]]+[[:space:]]+([0145][0145][0145])[[:space:]]*$' | head -10 || true
+        if find /usr/sbin -maxdepth 1 -name '*audit*' 2>/dev/null | grep -q .;
+        then stat -Lf '%N %Lp' /usr/sbin/*audit* 2>/dev/null
+        | grep -Ev -- '^[[:space:]]*[^[:space:]]+[[:space:]]+([0145][0145][0145])[[:space:]]*$' | head -10 || true;
+        else echo 'NON-COMPLIANT: no audit tools found at /usr/sbin/*audit*'; fi
       register: cis_5_2_4_8_mode
       changed_when: cis_5_2_4_8_mode.stdout | trim != ''
       failed_when: false
@@ -1497,8 +1501,10 @@
   block:
     - name: "5.2.4.9 | AUDIT | Find audit tools not owned by root"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
-        stat -Lf '%N %Su' /usr/sbin/*audit* 2>/dev/null
-        | grep -Ev -- '^[[:space:]]*[^[:space:]]+[[:space:]]+root[[:space:]]*$' | head -10 || true
+        if find /usr/sbin -maxdepth 1 -name '*audit*' 2>/dev/null | grep -q .;
+        then stat -Lf '%N %Su' /usr/sbin/*audit* 2>/dev/null
+        | grep -Ev -- '^[[:space:]]*[^[:space:]]+[[:space:]]+root[[:space:]]*$' | head -10 || true;
+        else echo 'NON-COMPLIANT: no audit tools found at /usr/sbin/*audit*'; fi
       register: cis_5_2_4_9_owner
       changed_when: cis_5_2_4_9_owner.stdout | trim != ''
       failed_when: false
@@ -1528,8 +1534,10 @@
   block:
     - name: "5.2.4.10 | AUDIT | Check audit tool ownership and group"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
-        stat -Lf '%N %Lp %Su %Sg' /usr/sbin/*audit* 2>/dev/null
-        | grep -Ev -- '^[[:space:]]*[^[:space:]]+[[:space:]]+([0145][0145][0145])[[:space:]]+root[[:space:]]+wheel[[:space:]]*$' | head -10 || true
+        if find /usr/sbin -maxdepth 1 -name '*audit*' 2>/dev/null | grep -q .;
+        then stat -Lf '%N %Lp %Su %Sg' /usr/sbin/*audit* 2>/dev/null
+        | grep -Ev -- '^[[:space:]]*[^[:space:]]+[[:space:]]+([0145][0145][0145])[[:space:]]+root[[:space:]]+wheel[[:space:]]*$' | head -10 || true;
+        else echo 'NON-COMPLIANT: no audit tools found at /usr/sbin/*audit*'; fi
       register: cis_5_2_4_10_group
       changed_when: cis_5_2_4_10_group.stdout | trim != ''
       failed_when: false
