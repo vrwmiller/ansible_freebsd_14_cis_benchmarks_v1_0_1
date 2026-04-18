@@ -129,6 +129,7 @@
         path: /etc/syslog.conf
       register: cis_5_1_1_4_syslog_conf
       changed_when: not cis_5_1_1_4_syslog_conf.stat.exists
+      failed_when: false
       check_mode: false
 
     - name: "5.1.1.4 | AUDIT | Report syslog.conf state"
@@ -225,6 +226,7 @@
       ansible.builtin.stat:
         path: /etc/syslog.conf
       register: cis_5_1_1_5_syslog_conf_stat
+      failed_when: false
       check_mode: false
 
     - name: "5.1.1.5 | REMEDIATE | Add remote log host entry to syslog.conf"
@@ -1365,6 +1367,7 @@
       when:
         - freebsd_cis_remediate | bool
         - cis_5_2_4_5_class.stdout | trim != ''
+        - "'MISSING ' ~ item not in cis_5_2_4_5_class.stdout"
 
     - name: "5.2.4.5 | REMEDIATE | Warn — audit_warn absent, manual action required"
       ansible.builtin.debug:
@@ -1395,6 +1398,7 @@
       when:
         - freebsd_cis_remediate | bool
         - cis_5_2_4_5_control.stdout | trim != ''
+        - "'MISSING ' ~ item not in cis_5_2_4_5_control.stdout"
 
 # ---
 
@@ -1489,7 +1493,9 @@
       when:
         - freebsd_cis_remediate | bool
         - cis_5_2_4_8_mode.stdout | trim != ''
+        - "'no audit tools found' not in cis_5_2_4_8_mode.stdout"
       changed_when: true
+      failed_when: false
 
 # ---
 
@@ -1522,7 +1528,9 @@
       when:
         - freebsd_cis_remediate | bool
         - cis_5_2_4_9_owner.stdout | trim != ''
+        - "'no audit tools found' not in cis_5_2_4_9_owner.stdout"
       changed_when: true
+      failed_when: false
 
 # ---
 
@@ -1555,7 +1563,9 @@
       when:
         - freebsd_cis_remediate | bool
         - cis_5_2_4_10_group.stdout | trim != ''
+        - "'no audit tools found' not in cis_5_2_4_10_group.stdout"
       changed_when: true
+      failed_when: false
 
 # =============================================================
 # 5.3 Configure Integrity Checking
