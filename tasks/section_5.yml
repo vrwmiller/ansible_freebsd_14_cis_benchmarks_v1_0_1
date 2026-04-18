@@ -295,7 +295,15 @@
         - freebsd_cis_remediate | bool
         - not cis_5_1_1_6_secure
       changed_when: true
-      notify: Reload syslogd
+
+    - name: "5.1.1.6 | REMEDIATE | Warn restart required to apply syslogd_flags"
+      ansible.builtin.debug:
+        msg: >-
+          REMEDIATED: Added -s to syslogd_flags in rc.conf. A syslogd restart or
+          system reboot is required for the updated startup flag to take effect.
+      when:
+        - freebsd_cis_remediate | bool
+        - not cis_5_1_1_6_secure
 
 # =============================================================
 # 5.1.2 Ensure newsyslog is configured
@@ -1013,7 +1021,7 @@
   tags: [rule_5.2.4.1, level2, section_5, manual]
   block:
     - name: "5.2.4.1 | AUDIT | Get audit log directory path"
-      ansible.builtin.shell: "awk -F: '/^dir:/ {print $2; exit}' /etc/security/audit_control"
+      ansible.builtin.shell: "awk -F: '/^dir:/ {dir=$2; sub(/^[[:space:]]+/,\"\",dir); sub(/,.*/,\"\",dir); print dir; exit}' /etc/security/audit_control"
       register: cis_5_2_4_1_dir
       changed_when: cis_5_2_4_1_dir.stdout | trim == ''
       failed_when: false
@@ -1083,7 +1091,7 @@
   tags: [rule_5.2.4.2, level2, section_5, manual]
   block:
     - name: "5.2.4.2 | AUDIT | Get audit log directory path"
-      ansible.builtin.shell: "awk -F: '/^dir:/ {print $2; exit}' /etc/security/audit_control"
+      ansible.builtin.shell: "awk -F: '/^dir:/ {dir=$2; sub(/^[[:space:]]+/,\"\",dir); sub(/,.*/,\"\",dir); print dir; exit}' /etc/security/audit_control"
       register: cis_5_2_4_2_dir
       changed_when: cis_5_2_4_2_dir.stdout | trim == ''
       failed_when: false
@@ -1161,7 +1169,7 @@
   tags: [rule_5.2.4.3, level2, section_5, manual]
   block:
     - name: "5.2.4.3 | AUDIT | Get audit log directory path"
-      ansible.builtin.shell: "awk -F: '/^dir:/ {print $2; exit}' /etc/security/audit_control"
+      ansible.builtin.shell: "awk -F: '/^dir:/ {dir=$2; sub(/^[[:space:]]+/,\"\",dir); sub(/,.*/,\"\",dir); print dir; exit}' /etc/security/audit_control"
       register: cis_5_2_4_3_dir
       changed_when: cis_5_2_4_3_dir.stdout | trim == ''
       failed_when: false
@@ -1234,7 +1242,7 @@
   tags: [rule_5.2.4.4, level2, section_5, manual]
   block:
     - name: "5.2.4.4 | AUDIT | Get audit log directory path"
-      ansible.builtin.shell: "awk -F: '/^dir:/ {print $2; exit}' /etc/security/audit_control"
+      ansible.builtin.shell: "awk -F: '/^dir:/ {dir=$2; sub(/^[[:space:]]+/,\"\",dir); sub(/,.*/,\"\",dir); print dir; exit}' /etc/security/audit_control"
       register: cis_5_2_4_4_dir
       changed_when: cis_5_2_4_4_dir.stdout | trim == ''
       failed_when: false
@@ -1600,7 +1608,7 @@
         - cis_5_3_1_aide.stdout | trim == ''
 
     - name: "5.3.1 | REMEDIATE | Initialize AIDE database"
-      ansible.builtin.command: aide --init
+      ansible.builtin.command: /usr/local/bin/aide --init
       args:
         creates: /var/lib/aide/aide.db.new.gz
       when:
