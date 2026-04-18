@@ -148,7 +148,7 @@ freebsd_cis_pw_warn_days: 7
 # mechanism (e.g. Splunk UF) and no syslog.conf change is needed.
 freebsd_cis_syslog_remote_host: ""
 
-# 5.1.3 — List of log files to enforce 0640 root:wheel on during remediation.
+# 5.1.3 — List of log files to enforce 0640 root:wheel or more restrictive on during remediation.
 # Extend or override as appropriate for your environment.
 freebsd_cis_log_files_to_fix:
   - /var/log/messages

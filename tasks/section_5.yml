@@ -1006,7 +1006,7 @@
         - cis_5_2_4_1_stat is defined
         - cis_5_2_4_1_stat.stat.exists
 
-    - name: "5.2.4.1 | REMEDIATE | Set audit log directory to 0750"
+    - name: "5.2.4.1 | REMEDIATE | Make audit log directory 0750 or more restrictive"
       ansible.builtin.file:
         path: "{{ cis_5_2_4_1_dir.stdout | trim }}"
         mode: 'g-w,o-rwx'
@@ -1063,7 +1063,7 @@
     - name: "5.2.4.2 | REMEDIATE | Fix over-permissive audit log file modes"
       ansible.builtin.shell: >-
         find "{{ cis_5_2_4_2_dir.stdout | trim }}" -type f -perm /0137
-        -exec chmod u-x,g-wx,o-rwx {} + 2>/dev/null || true
+        -exec chmod u-x,g-wx,o-rwx {} + 2>/dev/null
       when:
         - freebsd_cis_remediate | bool
         - cis_5_2_4_2_dir.stdout | trim != ''
@@ -1111,7 +1111,7 @@
     - name: "5.2.4.3 | REMEDIATE | Fix non-root-owned audit log files"
       ansible.builtin.shell: >-
         find "{{ cis_5_2_4_3_dir.stdout | trim }}" -type f ! -user root
-        -exec chown root {} + 2>/dev/null || true
+        -exec chown root {} + 2>/dev/null
       when:
         - freebsd_cis_remediate | bool
         - cis_5_2_4_3_dir.stdout | trim != ''
@@ -1166,7 +1166,7 @@
     - name: "5.2.4.4 | REMEDIATE | Set audit log files and directory group to audit"
       ansible.builtin.shell: >-
         find "{{ cis_5_2_4_4_dir.stdout | trim }}" \( -type f -o -type d \)
-        ! -group audit ! -group wheel -exec chgrp audit {} + 2>/dev/null || true
+        ! -group audit ! -group wheel -exec chgrp audit {} + 2>/dev/null
       when:
         - freebsd_cis_remediate | bool
         - cis_5_2_4_4_dir.stdout | trim != ''
@@ -1292,7 +1292,7 @@
 
     - name: "5.2.4.6 | REMEDIATE | Fix audit config file ownership"
       ansible.builtin.shell: >-
-        find /etc/security -type f -name 'audit*' ! -user root -exec chown root {} + 2>/dev/null || true
+        find /etc/security -type f -name 'audit*' ! -user root -exec chown root {} + 2>/dev/null
       when:
         - freebsd_cis_remediate | bool
         - cis_5_2_4_6_owner.stdout | trim != ''
@@ -1323,7 +1323,7 @@
 
     - name: "5.2.4.7 | REMEDIATE | Fix audit config file group"
       ansible.builtin.shell: >-
-        find /etc/security -type f -name 'audit*' ! -group wheel -exec chgrp wheel {} + 2>/dev/null || true
+        find /etc/security -type f -name 'audit*' ! -group wheel -exec chgrp wheel {} + 2>/dev/null
       when:
         - freebsd_cis_remediate | bool
         - cis_5_2_4_7_group.stdout | trim != ''
@@ -1354,7 +1354,7 @@
              else 'NON-COMPLIANT: audit tools with over-permissive mode found' }}
 
     - name: "5.2.4.8 | REMEDIATE | Remove write bits from over-permissive audit tools"
-      ansible.builtin.shell: chmod a-w /usr/sbin/*audit* 2>/dev/null || true
+      ansible.builtin.shell: chmod a-w /usr/sbin/*audit* 2>/dev/null
       when:
         - freebsd_cis_remediate | bool
         - cis_5_2_4_8_mode.stdout | trim != ''
@@ -1385,7 +1385,7 @@
              else 'NON-COMPLIANT: audit tools not owned by root: ' ~ cis_5_2_4_9_owner.stdout }}
 
     - name: "5.2.4.9 | REMEDIATE | Fix audit tool ownership"
-      ansible.builtin.shell: chown root /usr/sbin/*audit* 2>/dev/null || true
+      ansible.builtin.shell: chown root /usr/sbin/*audit* 2>/dev/null
       when:
         - freebsd_cis_remediate | bool
         - cis_5_2_4_9_owner.stdout | trim != ''
@@ -1416,7 +1416,7 @@
              else 'NON-COMPLIANT: audit tools with wrong owner/group/mode found' }}
 
     - name: "5.2.4.10 | REMEDIATE | Fix audit tool owner, group, and write bits"
-      ansible.builtin.shell: chown root:wheel /usr/sbin/*audit* && chmod a-w /usr/sbin/*audit* 2>/dev/null || true
+      ansible.builtin.shell: chown root:wheel /usr/sbin/*audit* && chmod a-w /usr/sbin/*audit* 2>/dev/null
       when:
         - freebsd_cis_remediate | bool
         - cis_5_2_4_10_group.stdout | trim != ''
