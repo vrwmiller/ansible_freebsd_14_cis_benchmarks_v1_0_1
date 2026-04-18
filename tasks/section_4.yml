@@ -267,7 +267,7 @@
       - -C
       - "host={{ ansible_facts['hostname'] }}"
       - -C
-      - "addr={{ ansible_facts['default_ipv4']['address'] | default('127.0.0.1') }}"
+      - "addr={{ ((ansible_facts['default_ipv4'] | default({})).address) | default('127.0.0.1') }}"
   register: cis_4_2_sshd_config_dump
   changed_when: false
   failed_when: false
@@ -297,7 +297,8 @@
         not cis_4_2_1_sshdcfg.stat.exists or
         cis_4_2_1_sshdcfg.stat.pw_name != 'root' or
         cis_4_2_1_sshdcfg.stat.gr_name != 'wheel' or
-        (cis_4_2_1_sshdcfg.stat.mode | int(base=8)) % 64 != 0
+        (cis_4_2_1_sshdcfg.stat.mode | int(base=8)) % 64 != 0 or
+        ((cis_4_2_1_sshdcfg.stat.mode | int(base=8)) // 64) % 8 not in [4, 6]
       failed_when: false
       check_mode: false
 
@@ -323,7 +324,8 @@
         - cis_4_2_1_sshdcfg.stat.exists
         - cis_4_2_1_sshdcfg.stat.pw_name != 'root' or
           cis_4_2_1_sshdcfg.stat.gr_name != 'wheel' or
-          (cis_4_2_1_sshdcfg.stat.mode | int(base=8)) % 64 != 0
+          (cis_4_2_1_sshdcfg.stat.mode | int(base=8)) % 64 != 0 or
+          ((cis_4_2_1_sshdcfg.stat.mode | int(base=8)) // 64) % 8 not in [4, 6]
 
 # ---
 
@@ -359,7 +361,8 @@
              ' — expected root:wheel mode 0600'
              if (item.stat.pw_name != 'root' or
                  item.stat.gr_name != 'wheel' or
-                 (item.stat.mode | int(base=8)) % 64 != 0)
+                 (item.stat.mode | int(base=8)) % 64 != 0 or
+                 ((item.stat.mode | int(base=8)) // 64) % 8 not in [4, 6])
              else 'COMPLIANT: ' ~ item.stat.path ~ ' has correct ownership and mode' }}
       loop: "{{ cis_4_2_2_privkey_stats.results }}"
       loop_control:
@@ -373,7 +376,7 @@
              or (cis_4_2_2_privkey_stats.results
               | selectattr('stat.gr_name', 'ne', 'wheel') | list | length > 0)
              or (cis_4_2_2_privkey_stats.results
-              | rejectattr('stat.mode', 'match', '^0[0-7]00$') | list | length > 0) }}
+              | rejectattr('stat.mode', 'match', '^0[46]00$') | list | length > 0) }}
       changed_when: cis_4_2_2_non_compliant | bool
       check_mode: false
 
@@ -390,7 +393,8 @@
         - freebsd_cis_remediate | bool
         - item.stat.pw_name != 'root' or
           item.stat.gr_name != 'wheel' or
-          (item.stat.mode | int(base=8)) % 64 != 0
+          (item.stat.mode | int(base=8)) % 64 != 0 or
+          ((item.stat.mode | int(base=8)) // 64) % 8 not in [4, 6]
 
 # ---
 
@@ -426,6 +430,7 @@
              ' — expected root:wheel mode 0644'
              if (item.stat.pw_name != 'root' or
                  item.stat.gr_name != 'wheel' or
+                 ((item.stat.mode | int(base=8)) // 64) % 8 not in [4, 6] or
                  (item.stat.mode | int(base=8)) % 8 not in [0, 4] or
                  ((item.stat.mode | int(base=8)) // 8) % 8 not in [0, 4])
              else 'COMPLIANT: ' ~ item.stat.path ~ ' has correct ownership and mode' }}
@@ -441,7 +446,7 @@
              or (cis_4_2_3_pubkey_stats.results
               | selectattr('stat.gr_name', 'ne', 'wheel') | list | length > 0)
              or (cis_4_2_3_pubkey_stats.results
-              | rejectattr('stat.mode', 'match', '^0[0-7][04][04]$') | list | length > 0) }}
+              | rejectattr('stat.mode', 'match', '^0[46][04][04]$') | list | length > 0) }}
       changed_when: cis_4_2_3_non_compliant | bool
       check_mode: false
 
@@ -458,6 +463,7 @@
         - freebsd_cis_remediate | bool
         - item.stat.pw_name != 'root' or
           item.stat.gr_name != 'wheel' or
+          ((item.stat.mode | int(base=8)) // 64) % 8 not in [4, 6] or
           (item.stat.mode | int(base=8)) % 8 not in [0, 4] or
           ((item.stat.mode | int(base=8)) // 8) % 8 not in [0, 4]
 
