@@ -1,5 +1,1345 @@
 ---
 # FreeBSD 14 CIS Benchmark v1.0.1
-# Section 4 — Access, Authentication and Authorization
-# Controls: 4.1.1.1 – 4.5.3.2
-[]
+# Section 4 — Access, Authentication and Authorization (Part A)
+# Controls: 4.1.1.1 – 4.2.21
+# lint-clean: production profile
+
+# =============================================================
+# 4.1 Configure job schedulers
+# =============================================================
+
+# ---
+
+- name: "4.1.1.1 | Ensure permissions on /etc/crontab are configured"
+  when: "'4.1.1.1' not in active_exceptions"
+  tags: [rule_4.1.1.1, level1, section_4, automated]
+  block:
+
+    - name: "4.1.1.1 | AUDIT | Stat /etc/crontab"
+      ansible.builtin.stat:
+        path: /etc/crontab
+      register: cis_4_1_1_1_crontab
+      changed_when: >-
+        not cis_4_1_1_1_crontab.stat.exists or
+        cis_4_1_1_1_crontab.stat.pw_name != 'root' or
+        cis_4_1_1_1_crontab.stat.gr_name != 'wheel' or
+        (cis_4_1_1_1_crontab.stat.mode | int(base=8)) % 64 != 0 or
+        ((cis_4_1_1_1_crontab.stat.mode | int(base=8)) // 64) % 8 not in [4, 6]
+      failed_when: false
+      check_mode: false
+
+    - name: "4.1.1.1 | AUDIT | Report /etc/crontab permission state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: /etc/crontab owner=' ~
+             (cis_4_1_1_1_crontab.stat.pw_name | default('?')) ~ ' group=' ~
+             (cis_4_1_1_1_crontab.stat.gr_name | default('?')) ~ ' mode=' ~
+             (cis_4_1_1_1_crontab.stat.mode | default('?')) ~
+             ' — expected root:wheel with no group/other permissions'
+             if cis_4_1_1_1_crontab is changed
+             else 'COMPLIANT: /etc/crontab is root:wheel with no group/other permissions' }}
+
+    - name: "4.1.1.1 | REMEDIATE | Set /etc/crontab owner, group, and mode"
+      ansible.builtin.file:
+        path: /etc/crontab
+        owner: root
+        group: wheel
+        mode: '0600'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_4_1_1_1_crontab.stat.exists
+        - cis_4_1_1_1_crontab.stat.pw_name != 'root' or
+          cis_4_1_1_1_crontab.stat.gr_name != 'wheel' or
+          (cis_4_1_1_1_crontab.stat.mode | int(base=8)) % 64 != 0 or
+          ((cis_4_1_1_1_crontab.stat.mode | int(base=8)) // 64) % 8 not in [4, 6]
+
+# ---
+
+- name: "4.1.1.2 | Ensure permissions on /etc/cron.d are configured"
+  when: "'4.1.1.2' not in active_exceptions"
+  tags: [rule_4.1.1.2, level1, section_4, automated]
+  block:
+
+    - name: "4.1.1.2 | AUDIT | Stat /etc/cron.d"
+      ansible.builtin.stat:
+        path: /etc/cron.d
+      register: cis_4_1_1_2_crond
+      changed_when: >-
+        not cis_4_1_1_2_crond.stat.exists or
+        cis_4_1_1_2_crond.stat.pw_name != 'root' or
+        cis_4_1_1_2_crond.stat.gr_name != 'wheel' or
+        (cis_4_1_1_2_crond.stat.mode | int(base=8)) % 64 != 0 or
+        ((cis_4_1_1_2_crond.stat.mode | int(base=8)) // 64 % 8) != 7
+      failed_when: false
+      check_mode: false
+
+    - name: "4.1.1.2 | AUDIT | Report /etc/cron.d permission state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: /etc/cron.d owner=' ~
+             (cis_4_1_1_2_crond.stat.pw_name | default('?')) ~ ' group=' ~
+             (cis_4_1_1_2_crond.stat.gr_name | default('?')) ~ ' mode=' ~
+             (cis_4_1_1_2_crond.stat.mode | default('?')) ~
+             ' — expected root:wheel mode 0700 (no group/other permissions, owner execute required)'
+             if cis_4_1_1_2_crond is changed
+             else 'COMPLIANT: /etc/cron.d is root:wheel 0700 (no group/other permissions, owner execute set)' }}
+
+    - name: "4.1.1.2 | REMEDIATE | Set /etc/cron.d owner, group, and mode"
+      ansible.builtin.file:
+        path: /etc/cron.d
+        owner: root
+        group: wheel
+        mode: '0700'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_4_1_1_2_crond.stat.exists
+        - cis_4_1_1_2_crond.stat.pw_name != 'root' or
+          cis_4_1_1_2_crond.stat.gr_name != 'wheel' or
+          (cis_4_1_1_2_crond.stat.mode | int(base=8)) % 64 != 0 or
+          ((cis_4_1_1_2_crond.stat.mode | int(base=8)) // 64 % 8) != 7
+
+# ---
+
+- name: "4.1.1.3 | Ensure crontab is restricted to authorized users"
+  when: "'4.1.1.3' not in active_exceptions"
+  tags: [rule_4.1.1.3, level1, section_4, manual]
+  block:
+
+    - name: "4.1.1.3 | AUDIT | Stat /var/cron/allow"
+      ansible.builtin.stat:
+        path: /var/cron/allow
+      register: cis_4_1_1_3_allow
+      check_mode: false
+
+    - name: "4.1.1.3 | AUDIT | Stat /var/cron/deny"
+      ansible.builtin.stat:
+        path: /var/cron/deny
+      register: cis_4_1_1_3_deny
+      check_mode: false
+
+    - name: "4.1.1.3 | AUDIT | Evaluate cron access control state"
+      ansible.builtin.set_fact:
+        cis_4_1_1_3_allow_ok: >-
+          {{ cis_4_1_1_3_allow.stat.exists and
+             cis_4_1_1_3_allow.stat.pw_name == 'root' and
+             cis_4_1_1_3_allow.stat.gr_name == 'wheel' and
+             (cis_4_1_1_3_allow.stat.mode | int(base=8)) % 8 == 0 and
+             ((cis_4_1_1_3_allow.stat.mode | int(base=8)) // 8) % 8 in [0, 4] and
+             ((cis_4_1_1_3_allow.stat.mode | int(base=8)) // 64) % 8 in [4, 6] }}
+        cis_4_1_1_3_deny_ok: >-
+          {{ not cis_4_1_1_3_deny.stat.exists or
+             (cis_4_1_1_3_deny.stat.pw_name == 'root' and
+              cis_4_1_1_3_deny.stat.gr_name == 'wheel' and
+              (cis_4_1_1_3_deny.stat.mode | int(base=8)) % 8 == 0 and
+              ((cis_4_1_1_3_deny.stat.mode | int(base=8)) // 8) % 8 in [0, 4] and
+              ((cis_4_1_1_3_deny.stat.mode | int(base=8)) // 64) % 8 in [4, 6]) }}
+      changed_when: not (cis_4_1_1_3_allow_ok | bool) or not (cis_4_1_1_3_deny_ok | bool)
+      check_mode: false
+
+    - name: "4.1.1.3 | AUDIT | Report cron access control state"
+      ansible.builtin.debug:
+        msg: "{{ ['4.1.1.3 cron access control:', ''] +
+              ['  /var/cron/allow: ' ~ ('OK' if cis_4_1_1_3_allow_ok else 'NON-COMPLIANT — missing or wrong owner/mode'),
+               '  /var/cron/deny: ' ~ ('OK or absent' if cis_4_1_1_3_deny_ok else 'NON-COMPLIANT — wrong owner/mode'),
+               '',
+               'COMPLIANT: cron access controls are properly configured'
+               if (cis_4_1_1_3_allow_ok | bool) and (cis_4_1_1_3_deny_ok | bool)
+               else 'NON-COMPLIANT: see details above — review /var/cron/allow contents per site policy'] }}"
+
+    - name: "4.1.1.3 | REMEDIATE | Create /var/cron/allow if absent"
+      ansible.builtin.file:
+        path: /var/cron/allow
+        state: touch
+        owner: root
+        group: wheel
+        mode: '0640'
+      when:
+        - freebsd_cis_remediate | bool
+        - not cis_4_1_1_3_allow.stat.exists
+
+    - name: "4.1.1.3 | REMEDIATE | Fix /var/cron/allow permissions"
+      ansible.builtin.file:
+        path: /var/cron/allow
+        owner: root
+        group: wheel
+        mode: '0640'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_4_1_1_3_allow.stat.exists
+        - not (cis_4_1_1_3_allow_ok | bool)
+
+    - name: "4.1.1.3 | REMEDIATE | Fix /var/cron/deny permissions if present"
+      ansible.builtin.file:
+        path: /var/cron/deny
+        owner: root
+        group: wheel
+        mode: '0640'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_4_1_1_3_deny.stat.exists
+        - not (cis_4_1_1_3_deny_ok | bool)
+
+# ---
+
+- name: "4.1.2.1 | Ensure at is restricted to authorized users"
+  when: "'4.1.2.1' not in active_exceptions"
+  tags: [rule_4.1.2.1, level1, section_4, manual]
+  block:
+
+    - name: "4.1.2.1 | AUDIT | Stat /var/at/at.allow"
+      ansible.builtin.stat:
+        path: /var/at/at.allow
+      register: cis_4_1_2_1_allow
+      check_mode: false
+
+    - name: "4.1.2.1 | AUDIT | Stat /var/at/at.deny"
+      ansible.builtin.stat:
+        path: /var/at/at.deny
+      register: cis_4_1_2_1_deny
+      check_mode: false
+
+    - name: "4.1.2.1 | AUDIT | Evaluate at access control state"
+      ansible.builtin.set_fact:
+        cis_4_1_2_1_allow_ok: >-
+          {{ cis_4_1_2_1_allow.stat.exists and
+             cis_4_1_2_1_allow.stat.pw_name in ['root', 'daemon'] and
+             cis_4_1_2_1_allow.stat.gr_name == 'wheel' and
+             (cis_4_1_2_1_allow.stat.mode | int(base=8)) % 8 == 0 and
+             ((cis_4_1_2_1_allow.stat.mode | int(base=8)) // 8) % 8 in [0, 4] and
+             ((cis_4_1_2_1_allow.stat.mode | int(base=8)) // 64) % 8 in [4, 6] }}
+        cis_4_1_2_1_deny_ok: >-
+          {{ not cis_4_1_2_1_deny.stat.exists or
+             (cis_4_1_2_1_deny.stat.pw_name in ['root', 'daemon'] and
+              cis_4_1_2_1_deny.stat.gr_name == 'wheel' and
+              (cis_4_1_2_1_deny.stat.mode | int(base=8)) % 8 == 0 and
+              ((cis_4_1_2_1_deny.stat.mode | int(base=8)) // 8) % 8 in [0, 4] and
+              ((cis_4_1_2_1_deny.stat.mode | int(base=8)) // 64) % 8 in [4, 6]) }}
+      changed_when: not (cis_4_1_2_1_allow_ok | bool) or not (cis_4_1_2_1_deny_ok | bool)
+      check_mode: false
+
+    - name: "4.1.2.1 | AUDIT | Report at access control state"
+      ansible.builtin.debug:
+        msg: "{{ ['4.1.2.1 at access control:', ''] +
+              ['  /var/at/at.allow: ' ~ ('OK' if cis_4_1_2_1_allow_ok else 'NON-COMPLIANT — missing or wrong owner/mode'),
+               '  /var/at/at.deny: ' ~ ('OK or absent' if cis_4_1_2_1_deny_ok else 'NON-COMPLIANT — wrong owner/mode'),
+               '',
+               'COMPLIANT: at access controls are properly configured'
+               if (cis_4_1_2_1_allow_ok | bool) and (cis_4_1_2_1_deny_ok | bool)
+               else 'NON-COMPLIANT: see details above — review /var/at/at.allow contents per site policy'] }}"
+
+    - name: "4.1.2.1 | REMEDIATE | Create /var/at/at.allow if absent"
+      ansible.builtin.file:
+        path: /var/at/at.allow
+        state: touch
+        owner: root
+        group: wheel
+        mode: '0640'
+      when:
+        - freebsd_cis_remediate | bool
+        - not cis_4_1_2_1_allow.stat.exists
+
+    - name: "4.1.2.1 | REMEDIATE | Fix /var/at/at.allow permissions"
+      ansible.builtin.file:
+        path: /var/at/at.allow
+        owner: root
+        group: wheel
+        mode: '0640'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_4_1_2_1_allow.stat.exists
+        - not (cis_4_1_2_1_allow_ok | bool)
+
+    - name: "4.1.2.1 | REMEDIATE | Fix /var/at/at.deny permissions if present"
+      ansible.builtin.file:
+        path: /var/at/at.deny
+        owner: root
+        group: wheel
+        mode: '0640'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_4_1_2_1_deny.stat.exists
+        - not (cis_4_1_2_1_deny_ok | bool)
+
+# =============================================================
+# 4.2 Configure SSH Server
+# Pre-gather effective sshd configuration (reused by 4.2.4–4.2.21)
+# =============================================================
+
+- name: "4.2 | GATHER | Query sshd effective configuration via sshd -T"
+  when: >-
+    (['4.2.4', '4.2.5', '4.2.6', '4.2.7', '4.2.8', '4.2.9', '4.2.10',
+      '4.2.11', '4.2.12', '4.2.13', '4.2.14', '4.2.15', '4.2.16', '4.2.17',
+      '4.2.18', '4.2.19', '4.2.20', '4.2.21'] | difference(active_exceptions) | length) > 0
+  ansible.builtin.command:
+    argv:
+      - "{{ freebsd_cis_sshd_bin }}"
+      - -T
+      - -f
+      - "{{ freebsd_cis_sshd_config }}"
+      - -C
+      - "user=root"
+      - -C
+      - "host={{ ansible_facts['hostname'] }}"
+      - -C
+      - "addr={{ ((ansible_facts['default_ipv4'] | default({})).address) | default('127.0.0.1') }}"
+  register: cis_4_2_sshd_config_dump
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags:
+    - section_4
+    - rule_4.2.4
+    - rule_4.2.5
+    - rule_4.2.6
+    - rule_4.2.7
+    - rule_4.2.8
+    - rule_4.2.9
+    - rule_4.2.10
+    - rule_4.2.11
+    - rule_4.2.12
+    - rule_4.2.13
+    - rule_4.2.14
+    - rule_4.2.15
+    - rule_4.2.16
+    - rule_4.2.17
+    - rule_4.2.18
+    - rule_4.2.19
+    - rule_4.2.20
+    - rule_4.2.21
+
+- name: "4.2 | GATHER | Report sshd -T query status"
+  when: >-
+    (['4.2.4', '4.2.5', '4.2.6', '4.2.7', '4.2.8', '4.2.9', '4.2.10',
+      '4.2.11', '4.2.12', '4.2.13', '4.2.14', '4.2.15', '4.2.16', '4.2.17',
+      '4.2.18', '4.2.19', '4.2.20', '4.2.21'] | difference(active_exceptions) | length) > 0
+  ansible.builtin.debug:
+    msg: >-
+      {{ 'NON-COMPLIANT: sshd -T query failed (rc=' ~ cis_4_2_sshd_config_dump.rc ~
+         ') — effective configuration unavailable; dependent controls 4.2.4–4.2.21 may report incorrect results'
+         if cis_4_2_sshd_config_dump.rc != 0
+         else 'sshd -T: effective configuration query succeeded' }}
+  changed_when: cis_4_2_sshd_config_dump.rc != 0
+  tags:
+    - section_4
+    - rule_4.2.4
+    - rule_4.2.5
+    - rule_4.2.6
+    - rule_4.2.7
+    - rule_4.2.8
+    - rule_4.2.9
+    - rule_4.2.10
+    - rule_4.2.11
+    - rule_4.2.12
+    - rule_4.2.13
+    - rule_4.2.14
+    - rule_4.2.15
+    - rule_4.2.16
+    - rule_4.2.17
+    - rule_4.2.18
+    - rule_4.2.19
+    - rule_4.2.20
+    - rule_4.2.21
+
+# ---
+
+- name: "4.2.1 | Ensure permissions on /etc/ssh/sshd_config are configured"
+  when: "'4.2.1' not in active_exceptions"
+  tags: [rule_4.2.1, level1, section_4]
+  block:
+
+    - name: "4.2.1 | AUDIT | Stat {{ freebsd_cis_sshd_config }}"
+      ansible.builtin.stat:
+        path: "{{ freebsd_cis_sshd_config }}"
+      register: cis_4_2_1_sshdcfg
+      changed_when: >-
+        not cis_4_2_1_sshdcfg.stat.exists or
+        cis_4_2_1_sshdcfg.stat.pw_name != 'root' or
+        cis_4_2_1_sshdcfg.stat.gr_name != 'wheel' or
+        (cis_4_2_1_sshdcfg.stat.mode | int(base=8)) % 64 != 0 or
+        ((cis_4_2_1_sshdcfg.stat.mode | int(base=8)) // 64) % 8 not in [4, 6]
+      failed_when: false
+      check_mode: false
+
+    - name: "4.2.1 | AUDIT | Report sshd_config permission state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: ' ~ freebsd_cis_sshd_config ~ ' owner=' ~
+             (cis_4_2_1_sshdcfg.stat.pw_name | default('?')) ~ ' group=' ~
+             (cis_4_2_1_sshdcfg.stat.gr_name | default('?')) ~ ' mode=' ~
+             (cis_4_2_1_sshdcfg.stat.mode | default('?')) ~
+             ' — expected root:wheel mode 0600 or more restrictive'
+             if cis_4_2_1_sshdcfg is changed
+             else 'COMPLIANT: ' ~ freebsd_cis_sshd_config ~ ' has correct ownership and mode' }}
+
+    - name: "4.2.1 | REMEDIATE | Fix sshd_config permissions"
+      ansible.builtin.file:
+        path: "{{ freebsd_cis_sshd_config }}"
+        owner: root
+        group: wheel
+        mode: '0600'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_4_2_1_sshdcfg.stat.exists
+        - cis_4_2_1_sshdcfg.stat.pw_name != 'root' or
+          cis_4_2_1_sshdcfg.stat.gr_name != 'wheel' or
+          (cis_4_2_1_sshdcfg.stat.mode | int(base=8)) % 64 != 0 or
+          ((cis_4_2_1_sshdcfg.stat.mode | int(base=8)) // 64) % 8 not in [4, 6]
+
+# ---
+
+- name: "4.2.2 | Ensure permissions on SSH private host key files are configured"
+  when: "'4.2.2' not in active_exceptions"
+  tags: [rule_4.2.2, level1, section_4]
+  block:
+
+    - name: "4.2.2 | AUDIT | Find SSH private host key files"
+      ansible.builtin.find:
+        paths: "{{ freebsd_cis_sshd_config | dirname }}"
+        patterns: "ssh_host_*_key"
+        file_type: file
+      register: cis_4_2_2_privkeys
+      failed_when: false
+      check_mode: false
+
+    - name: "4.2.2 | AUDIT | Check private key permissions"
+      ansible.builtin.stat:
+        path: "{{ item.path }}"
+      loop: "{{ cis_4_2_2_privkeys.files }}"
+      loop_control:
+        label: "{{ item.path }}"
+      register: cis_4_2_2_privkey_stats
+      check_mode: false
+
+    - name: "4.2.2 | AUDIT | Report private key permission state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: ' ~ item.stat.path ~ ' owner=' ~
+             (item.stat.pw_name | default('?')) ~ ' group=' ~
+             (item.stat.gr_name | default('?')) ~ ' mode=' ~
+             (item.stat.mode | default('?')) ~
+             ' — expected root:wheel mode 0600 or more restrictive (0400 permitted)'
+             if (item.stat.pw_name != 'root' or
+                 item.stat.gr_name != 'wheel' or
+                 (item.stat.mode | int(base=8)) % 64 != 0 or
+                 ((item.stat.mode | int(base=8)) // 64) % 8 not in [4, 6])
+             else 'COMPLIANT: ' ~ item.stat.path ~ ' has correct ownership and mode' }}
+      loop: "{{ cis_4_2_2_privkey_stats.results }}"
+      loop_control:
+        label: "{{ item.stat.path }}"
+
+    - name: "4.2.2 | AUDIT | Summarize private key compliance"
+      ansible.builtin.set_fact:
+        cis_4_2_2_non_compliant: >-
+          {{ (cis_4_2_2_privkey_stats.results
+              | selectattr('stat.pw_name', 'ne', 'root') | list | length > 0)
+             or (cis_4_2_2_privkey_stats.results
+              | selectattr('stat.gr_name', 'ne', 'wheel') | list | length > 0)
+             or (cis_4_2_2_privkey_stats.results
+              | rejectattr('stat.mode', 'match', '^0[46]00$') | list | length > 0) }}
+      changed_when: cis_4_2_2_non_compliant | bool
+      check_mode: false
+
+    - name: "4.2.2 | REMEDIATE | Fix SSH private host key file permissions"
+      ansible.builtin.file:
+        path: "{{ item.stat.path }}"
+        owner: root
+        group: wheel
+        mode: '0600'
+      loop: "{{ cis_4_2_2_privkey_stats.results }}"
+      loop_control:
+        label: "{{ item.stat.path }}"
+      when:
+        - freebsd_cis_remediate | bool
+        - item.stat.pw_name != 'root' or
+          item.stat.gr_name != 'wheel' or
+          (item.stat.mode | int(base=8)) % 64 != 0 or
+          ((item.stat.mode | int(base=8)) // 64) % 8 not in [4, 6]
+
+# ---
+
+- name: "4.2.3 | Ensure permissions on SSH public host key files are configured"
+  when: "'4.2.3' not in active_exceptions"
+  tags: [rule_4.2.3, level1, section_4]
+  block:
+
+    - name: "4.2.3 | AUDIT | Find SSH public host key files"
+      ansible.builtin.find:
+        paths: "{{ freebsd_cis_sshd_config | dirname }}"
+        patterns: "ssh_host_*_key.pub"
+        file_type: file
+      register: cis_4_2_3_pubkeys
+      failed_when: false
+      check_mode: false
+
+    - name: "4.2.3 | AUDIT | Check public key permissions"
+      ansible.builtin.stat:
+        path: "{{ item.path }}"
+      loop: "{{ cis_4_2_3_pubkeys.files }}"
+      loop_control:
+        label: "{{ item.path }}"
+      register: cis_4_2_3_pubkey_stats
+      check_mode: false
+
+    - name: "4.2.3 | AUDIT | Report public key permission state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: ' ~ item.stat.path ~ ' owner=' ~
+             (item.stat.pw_name | default('?')) ~ ' group=' ~
+             (item.stat.gr_name | default('?')) ~ ' mode=' ~
+             (item.stat.mode | default('?')) ~
+             ' — expected root:wheel mode 0644 or more restrictive'
+             if (item.stat.pw_name != 'root' or
+                 item.stat.gr_name != 'wheel' or
+                 ((item.stat.mode | int(base=8)) // 64) % 8 not in [4, 6] or
+                 (item.stat.mode | int(base=8)) % 8 not in [0, 4] or
+                 ((item.stat.mode | int(base=8)) // 8) % 8 not in [0, 4])
+             else 'COMPLIANT: ' ~ item.stat.path ~ ' has correct ownership and mode' }}
+      loop: "{{ cis_4_2_3_pubkey_stats.results }}"
+      loop_control:
+        label: "{{ item.stat.path }}"
+
+    - name: "4.2.3 | AUDIT | Summarize public key compliance"
+      ansible.builtin.set_fact:
+        cis_4_2_3_non_compliant: >-
+          {{ (cis_4_2_3_pubkey_stats.results
+              | selectattr('stat.pw_name', 'ne', 'root') | list | length > 0)
+             or (cis_4_2_3_pubkey_stats.results
+              | selectattr('stat.gr_name', 'ne', 'wheel') | list | length > 0)
+             or (cis_4_2_3_pubkey_stats.results
+              | rejectattr('stat.mode', 'match', '^0[46][04][04]$') | list | length > 0) }}
+      changed_when: cis_4_2_3_non_compliant | bool
+      check_mode: false
+
+    - name: "4.2.3 | REMEDIATE | Fix SSH public host key file permissions"
+      ansible.builtin.file:
+        path: "{{ item.stat.path }}"
+        owner: root
+        group: wheel
+        mode: '0644'
+      loop: "{{ cis_4_2_3_pubkey_stats.results }}"
+      loop_control:
+        label: "{{ item.stat.path }}"
+      when:
+        - freebsd_cis_remediate | bool
+        - item.stat.pw_name != 'root' or
+          item.stat.gr_name != 'wheel' or
+          ((item.stat.mode | int(base=8)) // 64) % 8 not in [4, 6] or
+          (item.stat.mode | int(base=8)) % 8 not in [0, 4] or
+          ((item.stat.mode | int(base=8)) // 8) % 8 not in [0, 4]
+
+# ---
+
+- name: "4.2.4 | Ensure sshd access is configured"
+  when: "'4.2.4' not in active_exceptions"
+  tags: [rule_4.2.4, level1, section_4, manual]
+  block:
+
+    - name: "4.2.4 | AUDIT | Check for access control directives in effective config"
+      ansible.builtin.set_fact:
+        cis_4_2_4_access_configured: >-
+          {{ cis_4_2_sshd_config_dump.stdout_lines | default([])
+             | select('match', '^(allowusers|allowgroups|denyusers|denygroups)\s')
+             | list | length > 0 }}
+      changed_when: not (cis_4_2_4_access_configured | bool)
+      check_mode: false
+
+    - name: "4.2.4 | AUDIT | Report sshd access control state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: at least one sshd access control directive is configured'
+             if cis_4_2_4_access_configured | bool
+             else 'NON-COMPLIANT: no AllowUsers/AllowGroups/DenyUsers/DenyGroups directive found — set at least one per site policy' }}
+
+    - name: "4.2.4 | REMEDIATE | Set AllowUsers if configured"
+      ansible.builtin.lineinfile:
+        path: "{{ freebsd_cis_sshd_config }}"
+        regexp: '^\s*#?\s*AllowUsers\s'
+        line: "AllowUsers {{ freebsd_cis_sshd_allow_users }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      notify: Reload sshd
+      when:
+        - freebsd_cis_remediate | bool
+        - freebsd_cis_sshd_allow_users | length > 0
+
+    - name: "4.2.4 | REMEDIATE | Set AllowGroups if configured"
+      ansible.builtin.lineinfile:
+        path: "{{ freebsd_cis_sshd_config }}"
+        regexp: '^\s*#?\s*AllowGroups\s'
+        line: "AllowGroups {{ freebsd_cis_sshd_allow_groups }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      notify: Reload sshd
+      when:
+        - freebsd_cis_remediate | bool
+        - freebsd_cis_sshd_allow_groups | length > 0
+
+    - name: "4.2.4 | REMEDIATE | Set DenyUsers if configured"
+      ansible.builtin.lineinfile:
+        path: "{{ freebsd_cis_sshd_config }}"
+        regexp: '^\s*#?\s*DenyUsers\s'
+        line: "DenyUsers {{ freebsd_cis_sshd_deny_users }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      notify: Reload sshd
+      when:
+        - freebsd_cis_remediate | bool
+        - freebsd_cis_sshd_deny_users | length > 0
+
+    - name: "4.2.4 | REMEDIATE | Set DenyGroups if configured"
+      ansible.builtin.lineinfile:
+        path: "{{ freebsd_cis_sshd_config }}"
+        regexp: '^\s*#?\s*DenyGroups\s'
+        line: "DenyGroups {{ freebsd_cis_sshd_deny_groups }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      notify: Reload sshd
+      when:
+        - freebsd_cis_remediate | bool
+        - freebsd_cis_sshd_deny_groups | length > 0
+
+# ---
+
+- name: "4.2.5 | Ensure sshd Banner is configured"
+  when: "'4.2.5' not in active_exceptions"
+  tags: [rule_4.2.5, level1, section_4, manual]
+  block:
+
+    - name: "4.2.5 | AUDIT | Check Banner directive"
+      ansible.builtin.set_fact:
+        cis_4_2_5_banner_val: >-
+          {{ cis_4_2_sshd_config_dump.stdout_lines | default([])
+             | select('match', '^banner\s')
+             | list | first | default('banner none')
+             | regex_replace('^banner\s+', '') | trim }}
+      changed_when: cis_4_2_5_banner_val != freebsd_cis_sshd_banner
+      check_mode: false
+
+    - name: "4.2.5 | AUDIT | Report Banner state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: Banner is set to ' ~ cis_4_2_5_banner_val
+             if cis_4_2_5_banner_val == freebsd_cis_sshd_banner
+             else 'NON-COMPLIANT: Banner=' ~ cis_4_2_5_banner_val ~
+                  ' — expected ' ~ freebsd_cis_sshd_banner }}
+
+    - name: "4.2.5 | REMEDIATE | Set Banner in sshd_config"
+      ansible.builtin.lineinfile:
+        path: "{{ freebsd_cis_sshd_config }}"
+        regexp: '^\s*#?\s*Banner\s'
+        line: "Banner {{ freebsd_cis_sshd_banner }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      notify: Reload sshd
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_4_2_5_banner_val != freebsd_cis_sshd_banner
+
+# ---
+
+- name: "4.2.6 | Ensure sshd Ciphers are configured"
+  when: "'4.2.6' not in active_exceptions"
+  tags: [rule_4.2.6, level1, section_4, manual]
+  block:
+
+    - name: "4.2.6 | AUDIT | Extract effective cipher list"
+      ansible.builtin.set_fact:
+        cis_4_2_6_cipher_list: >-
+          {{ (cis_4_2_sshd_config_dump.stdout_lines | default([])
+             | select('match', '^ciphers\s')
+             | list | first | default('ciphers')
+             | regex_replace('^ciphers\s+', '') | trim).split(',')
+             | map('trim') | list }}
+      changed_when: false
+      check_mode: false
+
+    - name: "4.2.6 | AUDIT | Check for weak ciphers"
+      ansible.builtin.set_fact:
+        cis_4_2_6_weak_found: >-
+          {{ freebsd_cis_sshd_weak_ciphers.split(',')
+             | map('trim') | select('in', cis_4_2_6_cipher_list) | list }}
+      changed_when: cis_4_2_6_weak_found | length > 0
+      check_mode: false
+
+    - name: "4.2.6 | AUDIT | Report Ciphers state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: weak ciphers present: ' ~ cis_4_2_6_weak_found | join(', ')
+             if cis_4_2_6_weak_found | length > 0
+             else 'COMPLIANT: no weak ciphers detected in effective cipher list' }}
+
+    - name: "4.2.6 | REMEDIATE | Remove weak ciphers from sshd_config"
+      ansible.builtin.lineinfile:
+        path: "{{ freebsd_cis_sshd_config }}"
+        regexp: '^\s*#?\s*Ciphers\s'
+        line: "Ciphers -{{ freebsd_cis_sshd_weak_ciphers }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      notify: Reload sshd
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_4_2_6_weak_found | length > 0
+
+# ---
+
+- name: "4.2.7 | Ensure sshd ClientAliveInterval and ClientAliveCountMax are configured"
+  when: "'4.2.7' not in active_exceptions"
+  tags: [rule_4.2.7, level1, section_4, manual]
+  block:
+
+    - name: "4.2.7 | AUDIT | Extract ClientAlive values"
+      ansible.builtin.set_fact:
+        cis_4_2_7_interval: >-
+          {{ cis_4_2_sshd_config_dump.stdout_lines | default([])
+             | select('match', '^clientaliveinterval\s')
+             | list | first | default('clientaliveinterval 0')
+             | regex_replace('^clientaliveinterval\s+', '') | trim | int }}
+        cis_4_2_7_countmax: >-
+          {{ cis_4_2_sshd_config_dump.stdout_lines | default([])
+             | select('match', '^clientalivecountmax\s')
+             | list | first | default('clientalivecountmax 3')
+             | regex_replace('^clientalivecountmax\s+', '') | trim | int }}
+      changed_when: >-
+        (cis_4_2_7_interval | int) == 0 or (cis_4_2_7_countmax | int) == 0
+      check_mode: false
+
+    - name: "4.2.7 | AUDIT | Report ClientAlive state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: ClientAliveInterval=' ~ cis_4_2_7_interval ~
+             ' ClientAliveCountMax=' ~ cis_4_2_7_countmax ~
+             ' — both must be > 0'
+             if (cis_4_2_7_interval | int) == 0 or (cis_4_2_7_countmax | int) == 0
+             else 'COMPLIANT: ClientAliveInterval=' ~ cis_4_2_7_interval ~
+                  ' ClientAliveCountMax=' ~ cis_4_2_7_countmax }}
+
+    - name: "4.2.7 | REMEDIATE | Set ClientAliveInterval"
+      ansible.builtin.lineinfile:
+        path: "{{ freebsd_cis_sshd_config }}"
+        regexp: '^\s*#?\s*ClientAliveInterval\s'
+        line: "ClientAliveInterval {{ freebsd_cis_sshd_client_alive_interval }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      notify: Reload sshd
+      when:
+        - freebsd_cis_remediate | bool
+        - (cis_4_2_7_interval | int) == 0
+
+    - name: "4.2.7 | REMEDIATE | Set ClientAliveCountMax"
+      ansible.builtin.lineinfile:
+        path: "{{ freebsd_cis_sshd_config }}"
+        regexp: '^\s*#?\s*ClientAliveCountMax\s'
+        line: "ClientAliveCountMax {{ freebsd_cis_sshd_client_alive_count_max }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      notify: Reload sshd
+      when:
+        - freebsd_cis_remediate | bool
+        - (cis_4_2_7_countmax | int) == 0
+
+# ---
+
+- name: "4.2.8 | Ensure sshd DisableForwarding is enabled"
+  when: "'4.2.8' not in active_exceptions"
+  tags: [rule_4.2.8, level1, section_4, manual]
+  block:
+
+    - name: "4.2.8 | AUDIT | Check DisableForwarding"
+      ansible.builtin.set_fact:
+        cis_4_2_8_val: >-
+          {{ cis_4_2_sshd_config_dump.stdout_lines | default([])
+             | select('match', '^disableforwarding\s')
+             | list | first | default('disableforwarding no')
+             | regex_replace('^disableforwarding\s+', '') | trim }}
+      changed_when: cis_4_2_8_val != 'yes'
+      check_mode: false
+
+    - name: "4.2.8 | AUDIT | Report DisableForwarding state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: DisableForwarding=yes'
+             if cis_4_2_8_val == 'yes'
+             else 'NON-COMPLIANT: DisableForwarding=' ~ cis_4_2_8_val ~ ' — expected yes' }}
+
+    - name: "4.2.8 | REMEDIATE | Set DisableForwarding yes"
+      ansible.builtin.lineinfile:
+        path: "{{ freebsd_cis_sshd_config }}"
+        regexp: '^\s*#?\s*DisableForwarding\s'
+        line: 'DisableForwarding yes'
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      notify: Reload sshd
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_4_2_8_val != 'yes'
+
+# ---
+
+- name: "4.2.9 | Ensure sshd HostbasedAuthentication is disabled"
+  when: "'4.2.9' not in active_exceptions"
+  tags: [rule_4.2.9, level1, section_4, manual]
+  block:
+
+    - name: "4.2.9 | AUDIT | Check HostbasedAuthentication"
+      ansible.builtin.set_fact:
+        cis_4_2_9_val: >-
+          {{ cis_4_2_sshd_config_dump.stdout_lines | default([])
+             | select('match', '^hostbasedauthentication\s')
+             | list | first | default('hostbasedauthentication no')
+             | regex_replace('^hostbasedauthentication\s+', '') | trim }}
+      changed_when: cis_4_2_9_val != 'no'
+      check_mode: false
+
+    - name: "4.2.9 | AUDIT | Report HostbasedAuthentication state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: HostbasedAuthentication=no'
+             if cis_4_2_9_val == 'no'
+             else 'NON-COMPLIANT: HostbasedAuthentication=' ~ cis_4_2_9_val ~ ' — expected no' }}
+
+    - name: "4.2.9 | REMEDIATE | Set HostbasedAuthentication no"
+      ansible.builtin.lineinfile:
+        path: "{{ freebsd_cis_sshd_config }}"
+        regexp: '^\s*#?\s*HostbasedAuthentication\s'
+        line: 'HostbasedAuthentication no'
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      notify: Reload sshd
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_4_2_9_val != 'no'
+
+# ---
+
+- name: "4.2.10 | Ensure sshd IgnoreRhosts is enabled"
+  when: "'4.2.10' not in active_exceptions"
+  tags: [rule_4.2.10, level1, section_4, manual]
+  block:
+
+    - name: "4.2.10 | AUDIT | Check IgnoreRhosts"
+      ansible.builtin.set_fact:
+        cis_4_2_10_val: >-
+          {{ cis_4_2_sshd_config_dump.stdout_lines | default([])
+             | select('match', '^ignorerhosts\s')
+             | list | first | default('ignorerhosts yes')
+             | regex_replace('^ignorerhosts\s+', '') | trim }}
+      changed_when: cis_4_2_10_val != 'yes'
+      check_mode: false
+
+    - name: "4.2.10 | AUDIT | Report IgnoreRhosts state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: IgnoreRhosts=yes'
+             if cis_4_2_10_val == 'yes'
+             else 'NON-COMPLIANT: IgnoreRhosts=' ~ cis_4_2_10_val ~ ' — expected yes' }}
+
+    - name: "4.2.10 | REMEDIATE | Set IgnoreRhosts yes"
+      ansible.builtin.lineinfile:
+        path: "{{ freebsd_cis_sshd_config }}"
+        regexp: '^\s*#?\s*IgnoreRhosts\s'
+        line: 'IgnoreRhosts yes'
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      notify: Reload sshd
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_4_2_10_val != 'yes'
+
+# ---
+
+- name: "4.2.11 | Ensure sshd KexAlgorithms is configured"
+  when: "'4.2.11' not in active_exceptions"
+  tags: [rule_4.2.11, level1, section_4, manual]
+  block:
+
+    - name: "4.2.11 | AUDIT | Extract effective KexAlgorithms"
+      ansible.builtin.set_fact:
+        cis_4_2_11_kex_list: >-
+          {{ (cis_4_2_sshd_config_dump.stdout_lines | default([])
+             | select('match', '^kexalgorithms\s')
+             | list | first | default('kexalgorithms')
+             | regex_replace('^kexalgorithms\s+', '') | trim).split(',')
+             | map('trim') | list }}
+      changed_when: false
+      check_mode: false
+
+    - name: "4.2.11 | AUDIT | Check for weak KexAlgorithms"
+      ansible.builtin.set_fact:
+        cis_4_2_11_weak_found: >-
+          {{ freebsd_cis_sshd_weak_kex.split(',')
+             | map('trim') | select('in', cis_4_2_11_kex_list) | list }}
+      changed_when: cis_4_2_11_weak_found | length > 0
+      check_mode: false
+
+    - name: "4.2.11 | AUDIT | Report KexAlgorithms state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: weak KexAlgorithms present: ' ~ cis_4_2_11_weak_found | join(', ')
+             if cis_4_2_11_weak_found | length > 0
+             else 'COMPLIANT: no weak KexAlgorithms detected in effective list' }}
+
+    - name: "4.2.11 | REMEDIATE | Remove weak KexAlgorithms from sshd_config"
+      ansible.builtin.lineinfile:
+        path: "{{ freebsd_cis_sshd_config }}"
+        regexp: '^\s*#?\s*KexAlgorithms\s'
+        line: "KexAlgorithms -{{ freebsd_cis_sshd_weak_kex }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      notify: Reload sshd
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_4_2_11_weak_found | length > 0
+
+# ---
+
+- name: "4.2.12 | Ensure sshd LoginGraceTime is configured"
+  when: "'4.2.12' not in active_exceptions"
+  tags: [rule_4.2.12, level1, section_4, manual]
+  block:
+
+    - name: "4.2.12 | AUDIT | Check LoginGraceTime"
+      ansible.builtin.set_fact:
+        cis_4_2_12_val: >-
+          {{ cis_4_2_sshd_config_dump.stdout_lines | default([])
+             | select('match', '^logingracetime\s')
+             | list | first | default('logingracetime 120')
+             | regex_replace('^logingracetime\s+', '') | trim | int }}
+      changed_when: (cis_4_2_12_val | int) == 0 or (cis_4_2_12_val | int) > 60
+      check_mode: false
+
+    - name: "4.2.12 | AUDIT | Report LoginGraceTime state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: LoginGraceTime=' ~ cis_4_2_12_val ~
+             ' — expected 1-60 seconds'
+             if (cis_4_2_12_val | int) == 0 or (cis_4_2_12_val | int) > 60
+             else 'COMPLIANT: LoginGraceTime=' ~ cis_4_2_12_val }}
+
+    - name: "4.2.12 | REMEDIATE | Set LoginGraceTime"
+      ansible.builtin.lineinfile:
+        path: "{{ freebsd_cis_sshd_config }}"
+        regexp: '^\s*#?\s*LoginGraceTime\s'
+        line: "LoginGraceTime {{ freebsd_cis_sshd_login_grace_time }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      notify: Reload sshd
+      when:
+        - freebsd_cis_remediate | bool
+        - (cis_4_2_12_val | int) == 0 or (cis_4_2_12_val | int) > 60
+
+# ---
+
+- name: "4.2.13 | Ensure sshd LogLevel is configured"
+  when: "'4.2.13' not in active_exceptions"
+  tags: [rule_4.2.13, level1, section_4, manual]
+  block:
+
+    - name: "4.2.13 | AUDIT | Check LogLevel"
+      ansible.builtin.set_fact:
+        cis_4_2_13_val: >-
+          {{ cis_4_2_sshd_config_dump.stdout_lines | default([])
+             | select('match', '^loglevel\s')
+             | list | first | default('loglevel INFO')
+             | regex_replace('^loglevel\s+', '') | trim | upper }}
+      changed_when: cis_4_2_13_val not in ['INFO', 'VERBOSE']
+      check_mode: false
+
+    - name: "4.2.13 | AUDIT | Report LogLevel state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: LogLevel=' ~ cis_4_2_13_val
+             if cis_4_2_13_val in ['INFO', 'VERBOSE']
+             else 'NON-COMPLIANT: LogLevel=' ~ cis_4_2_13_val ~ ' — expected INFO or VERBOSE' }}
+
+    - name: "4.2.13 | REMEDIATE | Set LogLevel"
+      ansible.builtin.lineinfile:
+        path: "{{ freebsd_cis_sshd_config }}"
+        regexp: '^\s*#?\s*LogLevel\s'
+        line: "LogLevel {{ freebsd_cis_sshd_log_level }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      notify: Reload sshd
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_4_2_13_val not in ['INFO', 'VERBOSE']
+
+# ---
+
+- name: "4.2.14 | Ensure sshd MACs are configured"
+  when: "'4.2.14' not in active_exceptions"
+  tags: [rule_4.2.14, level1, section_4, manual]
+  block:
+
+    - name: "4.2.14 | AUDIT | Extract effective MACs list"
+      ansible.builtin.set_fact:
+        cis_4_2_14_macs_list: >-
+          {{ (cis_4_2_sshd_config_dump.stdout_lines | default([])
+             | select('match', '^macs\s')
+             | list | first | default('macs')
+             | regex_replace('^macs\s+', '') | trim).split(',')
+             | map('trim') | list }}
+      changed_when: false
+      check_mode: false
+
+    - name: "4.2.14 | AUDIT | Check for weak MACs"
+      ansible.builtin.set_fact:
+        cis_4_2_14_weak_found: >-
+          {{ freebsd_cis_sshd_weak_macs.split(',')
+             | map('trim') | select('in', cis_4_2_14_macs_list) | list }}
+      changed_when: cis_4_2_14_weak_found | length > 0
+      check_mode: false
+
+    - name: "4.2.14 | AUDIT | Report MACs state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: weak MACs present: ' ~ cis_4_2_14_weak_found | join(', ')
+             if cis_4_2_14_weak_found | length > 0
+             else 'COMPLIANT: no weak MACs detected in effective list' }}
+
+    - name: "4.2.14 | REMEDIATE | Remove weak MACs from sshd_config"
+      ansible.builtin.lineinfile:
+        path: "{{ freebsd_cis_sshd_config }}"
+        regexp: '^\s*#?\s*MACs\s'
+        line: "MACs -{{ freebsd_cis_sshd_weak_macs }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      notify: Reload sshd
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_4_2_14_weak_found | length > 0
+
+# ---
+
+- name: "4.2.15 | Ensure sshd MaxAuthTries is configured"
+  when: "'4.2.15' not in active_exceptions"
+  tags: [rule_4.2.15, level1, section_4, manual]
+  block:
+
+    - name: "4.2.15 | AUDIT | Check MaxAuthTries"
+      ansible.builtin.set_fact:
+        cis_4_2_15_val: >-
+          {{ cis_4_2_sshd_config_dump.stdout_lines | default([])
+             | select('match', '^maxauthtries\s')
+             | list | first | default('maxauthtries 6')
+             | regex_replace('^maxauthtries\s+', '') | trim | int }}
+      changed_when: (cis_4_2_15_val | int) > 4
+      check_mode: false
+
+    - name: "4.2.15 | AUDIT | Report MaxAuthTries state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: MaxAuthTries=' ~ cis_4_2_15_val ~ ' — expected 4 or less'
+             if (cis_4_2_15_val | int) > 4
+             else 'COMPLIANT: MaxAuthTries=' ~ cis_4_2_15_val }}
+
+    - name: "4.2.15 | REMEDIATE | Set MaxAuthTries"
+      ansible.builtin.lineinfile:
+        path: "{{ freebsd_cis_sshd_config }}"
+        regexp: '^\s*#?\s*MaxAuthTries\s'
+        line: "MaxAuthTries {{ freebsd_cis_sshd_max_auth_tries }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      notify: Reload sshd
+      when:
+        - freebsd_cis_remediate | bool
+        - (cis_4_2_15_val | int) > 4
+
+# ---
+
+- name: "4.2.16 | Ensure sshd MaxSessions is configured"
+  when: "'4.2.16' not in active_exceptions"
+  tags: [rule_4.2.16, level1, section_4, manual]
+  block:
+
+    - name: "4.2.16 | AUDIT | Check MaxSessions"
+      ansible.builtin.set_fact:
+        cis_4_2_16_val: >-
+          {{ cis_4_2_sshd_config_dump.stdout_lines | default([])
+             | select('match', '^maxsessions\s')
+             | list | first | default('maxsessions 10')
+             | regex_replace('^maxsessions\s+', '') | trim | int }}
+      changed_when: (cis_4_2_16_val | int) > 10
+      check_mode: false
+
+    - name: "4.2.16 | AUDIT | Report MaxSessions state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: MaxSessions=' ~ cis_4_2_16_val ~ ' — expected 10 or less'
+             if (cis_4_2_16_val | int) > 10
+             else 'COMPLIANT: MaxSessions=' ~ cis_4_2_16_val }}
+
+    - name: "4.2.16 | REMEDIATE | Set MaxSessions"
+      ansible.builtin.lineinfile:
+        path: "{{ freebsd_cis_sshd_config }}"
+        regexp: '^\s*#?\s*MaxSessions\s'
+        line: "MaxSessions {{ freebsd_cis_sshd_max_sessions }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      notify: Reload sshd
+      when:
+        - freebsd_cis_remediate | bool
+        - (cis_4_2_16_val | int) > 10
+
+# ---
+
+- name: "4.2.17 | Ensure sshd MaxStartups is configured"
+  when: "'4.2.17' not in active_exceptions"
+  tags: [rule_4.2.17, level1, section_4, manual]
+  block:
+
+    - name: "4.2.17 | AUDIT | Extract MaxStartups effective value"
+      ansible.builtin.set_fact:
+        cis_4_2_17_val: >-
+          {{ cis_4_2_sshd_config_dump.stdout_lines | default([])
+             | select('match', '^maxstartups\s')
+             | list | first | default('maxstartups 10:30:100')
+             | regex_replace('^maxstartups\s+', '') | trim }}
+      changed_when: false
+      check_mode: false
+
+    - name: "4.2.17 | AUDIT | Parse MaxStartups components"
+      ansible.builtin.set_fact:
+        cis_4_2_17_start: "{{ cis_4_2_17_val.split(':')[0] | int }}"
+        cis_4_2_17_rate: "{{ cis_4_2_17_val.split(':')[1] | int if ':' in cis_4_2_17_val else 0 }}"
+        cis_4_2_17_full: >-
+          {{ cis_4_2_17_val.split(':')[2] | int if cis_4_2_17_val.split(':') | length > 2
+             else (cis_4_2_17_val | int if ':' not in cis_4_2_17_val else 100) }}
+      changed_when: >-
+        (cis_4_2_17_start | int) > 10 or
+        (cis_4_2_17_rate | int) > 30 or
+        (cis_4_2_17_full | int) > 60
+      check_mode: false
+
+    - name: "4.2.17 | AUDIT | Report MaxStartups state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: MaxStartups=' ~ cis_4_2_17_val ~
+             ' — expected 10:30:60 or more restrictive (start<=10, rate<=30, full<=60)'
+             if (cis_4_2_17_start | int) > 10 or
+                (cis_4_2_17_rate | int) > 30 or
+                (cis_4_2_17_full | int) > 60
+             else 'COMPLIANT: MaxStartups=' ~ cis_4_2_17_val }}
+
+    - name: "4.2.17 | REMEDIATE | Set MaxStartups"
+      ansible.builtin.lineinfile:
+        path: "{{ freebsd_cis_sshd_config }}"
+        regexp: '^\s*#?\s*MaxStartups\s'
+        line: "MaxStartups {{ freebsd_cis_sshd_max_startups }}"
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      notify: Reload sshd
+      when:
+        - freebsd_cis_remediate | bool
+        - (cis_4_2_17_start | int) > 10 or
+          (cis_4_2_17_rate | int) > 30 or
+          (cis_4_2_17_full | int) > 60
+
+# ---
+
+- name: "4.2.18 | Ensure sshd PermitEmptyPasswords is disabled"
+  when: "'4.2.18' not in active_exceptions"
+  tags: [rule_4.2.18, level1, section_4, manual]
+  block:
+
+    - name: "4.2.18 | AUDIT | Check PermitEmptyPasswords"
+      ansible.builtin.set_fact:
+        cis_4_2_18_val: >-
+          {{ cis_4_2_sshd_config_dump.stdout_lines | default([])
+             | select('match', '^permitemptypasswords\s')
+             | list | first | default('permitemptypasswords no')
+             | regex_replace('^permitemptypasswords\s+', '') | trim }}
+      changed_when: cis_4_2_18_val != 'no'
+      check_mode: false
+
+    - name: "4.2.18 | AUDIT | Report PermitEmptyPasswords state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: PermitEmptyPasswords=no'
+             if cis_4_2_18_val == 'no'
+             else 'NON-COMPLIANT: PermitEmptyPasswords=' ~ cis_4_2_18_val ~ ' — expected no' }}
+
+    - name: "4.2.18 | REMEDIATE | Set PermitEmptyPasswords no"
+      ansible.builtin.lineinfile:
+        path: "{{ freebsd_cis_sshd_config }}"
+        regexp: '^\s*#?\s*PermitEmptyPasswords\s'
+        line: 'PermitEmptyPasswords no'
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      notify: Reload sshd
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_4_2_18_val != 'no'
+
+# ---
+
+- name: "4.2.19 | Ensure sshd PermitRootLogin is disabled"
+  when: "'4.2.19' not in active_exceptions"
+  tags: [rule_4.2.19, level1, section_4, manual]
+  block:
+
+    - name: "4.2.19 | AUDIT | Check PermitRootLogin"
+      ansible.builtin.set_fact:
+        cis_4_2_19_val: >-
+          {{ cis_4_2_sshd_config_dump.stdout_lines | default([])
+             | select('match', '^permitrootlogin\s')
+             | list | first | default('permitrootlogin no')
+             | regex_replace('^permitrootlogin\s+', '') | trim }}
+      changed_when: cis_4_2_19_val != 'no'
+      check_mode: false
+
+    - name: "4.2.19 | AUDIT | Report PermitRootLogin state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: PermitRootLogin=no'
+             if cis_4_2_19_val == 'no'
+             else 'NON-COMPLIANT: PermitRootLogin=' ~ cis_4_2_19_val ~ ' — expected no' }}
+
+    - name: "4.2.19 | REMEDIATE | Set PermitRootLogin no"
+      ansible.builtin.lineinfile:
+        path: "{{ freebsd_cis_sshd_config }}"
+        regexp: '^\s*#?\s*PermitRootLogin\s'
+        line: 'PermitRootLogin no'
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      notify: Reload sshd
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_4_2_19_val != 'no'
+
+# ---
+
+- name: "4.2.20 | Ensure sshd PermitUserEnvironment is disabled"
+  when: "'4.2.20' not in active_exceptions"
+  tags: [rule_4.2.20, level1, section_4, automated]
+  block:
+
+    - name: "4.2.20 | AUDIT | Check PermitUserEnvironment"
+      ansible.builtin.set_fact:
+        cis_4_2_20_val: >-
+          {{ cis_4_2_sshd_config_dump.stdout_lines | default([])
+             | select('match', '^permituserenvironment\s')
+             | list | first | default('permituserenvironment no')
+             | regex_replace('^permituserenvironment\s+', '') | trim }}
+      changed_when: cis_4_2_20_val != 'no'
+      check_mode: false
+
+    - name: "4.2.20 | AUDIT | Report PermitUserEnvironment state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: PermitUserEnvironment=no'
+             if cis_4_2_20_val == 'no'
+             else 'NON-COMPLIANT: PermitUserEnvironment=' ~ cis_4_2_20_val ~ ' — expected no' }}
+
+    - name: "4.2.20 | REMEDIATE | Set PermitUserEnvironment no"
+      ansible.builtin.lineinfile:
+        path: "{{ freebsd_cis_sshd_config }}"
+        regexp: '^\s*#?\s*PermitUserEnvironment\s'
+        line: 'PermitUserEnvironment no'
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      notify: Reload sshd
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_4_2_20_val != 'no'
+
+# ---
+
+- name: "4.2.21 | Ensure sshd UsePAM is enabled"
+  when: "'4.2.21' not in active_exceptions"
+  tags: [rule_4.2.21, level1, section_4, automated]
+  block:
+
+    - name: "4.2.21 | AUDIT | Check UsePAM"
+      ansible.builtin.set_fact:
+        cis_4_2_21_val: >-
+          {{ cis_4_2_sshd_config_dump.stdout_lines | default([])
+             | select('match', '^usepam\s')
+             | list | first | default('usepam yes')
+             | regex_replace('^usepam\s+', '') | trim }}
+      changed_when: cis_4_2_21_val != 'yes'
+      check_mode: false
+
+    - name: "4.2.21 | AUDIT | Report UsePAM state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: UsePAM=yes'
+             if cis_4_2_21_val == 'yes'
+             else 'NON-COMPLIANT: UsePAM=' ~ cis_4_2_21_val ~ ' — expected yes' }}
+
+    - name: "4.2.21 | REMEDIATE | Set UsePAM yes"
+      ansible.builtin.lineinfile:
+        path: "{{ freebsd_cis_sshd_config }}"
+        regexp: '^\s*#?\s*UsePAM\s'
+        line: 'UsePAM yes'
+        insertbefore: '^\s*Match\b'
+        firstmatch: true
+        owner: root
+        group: wheel
+        mode: '0600'
+      notify: Reload sshd
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_4_2_21_val != 'yes'

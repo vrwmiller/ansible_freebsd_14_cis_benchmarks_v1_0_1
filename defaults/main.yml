@@ -33,3 +33,75 @@ freebsd_cis_bootloader_password: ""
 # /etc/issue, and /etc/issue.net. Customize per site policy and legal review.
 freebsd_cis_warning_banner: >-
   Authorized users only. All activity may be monitored and reported.
+
+# -------------------------------------------------------------------
+# Section 4 — Access, Authentication and Authorization
+# -------------------------------------------------------------------
+
+# 4.2.x — SSH implementation selector.
+# 'base'  — FreeBSD base system sshd  (default)
+# 'ports' — OpenSSH installed from ports/packages
+# Setting this automatically derives the four variables below.
+# Override any of them individually if your layout differs from standard paths.
+freebsd_cis_sshd_source: base
+
+# 4.2.x — Path to sshd_config.
+freebsd_cis_sshd_config: >-
+  {{ '/usr/local/etc/ssh/sshd_config' if freebsd_cis_sshd_source == 'ports'
+     else '/etc/ssh/sshd_config' }}
+
+# 4.2.x — Path to the sshd binary used for configuration test/query (-T flag).
+freebsd_cis_sshd_bin: >-
+  {{ '/usr/local/sbin/sshd' if freebsd_cis_sshd_source == 'ports'
+     else '/usr/sbin/sshd' }}
+
+# 4.2.x — Path to the ssh binary (used for version checks if needed).
+freebsd_cis_ssh_bin: >-
+  {{ '/usr/local/bin/ssh' if freebsd_cis_sshd_source == 'ports'
+     else '/usr/bin/ssh' }}
+
+# 4.2.x — rc.d service name for sshd reload.
+# FreeBSD base: sshd  |  Ports OpenSSH: openssh
+freebsd_cis_sshd_service: >-
+  {{ 'openssh' if freebsd_cis_sshd_source == 'ports'
+     else 'sshd' }}
+
+# 4.2.4 — sshd access restriction (AllowUsers / AllowGroups / DenyUsers / DenyGroups).
+# Set at least one to a non-empty string to enable automated remediation.
+# Leave all empty to skip the remediation task (the audit will still run).
+freebsd_cis_sshd_allow_users: ""
+freebsd_cis_sshd_allow_groups: ""
+freebsd_cis_sshd_deny_users: ""
+freebsd_cis_sshd_deny_groups: ""
+
+# 4.2.5 — Banner file path sent to remote users before authentication.
+freebsd_cis_sshd_banner: /etc/issue.net
+
+# 4.2.6 — Comma-separated list of weak ciphers to remove (minus-prefix syntax).
+freebsd_cis_sshd_weak_ciphers: "3des-cbc,aes128-cbc,aes192-cbc,aes256-cbc,rijndael-cbc@lysator.liu.se"
+
+# 4.2.7 — Idle connection timeout. ClientAliveInterval must be > 0; CountMax must be > 0.
+freebsd_cis_sshd_client_alive_interval: 15
+freebsd_cis_sshd_client_alive_count_max: 3
+
+# 4.2.11 — Comma-separated list of weak key-exchange algorithms to remove.
+freebsd_cis_sshd_weak_kex: "diffie-hellman-group1-sha1,diffie-hellman-group14-sha1,diffie-hellman-group-exchange-sha1"
+
+# 4.2.12 — Maximum seconds allowed for successful authentication (1-60 or 1m).
+freebsd_cis_sshd_login_grace_time: 60
+
+# 4.2.13 — sshd log verbosity (VERBOSE or INFO).
+freebsd_cis_sshd_log_level: "VERBOSE"
+
+# 4.2.14 — Comma-separated list of weak MAC algorithms to remove.
+freebsd_cis_sshd_weak_macs: >-
+  hmac-md5,hmac-md5-96,hmac-ripemd160,hmac-sha1-96,umac-64@openssh.com,hmac-md5-etm@openssh.com,hmac-md5-96-etm@openssh.com,hmac-ripemd160-etm@openssh.com,hmac-sha1-96-etm@openssh.com,umac-64-etm@openssh.com
+
+# 4.2.15 — Maximum authentication attempts per connection (benchmark recommends 4).
+freebsd_cis_sshd_max_auth_tries: 4
+
+# 4.2.16 — Maximum open sessions per connection (benchmark requires <= 10).
+freebsd_cis_sshd_max_sessions: 10
+
+# 4.2.17 — MaxStartups throttle: start:rate:full (benchmark recommends 10:30:60).
+freebsd_cis_sshd_max_startups: "10:30:60"
