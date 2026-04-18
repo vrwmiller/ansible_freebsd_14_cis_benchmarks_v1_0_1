@@ -972,7 +972,8 @@
       register: cis_5_2_4_1_stat
       changed_when: >-
         (not cis_5_2_4_1_stat.stat.exists) or
-        ((cis_5_2_4_1_stat.stat.mode | int(base=8)) > 488)
+        ((cis_5_2_4_1_stat.stat.mode[-2] | int) in [2, 3, 6, 7]) or
+        ((cis_5_2_4_1_stat.stat.mode[-1] | int) != 0)
       failed_when: false
       check_mode: false
       when: cis_5_2_4_1_dir.stdout | trim != ''
@@ -997,7 +998,8 @@
         msg: >-
           {{ 'COMPLIANT: ' ~ cis_5_2_4_1_dir.stdout | trim ~ ' has mode '
              ~ cis_5_2_4_1_stat.stat.mode ~ ' (0750 or more restrictive)'
-             if (cis_5_2_4_1_stat.stat.mode | int(base=8)) <= 488
+             if (cis_5_2_4_1_stat.stat.mode[-2] | int) not in [2, 3, 6, 7] and
+                (cis_5_2_4_1_stat.stat.mode[-1] | int) == 0
              else 'NON-COMPLIANT: ' ~ cis_5_2_4_1_dir.stdout | trim
                   ~ ' has mode ' ~ cis_5_2_4_1_stat.stat.mode
                   ~ ' — must be 0750 or more restrictive' }}
@@ -1015,7 +1017,9 @@
         - cis_5_2_4_1_dir.stdout | trim != ''
         - cis_5_2_4_1_stat is defined
         - cis_5_2_4_1_stat.stat.exists
-        - (cis_5_2_4_1_stat.stat.mode | int(base=8)) > 488
+        - >-
+          (cis_5_2_4_1_stat.stat.mode[-2] | int) in [2, 3, 6, 7] or
+          (cis_5_2_4_1_stat.stat.mode[-1] | int) != 0
 
 # ---
 
@@ -1066,6 +1070,7 @@
         -exec chmod u-x,g-wx,o-rwx {} + 2>/dev/null
       when:
         - freebsd_cis_remediate | bool
+        - cis_5_2_4_2_dir.stdout | trim | regex_search('^/[a-zA-Z0-9/_.-]+$')
         - cis_5_2_4_2_dir.stdout | trim != ''
         - (cis_5_2_4_2_files.stdout | default('')) | trim != ''
       changed_when: true
@@ -1114,6 +1119,7 @@
         -exec chown root {} + 2>/dev/null
       when:
         - freebsd_cis_remediate | bool
+        - cis_5_2_4_3_dir.stdout | trim | regex_search('^/[a-zA-Z0-9/_.-]+$')
         - cis_5_2_4_3_dir.stdout | trim != ''
         - (cis_5_2_4_3_owner.stdout | default('')) | trim != ''
       changed_when: true
@@ -1169,6 +1175,7 @@
         ! -group audit ! -group wheel -exec chgrp audit {} + 2>/dev/null
       when:
         - freebsd_cis_remediate | bool
+        - cis_5_2_4_4_dir.stdout | trim | regex_search('^/[a-zA-Z0-9/_.-]+$')
         - cis_5_2_4_4_dir.stdout | trim != ''
         - (cis_5_2_4_4_group.stdout | default('')) | trim != ''
       changed_when: true
