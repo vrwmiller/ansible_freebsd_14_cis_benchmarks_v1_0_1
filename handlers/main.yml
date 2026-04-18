@@ -18,7 +18,7 @@
         state: reloaded
       failed_when: false  # acceptable: sshd may not be running
 
-- name: Restart syslogd
+- name: Reload syslogd
   ansible.builtin.service:
     name: syslogd
     state: reloaded
