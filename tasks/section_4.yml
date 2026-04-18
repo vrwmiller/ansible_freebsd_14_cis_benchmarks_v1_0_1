@@ -68,7 +68,8 @@
         not cis_4_1_1_2_crond.stat.exists or
         cis_4_1_1_2_crond.stat.pw_name != 'root' or
         cis_4_1_1_2_crond.stat.gr_name != 'wheel' or
-        (cis_4_1_1_2_crond.stat.mode | int(base=8)) % 64 != 0
+        (cis_4_1_1_2_crond.stat.mode | int(base=8)) % 64 != 0 or
+        ((cis_4_1_1_2_crond.stat.mode | int(base=8)) // 64 % 8) % 2 == 0
       failed_when: false
       check_mode: false
 
@@ -79,9 +80,9 @@
              (cis_4_1_1_2_crond.stat.pw_name | default('?')) ~ ' group=' ~
              (cis_4_1_1_2_crond.stat.gr_name | default('?')) ~ ' mode=' ~
              (cis_4_1_1_2_crond.stat.mode | default('?')) ~
-             ' — expected root:wheel with no group/other permissions'
+             ' — expected root:wheel mode 0700 (no group/other permissions, owner execute required)'
              if cis_4_1_1_2_crond is changed
-             else 'COMPLIANT: /etc/cron.d is root:wheel with no group/other permissions' }}
+             else 'COMPLIANT: /etc/cron.d is root:wheel 0700 (no group/other permissions, owner execute set)' }}
 
     - name: "4.1.1.2 | REMEDIATE | Set /etc/cron.d owner, group, and mode"
       ansible.builtin.file:
@@ -94,7 +95,8 @@
         - cis_4_1_1_2_crond.stat.exists
         - cis_4_1_1_2_crond.stat.pw_name != 'root' or
           cis_4_1_1_2_crond.stat.gr_name != 'wheel' or
-          (cis_4_1_1_2_crond.stat.mode | int(base=8)) % 64 != 0
+          (cis_4_1_1_2_crond.stat.mode | int(base=8)) % 64 != 0 or
+          ((cis_4_1_1_2_crond.stat.mode | int(base=8)) // 64 % 8) % 2 == 0
 
 # ---
 
@@ -264,6 +266,10 @@
 # =============================================================
 
 - name: "4.2 | GATHER | Query sshd effective configuration via sshd -T"
+  when: >-
+    (['4.2.4', '4.2.5', '4.2.6', '4.2.7', '4.2.8', '4.2.9', '4.2.10',
+      '4.2.11', '4.2.12', '4.2.13', '4.2.14', '4.2.15', '4.2.16', '4.2.17',
+      '4.2.18', '4.2.19', '4.2.20', '4.2.21'] | difference(active_exceptions) | length) > 0
   ansible.builtin.command:
     argv:
       - "{{ freebsd_cis_sshd_bin }}"
@@ -302,6 +308,10 @@
     - rule_4.2.21
 
 - name: "4.2 | GATHER | Report sshd -T query status"
+  when: >-
+    (['4.2.4', '4.2.5', '4.2.6', '4.2.7', '4.2.8', '4.2.9', '4.2.10',
+      '4.2.11', '4.2.12', '4.2.13', '4.2.14', '4.2.15', '4.2.16', '4.2.17',
+      '4.2.18', '4.2.19', '4.2.20', '4.2.21'] | difference(active_exceptions) | length) > 0
   ansible.builtin.debug:
     msg: >-
       {{ 'NON-COMPLIANT: sshd -T query failed (rc=' ~ cis_4_2_sshd_config_dump.rc ~
