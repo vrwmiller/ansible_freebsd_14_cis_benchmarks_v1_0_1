@@ -1108,7 +1108,7 @@
           configured in audit_control but does not exist on disk
       when:
         - cis_5_2_4_2_dir.stdout | trim != ''
-        - cis_5_2_4_2_dir.stdout | trim | regex_search('^/[a-zA-Z0-9/_.-]+$')
+        - cis_5_2_4_2_dir.stdout | trim | regex_search('^/[a-zA-Z0-9/_.-]+$') is not none
         - "not (cis_5_2_4_2_dir_stat.stat | default({'exists': false})).exists"
 
     - name: "5.2.4.2 | AUDIT | Find over-permissive audit log files"  # noqa: risky-shell-pipe
@@ -1121,7 +1121,7 @@
       check_mode: false
       when:
         - cis_5_2_4_2_dir.stdout | trim != ''
-        - cis_5_2_4_2_dir.stdout | trim | regex_search('^/[a-zA-Z0-9/_.-]+$')
+        - cis_5_2_4_2_dir.stdout | trim | regex_search('^/[a-zA-Z0-9/_.-]+$') is not none
         - "(cis_5_2_4_2_dir_stat.stat | default({'exists': false})).exists"
 
     - name: "5.2.4.2 | AUDIT | Report audit log file permissions"
@@ -1145,7 +1145,7 @@
         -exec chmod u-x,g-wx,o-rwx {} + 2>/dev/null
       when:
         - freebsd_cis_remediate | bool
-        - cis_5_2_4_2_dir.stdout | trim | regex_search('^/[a-zA-Z0-9/_.-]+$')
+        - cis_5_2_4_2_dir.stdout | trim | regex_search('^/[a-zA-Z0-9/_.-]+$') is not none
         - cis_5_2_4_2_dir.stdout | trim != ''
         - (cis_5_2_4_2_files.stdout | default('')) | trim != ''
       changed_when: true
@@ -1186,7 +1186,7 @@
           configured in audit_control but does not exist on disk
       when:
         - cis_5_2_4_3_dir.stdout | trim != ''
-        - cis_5_2_4_3_dir.stdout | trim | regex_search('^/[a-zA-Z0-9/_.-]+$')
+        - cis_5_2_4_3_dir.stdout | trim | regex_search('^/[a-zA-Z0-9/_.-]+$') is not none
         - "not (cis_5_2_4_3_dir_stat.stat | default({'exists': false})).exists"
 
     - name: "5.2.4.3 | AUDIT | Find non-root-owned audit log files"  # noqa: risky-shell-pipe
@@ -1199,7 +1199,7 @@
       check_mode: false
       when:
         - cis_5_2_4_3_dir.stdout | trim != ''
-        - cis_5_2_4_3_dir.stdout | trim | regex_search('^/[a-zA-Z0-9/_.-]+$')
+        - cis_5_2_4_3_dir.stdout | trim | regex_search('^/[a-zA-Z0-9/_.-]+$') is not none
         - "(cis_5_2_4_3_dir_stat.stat | default({'exists': false})).exists"
 
     - name: "5.2.4.3 | AUDIT | Report audit log file ownership"
@@ -1218,7 +1218,7 @@
         -exec chown root {} + 2>/dev/null
       when:
         - freebsd_cis_remediate | bool
-        - cis_5_2_4_3_dir.stdout | trim | regex_search('^/[a-zA-Z0-9/_.-]+$')
+        - cis_5_2_4_3_dir.stdout | trim | regex_search('^/[a-zA-Z0-9/_.-]+$') is not none
         - cis_5_2_4_3_dir.stdout | trim != ''
         - (cis_5_2_4_3_owner.stdout | default('')) | trim != ''
       changed_when: true
@@ -1296,7 +1296,7 @@
         ! -group audit ! -group wheel -exec chgrp audit {} + 2>/dev/null
       when:
         - freebsd_cis_remediate | bool
-        - cis_5_2_4_4_dir.stdout | trim | regex_search('^/[a-zA-Z0-9/_.-]+$')
+        - cis_5_2_4_4_dir.stdout | trim | regex_search('^/[a-zA-Z0-9/_.-]+$') is not none
         - cis_5_2_4_4_dir.stdout | trim != ''
         - (cis_5_2_4_4_group.stdout | default('')) | trim != ''
       changed_when: true
