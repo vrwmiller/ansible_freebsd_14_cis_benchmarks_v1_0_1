@@ -1382,7 +1382,7 @@
 
     - name: "4.3.2 | AUDIT | Check Defaults use_pty in sudoers"
       ansible.builtin.command: >-
-        grep -Ei '^[[:space:]]*Defaults[[:space:]]+([^#,]+,[[:space:]]*)?use_pty'
+        grep -Ei '^[[:space:]]*Defaults[[:space:]].*use_pty([[:space:]]|,|$)'
         /usr/local/etc/sudoers
       register: cis_4_3_2_use_pty
       changed_when: cis_4_3_2_use_pty.stdout == ''
@@ -1399,7 +1399,7 @@
     - name: "4.3.2 | REMEDIATE | Add Defaults use_pty to sudoers"
       ansible.builtin.lineinfile:
         path: /usr/local/etc/sudoers
-        regexp: '^\s*Defaults\s+([^#,]+,\s*)?use_pty'
+        regexp: '^\s*Defaults\s+.*use_pty(\s|,|$)'
         line: 'Defaults use_pty'
         validate: 'visudo -cf %s'
       when:
@@ -1415,7 +1415,7 @@
 
     - name: "4.3.3 | AUDIT | Check Defaults logfile in sudoers"
       ansible.builtin.command: >-
-        grep -Ei '^[[:space:]]*Defaults[[:space:]]+([^#,]+,)?logfile[[:space:]]*='
+        grep -Ei '^[[:space:]]*Defaults[[:space:]].*logfile[[:space:]]*='
         /usr/local/etc/sudoers
       register: cis_4_3_3_logfile
       changed_when: cis_4_3_3_logfile.stdout == ''
@@ -1432,7 +1432,7 @@
     - name: "4.3.3 | REMEDIATE | Add Defaults logfile to sudoers"
       ansible.builtin.lineinfile:
         path: /usr/local/etc/sudoers
-        regexp: '^\s*Defaults\s+([^#,]+,\s*)?logfile='
+        regexp: '^\s*Defaults\s+.*logfile\s*='
         line: 'Defaults logfile="{{ freebsd_cis_sudo_logfile }}"'
         validate: 'visudo -cf %s'
       when:
@@ -1448,22 +1448,47 @@
   tags: [rule_4.3.4, level2, section_4, manual]
   block:
 
+    - name: "4.3.4 | AUDIT | Stat sudoers.d include directory"
+      ansible.builtin.stat:
+        path: /usr/local/etc/sudoers.d
+      register: cis_4_3_4_sudoers_d
+      changed_when: false
+      check_mode: false
+
     - name: "4.3.4 | AUDIT | Check for NOPASSWD in sudoers"
-      ansible.builtin.command: grep -rE '^[[:space:]]*[^#[:space:]].*NOPASSWD' /usr/local/etc/sudoers
+      ansible.builtin.command: grep -E '^[[:space:]]*[^#[:space:]].*NOPASSWD' /usr/local/etc/sudoers
       register: cis_4_3_4_nopasswd
-      changed_when: cis_4_3_4_nopasswd.rc != 1
+      changed_when: false
       failed_when: false
+      check_mode: false
+
+    - name: "4.3.4 | AUDIT | Check for NOPASSWD in sudoers.d"
+      ansible.builtin.command: grep -rE '^[[:space:]]*[^#[:space:]].*NOPASSWD' /usr/local/etc/sudoers.d
+      register: cis_4_3_4_nopasswd_d
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when: cis_4_3_4_sudoers_d.stat.exists
+
+    - name: "4.3.4 | AUDIT | Summarize NOPASSWD state"
+      ansible.builtin.set_fact:
+        cis_4_3_4_nopasswd_lines: >-
+          {{ (cis_4_3_4_nopasswd.stdout_lines | default([])) +
+             (cis_4_3_4_nopasswd_d.stdout_lines | default([])) }}
+        cis_4_3_4_nopasswd_error: >-
+          {{ (cis_4_3_4_nopasswd.rc not in [0, 1]) or
+             (cis_4_3_4_sudoers_d.stat.exists and cis_4_3_4_nopasswd_d.rc not in [0, 1]) }}
+      changed_when: (cis_4_3_4_nopasswd_error | bool) or (cis_4_3_4_nopasswd_lines | length > 0)
       check_mode: false
 
     - name: "4.3.4 | AUDIT | Report NOPASSWD state"
       ansible.builtin.debug:
         msg: >-
           {{ ['NON-COMPLIANT: NOPASSWD entries found — review and remove:']
-             + cis_4_3_4_nopasswd.stdout_lines
-             if cis_4_3_4_nopasswd.rc == 0
-             else ('NON-COMPLIANT: grep error (rc=' ~ cis_4_3_4_nopasswd.rc ~
-                   ') — sudoers missing or unreadable'
-                   if cis_4_3_4_nopasswd.rc != 1
+             + cis_4_3_4_nopasswd_lines
+             if (cis_4_3_4_nopasswd_lines | length > 0)
+             else ('NON-COMPLIANT: grep error while reading sudoers content'
+                   if cis_4_3_4_nopasswd_error | bool
                    else 'COMPLIANT: no NOPASSWD entries found in sudoers') }}
 
 # ---
@@ -1473,22 +1498,47 @@
   tags: [rule_4.3.5, level1, section_4, manual]
   block:
 
+    - name: "4.3.5 | AUDIT | Stat sudoers.d include directory"
+      ansible.builtin.stat:
+        path: /usr/local/etc/sudoers.d
+      register: cis_4_3_5_sudoers_d
+      changed_when: false
+      check_mode: false
+
     - name: "4.3.5 | AUDIT | Check for !authenticate in sudoers"
-      ansible.builtin.command: grep -rE '^[[:space:]]*[^#[:space:]].*!authenticate' /usr/local/etc/sudoers
+      ansible.builtin.command: grep -E '^[[:space:]]*[^#[:space:]].*!authenticate' /usr/local/etc/sudoers
       register: cis_4_3_5_noauth
-      changed_when: cis_4_3_5_noauth.rc != 1
+      changed_when: false
       failed_when: false
+      check_mode: false
+
+    - name: "4.3.5 | AUDIT | Check for !authenticate in sudoers.d"
+      ansible.builtin.command: grep -rE '^[[:space:]]*[^#[:space:]].*!authenticate' /usr/local/etc/sudoers.d
+      register: cis_4_3_5_noauth_d
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when: cis_4_3_5_sudoers_d.stat.exists
+
+    - name: "4.3.5 | AUDIT | Summarize !authenticate state"
+      ansible.builtin.set_fact:
+        cis_4_3_5_noauth_lines: >-
+          {{ (cis_4_3_5_noauth.stdout_lines | default([])) +
+             (cis_4_3_5_noauth_d.stdout_lines | default([])) }}
+        cis_4_3_5_noauth_error: >-
+          {{ (cis_4_3_5_noauth.rc not in [0, 1]) or
+             (cis_4_3_5_sudoers_d.stat.exists and cis_4_3_5_noauth_d.rc not in [0, 1]) }}
+      changed_when: (cis_4_3_5_noauth_error | bool) or (cis_4_3_5_noauth_lines | length > 0)
       check_mode: false
 
     - name: "4.3.5 | AUDIT | Report !authenticate state"
       ansible.builtin.debug:
         msg: >-
           {{ ['NON-COMPLIANT: !authenticate entries found — review and remove:']
-             + cis_4_3_5_noauth.stdout_lines
-             if cis_4_3_5_noauth.rc == 0
-             else ('NON-COMPLIANT: grep error (rc=' ~ cis_4_3_5_noauth.rc ~
-                   ') — sudoers missing or unreadable'
-                   if cis_4_3_5_noauth.rc != 1
+             + cis_4_3_5_noauth_lines
+             if (cis_4_3_5_noauth_lines | length > 0)
+             else ('NON-COMPLIANT: grep error while reading sudoers content'
+                   if cis_4_3_5_noauth_error | bool
                    else 'COMPLIANT: no !authenticate entries found in sudoers') }}
 
 # ---
@@ -1524,9 +1574,8 @@
           {{ 'COMPLIANT: sudo timestamp_timeout=' ~ cis_4_3_6_timeout_val ~ ' minutes'
              if not (cis_4_3_6_timeout_val | int == -1 or
                      cis_4_3_6_timeout_val | int > freebsd_cis_sudo_timeout | int)
-             else 'NON-COMPLIANT: sudo timestamp_timeout=' ~ cis_4_3_6_timeout_val ~
-                  ' — must be 1–' ~ freebsd_cis_sudo_timeout ~
-                  ' (not -1 or > ' ~ freebsd_cis_sudo_timeout ~ ')' }}
+               else 'NON-COMPLIANT: sudo timestamp_timeout=' ~ cis_4_3_6_timeout_val ~
+                 ' — must not be -1 and must be <= ' ~ freebsd_cis_sudo_timeout }}
 
     - name: "4.3.6 | REMEDIATE | Set timestamp_timeout in sudoers"
       ansible.builtin.lineinfile:
@@ -1612,7 +1661,7 @@
         path: /etc/pam.d/passwd
         regexp: '^\s*password\s+(requisite|required)\s+pam_passwdqc\.so'
         line: "password  requisite  pam_passwdqc.so  enforce=everyone minlen={{ freebsd_cis_pam_passwdqc_minlen }}"
-        create: true
+        create: false
         owner: root
         group: wheel
         mode: '0644'
@@ -1720,6 +1769,8 @@
       ansible.builtin.lineinfile:
         path: /etc/login.conf
         regexp: '^\s*:passwd_format='
+        insertafter: '^default:\\$'
+        firstmatch: true
         line: ":passwd_format=sha512:\\"
       when:
         - freebsd_cis_remediate | bool
@@ -1779,6 +1830,8 @@
       ansible.builtin.lineinfile:
         path: /etc/login.conf
         regexp: '^\s*:passwordtime='
+        insertafter: '^default:\\$'
+        firstmatch: true
         line: ":passwordtime={{ freebsd_cis_pw_max_age }}d:\\"
       when:
         - freebsd_cis_remediate | bool
@@ -1881,6 +1934,8 @@
       ansible.builtin.lineinfile:
         path: /etc/login.conf
         regexp: '^\s*:warnpassword='
+        insertafter: '^default:\\$'
+        firstmatch: true
         line: ":warnpassword={{ freebsd_cis_pw_warn_days }}d:\\"
       when:
         - freebsd_cis_remediate | bool
