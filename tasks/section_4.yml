@@ -120,13 +120,15 @@
              cis_4_1_1_3_allow.stat.pw_name == 'root' and
              cis_4_1_1_3_allow.stat.gr_name == 'wheel' and
              (cis_4_1_1_3_allow.stat.mode | int(base=8)) % 8 == 0 and
-             ((cis_4_1_1_3_allow.stat.mode | int(base=8)) // 8) % 8 <= 4 }}
+             ((cis_4_1_1_3_allow.stat.mode | int(base=8)) // 8) % 8 in [0, 4] and
+             ((cis_4_1_1_3_allow.stat.mode | int(base=8)) // 64) % 8 in [4, 6] }}
         cis_4_1_1_3_deny_ok: >-
           {{ not cis_4_1_1_3_deny.stat.exists or
              (cis_4_1_1_3_deny.stat.pw_name == 'root' and
               cis_4_1_1_3_deny.stat.gr_name == 'wheel' and
               (cis_4_1_1_3_deny.stat.mode | int(base=8)) % 8 == 0 and
-              ((cis_4_1_1_3_deny.stat.mode | int(base=8)) // 8) % 8 <= 4) }}
+              ((cis_4_1_1_3_deny.stat.mode | int(base=8)) // 8) % 8 in [0, 4] and
+              ((cis_4_1_1_3_deny.stat.mode | int(base=8)) // 64) % 8 in [4, 6]) }}
       changed_when: not (cis_4_1_1_3_allow_ok | bool) or not (cis_4_1_1_3_deny_ok | bool)
       check_mode: false
 
@@ -199,13 +201,15 @@
              cis_4_1_2_1_allow.stat.pw_name in ['root', 'daemon'] and
              cis_4_1_2_1_allow.stat.gr_name == 'wheel' and
              (cis_4_1_2_1_allow.stat.mode | int(base=8)) % 8 == 0 and
-             ((cis_4_1_2_1_allow.stat.mode | int(base=8)) // 8) % 8 <= 4 }}
+             ((cis_4_1_2_1_allow.stat.mode | int(base=8)) // 8) % 8 in [0, 4] and
+             ((cis_4_1_2_1_allow.stat.mode | int(base=8)) // 64) % 8 in [4, 6] }}
         cis_4_1_2_1_deny_ok: >-
           {{ not cis_4_1_2_1_deny.stat.exists or
              (cis_4_1_2_1_deny.stat.pw_name in ['root', 'daemon'] and
               cis_4_1_2_1_deny.stat.gr_name == 'wheel' and
               (cis_4_1_2_1_deny.stat.mode | int(base=8)) % 8 == 0 and
-              ((cis_4_1_2_1_deny.stat.mode | int(base=8)) // 8) % 8 <= 4) }}
+              ((cis_4_1_2_1_deny.stat.mode | int(base=8)) // 8) % 8 in [0, 4] and
+              ((cis_4_1_2_1_deny.stat.mode | int(base=8)) // 64) % 8 in [4, 6]) }}
       changed_when: not (cis_4_1_2_1_allow_ok | bool) or not (cis_4_1_2_1_deny_ok | bool)
       check_mode: false
 
@@ -272,6 +276,26 @@
   changed_when: false
   failed_when: false
   check_mode: false
+  tags:
+    - section_4
+    - rule_4.2.4
+    - rule_4.2.5
+    - rule_4.2.6
+    - rule_4.2.7
+    - rule_4.2.8
+    - rule_4.2.9
+    - rule_4.2.10
+    - rule_4.2.11
+    - rule_4.2.12
+    - rule_4.2.13
+    - rule_4.2.14
+    - rule_4.2.15
+    - rule_4.2.16
+    - rule_4.2.17
+    - rule_4.2.18
+    - rule_4.2.19
+    - rule_4.2.20
+    - rule_4.2.21
 
 - name: "4.2 | GATHER | Report sshd -T query status"
   ansible.builtin.debug:
@@ -281,6 +305,26 @@
          if cis_4_2_sshd_config_dump.rc != 0
          else 'sshd -T: effective configuration query succeeded' }}
   changed_when: cis_4_2_sshd_config_dump.rc != 0
+  tags:
+    - section_4
+    - rule_4.2.4
+    - rule_4.2.5
+    - rule_4.2.6
+    - rule_4.2.7
+    - rule_4.2.8
+    - rule_4.2.9
+    - rule_4.2.10
+    - rule_4.2.11
+    - rule_4.2.12
+    - rule_4.2.13
+    - rule_4.2.14
+    - rule_4.2.15
+    - rule_4.2.16
+    - rule_4.2.17
+    - rule_4.2.18
+    - rule_4.2.19
+    - rule_4.2.20
+    - rule_4.2.21
 
 # ---
 
@@ -358,7 +402,7 @@
              (item.stat.pw_name | default('?')) ~ ' group=' ~
              (item.stat.gr_name | default('?')) ~ ' mode=' ~
              (item.stat.mode | default('?')) ~
-             ' — expected root:wheel mode 0600'
+             ' — expected root:wheel mode 0600 or more restrictive (0400 permitted)'
              if (item.stat.pw_name != 'root' or
                  item.stat.gr_name != 'wheel' or
                  (item.stat.mode | int(base=8)) % 64 != 0 or
@@ -427,7 +471,7 @@
              (item.stat.pw_name | default('?')) ~ ' group=' ~
              (item.stat.gr_name | default('?')) ~ ' mode=' ~
              (item.stat.mode | default('?')) ~
-             ' — expected root:wheel mode 0644'
+             ' — expected root:wheel mode 0644 or more restrictive'
              if (item.stat.pw_name != 'root' or
                  item.stat.gr_name != 'wheel' or
                  ((item.stat.mode | int(base=8)) // 64) % 8 not in [4, 6] or
