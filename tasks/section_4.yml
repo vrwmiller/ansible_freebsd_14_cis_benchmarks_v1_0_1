@@ -80,9 +80,9 @@
              (cis_4_1_1_2_crond.stat.pw_name | default('?')) ~ ' group=' ~
              (cis_4_1_1_2_crond.stat.gr_name | default('?')) ~ ' mode=' ~
              (cis_4_1_1_2_crond.stat.mode | default('?')) ~
-             ' — expected root:wheel with no group/other permissions'
+             ' — expected root:wheel mode 0700 (owner rwx, no group/other)'
              if cis_4_1_1_2_crond is changed
-             else 'COMPLIANT: /etc/cron.d is root:wheel with no group/other permissions' }}
+             else 'COMPLIANT: /etc/cron.d is root:wheel mode 0700' }}
 
     - name: "4.1.1.2 | REMEDIATE | Set /etc/cron.d owner, group, and mode"
       ansible.builtin.file:
@@ -415,7 +415,7 @@
              (item.stat.pw_name | default('?')) ~ ' group=' ~
              (item.stat.gr_name | default('?')) ~ ' mode=' ~
              (item.stat.mode | default('?')) ~
-             ' — expected root:wheel mode 0600'
+             ' — expected root:wheel mode 0600 or 0400'
              if (item.stat.pw_name != 'root' or
                  item.stat.gr_name != 'wheel' or
                  ((item.stat.mode | int(base=8)) // 64) % 8 not in [4, 6] or
@@ -1449,7 +1449,7 @@
   block:
 
     - name: "4.3.4 | AUDIT | Check for NOPASSWD in sudoers"
-      ansible.builtin.command: grep -r '^[^#].*NOPASSWD' /usr/local/etc/sudoers
+      ansible.builtin.command: grep -rE '^[[:space:]]*[^#[:space:]].*NOPASSWD' /usr/local/etc/sudoers
       register: cis_4_3_4_nopasswd
       changed_when: cis_4_3_4_nopasswd.rc != 1
       failed_when: false
@@ -1474,7 +1474,7 @@
   block:
 
     - name: "4.3.5 | AUDIT | Check for !authenticate in sudoers"
-      ansible.builtin.command: grep -r '^[^#].*!authenticate' /usr/local/etc/sudoers
+      ansible.builtin.command: grep -rE '^[[:space:]]*[^#[:space:]].*!authenticate' /usr/local/etc/sudoers
       register: cis_4_3_5_noauth
       changed_when: cis_4_3_5_noauth.rc != 1
       failed_when: false
@@ -1499,7 +1499,7 @@
   block:
 
     - name: "4.3.6 | AUDIT | Get timestamp_timeout from sudoers"
-      ansible.builtin.command: grep -E 'timestamp_timeout=-?[0-9]+' /usr/local/etc/sudoers
+      ansible.builtin.command: grep -E '^[[:space:]]*Defaults[[:space:]].*timestamp_timeout=-?[0-9]+' /usr/local/etc/sudoers
       register: cis_4_3_6_timeout_raw
       changed_when: false
       failed_when: false
