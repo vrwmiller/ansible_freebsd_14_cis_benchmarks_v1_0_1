@@ -217,7 +217,20 @@
         - freebsd_cis_remediate | bool
         - not cis_5_1_1_5_remote_configured
         - freebsd_cis_syslog_remote_host | length > 0
+        - cis_5_1_1_4_syslog_conf is not defined or cis_5_1_1_4_syslog_conf.stat.exists
       notify: Reload syslogd
+
+    - name: "5.1.1.5 | REMEDIATE | Warn — syslog.conf absent, cannot add remote host entry"
+      ansible.builtin.debug:
+        msg: >-
+          REMEDIATION SKIPPED: /etc/syslog.conf is absent (see 5.1.1.4).
+          Restore it from a trusted base system source before re-running remediation.
+      when:
+        - freebsd_cis_remediate | bool
+        - not cis_5_1_1_5_remote_configured
+        - freebsd_cis_syslog_remote_host | length > 0
+        - cis_5_1_1_4_syslog_conf is defined
+        - not cis_5_1_1_4_syslog_conf.stat.exists
 
     - name: "5.1.1.5 | REMEDIATE | Warn — no remote logging and freebsd_cis_syslog_remote_host is unset"
       ansible.builtin.debug:
@@ -538,7 +551,12 @@
         cis_5_2_3_2_missing: >-
           {{
             ['fa', 'fc', 'fd', 'fm', 'fr', 'fw']
-            | reject('in', cis_5_2_3_2_flags.stdout | default(''))
+            | reject('in', cis_5_2_3_2_flags.stdout
+                          | default('')
+                          | regex_replace('^flags:[[:space:]]*', '')
+                          | split(',')
+                          | map('trim')
+                          | list)
             | list
           }}
       changed_when: cis_5_2_3_2_missing | length > 0
@@ -781,7 +799,7 @@
     - name: "5.2.4.1 | AUDIT | Get audit log directory path"
       ansible.builtin.shell: "awk -F: '/^dir/ {print $2}' /etc/security/audit_control"
       register: cis_5_2_4_1_dir
-      changed_when: false
+      changed_when: cis_5_2_4_1_dir.stdout | trim == ''
       failed_when: false
       check_mode: false
 
@@ -832,9 +850,14 @@
     - name: "5.2.4.2 | AUDIT | Get audit log directory path"
       ansible.builtin.shell: "awk -F: '/^dir/ {print $2}' /etc/security/audit_control"
       register: cis_5_2_4_2_dir
-      changed_when: false
+      changed_when: cis_5_2_4_2_dir.stdout | trim == ''
       failed_when: false
       check_mode: false
+
+    - name: "5.2.4.2 | AUDIT | Report audit log directory not found"
+      ansible.builtin.debug:
+        msg: "NON-COMPLIANT: could not determine audit log directory from audit_control"
+      when: cis_5_2_4_2_dir.stdout | trim == ''
 
     - name: "5.2.4.2 | AUDIT | Find over-permissive audit log files"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
@@ -852,6 +875,7 @@
           {{ 'COMPLIANT: all audit log files are 0640 or more restrictive'
              if (cis_5_2_4_2_files.stdout | default('')) | trim == ''
              else 'NON-COMPLIANT: over-permissive audit log files found' }}
+      when: cis_5_2_4_2_dir.stdout | trim != ''
 
     - name: "5.2.4.2 | AUDIT | Show over-permissive audit log files"
       ansible.builtin.debug:
@@ -879,9 +903,14 @@
     - name: "5.2.4.3 | AUDIT | Get audit log directory path"
       ansible.builtin.shell: "awk -F: '/^dir/ {print $2}' /etc/security/audit_control"
       register: cis_5_2_4_3_dir
-      changed_when: false
+      changed_when: cis_5_2_4_3_dir.stdout | trim == ''
       failed_when: false
       check_mode: false
+
+    - name: "5.2.4.3 | AUDIT | Report audit log directory not found"
+      ansible.builtin.debug:
+        msg: "NON-COMPLIANT: could not determine audit log directory from audit_control"
+      when: cis_5_2_4_3_dir.stdout | trim == ''
 
     - name: "5.2.4.3 | AUDIT | Find non-root-owned audit log files"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
@@ -899,6 +928,7 @@
           {{ 'COMPLIANT: all audit log files are owned by root'
              if (cis_5_2_4_3_owner.stdout | default('')) | trim == ''
              else 'NON-COMPLIANT: audit log files found not owned by root' }}
+      when: cis_5_2_4_3_dir.stdout | trim != ''
 
     - name: "5.2.4.3 | REMEDIATE | Fix non-root-owned audit log files"
       ansible.builtin.shell: >-
@@ -921,7 +951,7 @@
     - name: "5.2.4.4 | AUDIT | Get audit log directory path"
       ansible.builtin.shell: "awk -F: '/^dir/ {print $2}' /etc/security/audit_control"
       register: cis_5_2_4_4_dir
-      changed_when: false
+      changed_when: cis_5_2_4_4_dir.stdout | trim == ''
       failed_when: false
       check_mode: false
 
@@ -935,12 +965,18 @@
       check_mode: false
       when: cis_5_2_4_4_dir.stdout | trim != ''
 
+    - name: "5.2.4.4 | AUDIT | Report audit log directory not found"
+      ansible.builtin.debug:
+        msg: "NON-COMPLIANT: could not determine audit log directory from audit_control"
+      when: cis_5_2_4_4_dir.stdout | trim == ''
+
     - name: "5.2.4.4 | AUDIT | Report audit log file group ownership"
       ansible.builtin.debug:
         msg: >-
           {{ 'COMPLIANT: all audit log files belong to audit or wheel group'
              if (cis_5_2_4_4_group.stdout | default('')) | trim == ''
              else 'NON-COMPLIANT: audit log files found with unauthorized group ownership' }}
+      when: cis_5_2_4_4_dir.stdout | trim != ''
 
     - name: "5.2.4.4 | REMEDIATE | Set audit log files and directory group to audit"
       ansible.builtin.shell: >-
