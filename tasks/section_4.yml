@@ -69,7 +69,7 @@
         cis_4_1_1_2_crond.stat.pw_name != 'root' or
         cis_4_1_1_2_crond.stat.gr_name != 'wheel' or
         (cis_4_1_1_2_crond.stat.mode | int(base=8)) % 64 != 0 or
-        ((cis_4_1_1_2_crond.stat.mode | int(base=8)) // 64 % 8) % 2 == 0
+        ((cis_4_1_1_2_crond.stat.mode | int(base=8)) // 64 % 8) != 7
       failed_when: false
       check_mode: false
 
@@ -96,7 +96,7 @@
         - cis_4_1_1_2_crond.stat.pw_name != 'root' or
           cis_4_1_1_2_crond.stat.gr_name != 'wheel' or
           (cis_4_1_1_2_crond.stat.mode | int(base=8)) % 64 != 0 or
-          ((cis_4_1_1_2_crond.stat.mode | int(base=8)) // 64 % 8) % 2 == 0
+          ((cis_4_1_1_2_crond.stat.mode | int(base=8)) // 64 % 8) != 7
 
 # ---
 
@@ -653,6 +653,7 @@
              | list | first | default('ciphers')
              | regex_replace('^ciphers\s+', '') | trim).split(',')
              | map('trim') | list }}
+      changed_when: false
       check_mode: false
 
     - name: "4.2.6 | AUDIT | Check for weak ciphers"
@@ -868,6 +869,7 @@
              | list | first | default('kexalgorithms')
              | regex_replace('^kexalgorithms\s+', '') | trim).split(',')
              | map('trim') | list }}
+      changed_when: false
       check_mode: false
 
     - name: "4.2.11 | AUDIT | Check for weak KexAlgorithms"
@@ -988,6 +990,7 @@
              | list | first | default('macs')
              | regex_replace('^macs\s+', '') | trim).split(',')
              | map('trim') | list }}
+      changed_when: false
       check_mode: false
 
     - name: "4.2.14 | AUDIT | Check for weak MACs"
@@ -1106,6 +1109,7 @@
              | select('match', '^maxstartups\s')
              | list | first | default('maxstartups 10:30:100')
              | regex_replace('^maxstartups\s+', '') | trim }}
+      changed_when: false
       check_mode: false
 
     - name: "4.2.17 | AUDIT | Parse MaxStartups components"
