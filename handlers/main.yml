@@ -3,6 +3,6 @@
 
 - name: Reload sshd
   ansible.builtin.service:
-    name: sshd
+    name: "{{ freebsd_cis_sshd_service }}"
     state: reloaded
   failed_when: false

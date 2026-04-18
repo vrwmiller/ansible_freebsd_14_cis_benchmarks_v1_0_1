@@ -38,20 +38,33 @@ freebsd_cis_warning_banner: >-
 # Section 4 — Access, Authentication and Authorization
 # -------------------------------------------------------------------
 
+# 4.2.x — SSH implementation selector.
+# 'base'  — FreeBSD base system sshd  (default)
+# 'ports' — OpenSSH installed from ports/packages
+# Setting this automatically derives the four variables below.
+# Override any of them individually if your layout differs from standard paths.
+freebsd_cis_sshd_source: base
+
 # 4.2.x — Path to sshd_config.
-# FreeBSD base sshd uses /etc/ssh/sshd_config.
-# OpenSSH installed from ports/packages uses /usr/local/etc/ssh/sshd_config.
-freebsd_cis_sshd_config: /etc/ssh/sshd_config
+freebsd_cis_sshd_config: >-
+  {{ '/usr/local/etc/ssh/sshd_config' if freebsd_cis_sshd_source == 'ports'
+     else '/etc/ssh/sshd_config' }}
 
 # 4.2.x — Path to the sshd binary used for configuration test/query (-T flag).
-# FreeBSD base: /usr/sbin/sshd
-# Ports/packages OpenSSH: /usr/local/sbin/sshd
-freebsd_cis_sshd_bin: /usr/sbin/sshd
+freebsd_cis_sshd_bin: >-
+  {{ '/usr/local/sbin/sshd' if freebsd_cis_sshd_source == 'ports'
+     else '/usr/sbin/sshd' }}
 
 # 4.2.x — Path to the ssh binary (used for version checks if needed).
-# FreeBSD base: /usr/bin/ssh
-# Ports/packages OpenSSH: /usr/local/bin/ssh
-freebsd_cis_ssh_bin: /usr/bin/ssh
+freebsd_cis_ssh_bin: >-
+  {{ '/usr/local/bin/ssh' if freebsd_cis_sshd_source == 'ports'
+     else '/usr/bin/ssh' }}
+
+# 4.2.x — rc.d service name for sshd reload.
+# FreeBSD base: sshd  |  Ports OpenSSH: openssh
+freebsd_cis_sshd_service: >-
+  {{ 'openssh' if freebsd_cis_sshd_source == 'ports'
+     else 'sshd' }}
 
 # 4.2.4 — sshd access restriction (AllowUsers / AllowGroups / DenyUsers / DenyGroups).
 # Set at least one to a non-empty string to enable automated remediation.
