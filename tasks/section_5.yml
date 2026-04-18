@@ -357,12 +357,12 @@
         - freebsd_cis_log_files_to_fix | length > 0
         - cis_5_1_3_world_read.stdout | trim != '' or cis_5_1_3_owner.stdout | trim != ''
 
-    - name: "5.1.3 | REMEDIATE | Fix permissions on existing key log files"
+    - name: "5.1.3 | REMEDIATE | Tighten permissions on existing key log files"
       ansible.builtin.file:
         path: "{{ item }}"
         owner: root
         group: wheel
-        mode: '0640'
+        mode: 'u-x,g-wx,o-rwx'
       loop: >-
         {{ (cis_5_1_3_log_stats.results | default([]))
            | selectattr('stat.exists', 'defined')
@@ -1185,7 +1185,7 @@
       ansible.builtin.stat:
         path: /etc/security/audit_warn
       register: cis_5_2_4_5_warn
-      changed_when: cis_5_2_4_5_warn.stat.exists and cis_5_2_4_5_warn.stat.mode != '0500'
+      changed_when: not cis_5_2_4_5_warn.stat.exists or cis_5_2_4_5_warn.stat.mode != '0500'
       check_mode: false
 
     - name: "5.2.4.5 | AUDIT | Check audit_control and audit_user modes"  # noqa: risky-shell-pipe
@@ -1212,9 +1212,9 @@
           {{ 'COMPLIANT: audit configuration files have correct modes'
              if (cis_5_2_4_5_control.stdout | trim == '') and
                 (cis_5_2_4_5_class.stdout | trim == '') and
-                (not cis_5_2_4_5_warn.stat.exists or
+                (cis_5_2_4_5_warn.stat.exists and
                  cis_5_2_4_5_warn.stat.mode == '0500')
-             else 'NON-COMPLIANT: audit configuration files have incorrect modes — review details' }}
+             else 'NON-COMPLIANT: audit configuration files have incorrect modes or audit_warn is absent — review details' }}
 
     - name: "5.2.4.5 | AUDIT | Show control/user mismatches"
       ansible.builtin.debug:
@@ -1236,6 +1236,16 @@
       when:
         - freebsd_cis_remediate | bool
         - cis_5_2_4_5_class.stdout | trim != ''
+
+    - name: "5.2.4.5 | REMEDIATE | Warn — audit_warn absent, manual action required"
+      ansible.builtin.debug:
+        msg: >-
+          REMEDIATION SKIPPED: /etc/security/audit_warn does not exist. Create a
+          site-appropriate audit_warn script (see audit_warn(8)) and set it to mode
+          0500 before re-running remediation.
+      when:
+        - freebsd_cis_remediate | bool
+        - not cis_5_2_4_5_warn.stat.exists
 
     - name: "5.2.4.5 | REMEDIATE | Set audit_warn to 500"
       ansible.builtin.file:
