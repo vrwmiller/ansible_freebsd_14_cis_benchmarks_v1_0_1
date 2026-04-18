@@ -72,19 +72,23 @@
   when: "'5.1.1.3' not in active_exceptions"
   tags: [rule_5.1.1.3, level1, section_5, manual]
   block:
-    - name: "5.1.1.3 | AUDIT | Check newsyslog.conf for overly permissive modes"
-      ansible.builtin.shell: "grep -E '[[:space:]]{2}[02467]{3}([[:space:]]|$)' /etc/newsyslog.conf 2>/dev/null || true"  # noqa: risky-shell-pipe
+    - name: "5.1.1.3 | AUDIT | Check newsyslog.conf for modes more permissive than 640"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        awk '/^[[:space:]]*(#|$)/{next}
+          {m=($2~/:/)?$3:$2; sub(/^0+/,"",m)}
+          NF>=3&&m~/^[0-7]{3}$/&&m!~/^[0-7][0145][0]$/{print}'
+        /etc/newsyslog.conf 2>/dev/null || true
       register: cis_5_1_1_3_perms
-      changed_when: false
+      changed_when: cis_5_1_1_3_perms.stdout | trim != ''
       failed_when: false
       check_mode: false
 
     - name: "5.1.1.3 | AUDIT | Report newsyslog.conf permission state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'COMPLIANT: no obviously over-permissive log modes found in newsyslog.conf'
+          {{ 'COMPLIANT: all newsyslog.conf log modes are 640 or more restrictive'
              if cis_5_1_1_3_perms.stdout | trim == ''
-             else 'NON-COMPLIANT: review the following newsyslog.conf entries for modes more permissive than 644' }}
+             else 'NON-COMPLIANT: review the following newsyslog.conf entries — modes are more permissive than 640' }}
 
     - name: "5.1.1.3 | AUDIT | Show entries requiring review"
       ansible.builtin.debug:
@@ -178,6 +182,12 @@
             (cis_5_1_1_5_splunk.rc == 0) or
             (cis_5_1_1_5_alt_daemon.stdout | trim != '')
           }}
+      changed_when: >-
+        not (
+          (cis_5_1_1_5_syslog_remote.stdout | trim != '') or
+          (cis_5_1_1_5_splunk.rc == 0) or
+          (cis_5_1_1_5_alt_daemon.stdout | trim != '')
+        )
 
     - name: "5.1.1.5 | AUDIT | Report remote logging state"
       ansible.builtin.debug:
@@ -455,11 +465,37 @@
              if cis_5_2_3_1_flags.rc == 0
              else 'NON-COMPLIANT: aa flag not found in audit_control flags — sudo actions may not be audited' }}
 
-    - name: "5.2.3.1 | REMEDIATE | Add aa to audit_control flags"
-      ansible.builtin.replace:
+    - name: "5.2.3.1 | REMEDIATE | Read current audit_control flags line"
+      ansible.builtin.command: grep "^flags:" /etc/security/audit_control
+      register: cis_5_2_3_1_flags_current
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_3_1_flags.rc != 0
+
+    - name: "5.2.3.1 | REMEDIATE | Build merged flags line including aa"
+      ansible.builtin.set_fact:
+        cis_5_2_3_1_new_flags: >-
+          {{ ((cis_5_2_3_1_flags_current.stdout | default('')
+               | regex_replace('^flags:[[:space:]]*', '')
+               | split(',')
+               | map('trim')
+               | reject('equalto', '')
+               | list)
+              + ['aa'])
+             | unique | join(',') }}
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_2_3_1_flags.rc != 0
+
+    - name: "5.2.3.1 | REMEDIATE | Ensure aa flag in audit_control flags line"
+      ansible.builtin.lineinfile:
         path: /etc/security/audit_control
-        regexp: '^(flags:.*)$'
-        replace: '\1,aa'
+        regexp: '^flags:'
+        line: "flags:{{ cis_5_2_3_1_new_flags }}"
+        insertbefore: '^naflags:'
         backup: true
       when:
         - freebsd_cis_remediate | bool
@@ -937,7 +973,10 @@
       ansible.builtin.debug:
         msg: >-
           {{ 'COMPLIANT: audit configuration files have correct modes'
-             if (cis_5_2_4_5_control.stdout | trim == '') and (cis_5_2_4_5_class.stdout | trim == '')
+             if (cis_5_2_4_5_control.stdout | trim == '') and
+                (cis_5_2_4_5_class.stdout | trim == '') and
+                (not cis_5_2_4_5_warn.stat.exists or
+                 cis_5_2_4_5_warn.stat.mode == '0500')
              else 'NON-COMPLIANT: audit configuration files have incorrect modes — review details' }}
 
     - name: "5.2.4.5 | AUDIT | Show control/user mismatches"
