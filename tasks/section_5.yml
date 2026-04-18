@@ -148,8 +148,8 @@
     # --- Detection: syslog @remote entries ---
     - name: "5.1.1.5 | AUDIT | Check syslog.conf files for remote forwarding entries"
       ansible.builtin.shell: >-
-        { grep -E '^[[:space:]]*[^#[:space:]].*@' /etc/syslog.conf 2>/dev/null || true; }
-        { grep -rE '^[[:space:]]*[^#[:space:]].*@' /etc/syslog.d/ 2>/dev/null || true; }
+        { grep -E '^[[:space:]]*[^#[:space:]].*@' /etc/syslog.conf 2>/dev/null || true; };
+        { grep -rE '^[[:space:]]*[^#[:space:]].*@' /etc/syslog.d/ 2>/dev/null || true; };
         { grep -rE '^[[:space:]]*[^#[:space:]].*@' /usr/local/etc/syslog.d/ 2>/dev/null || true; }
       register: cis_5_1_1_5_syslog_remote
       changed_when: false
@@ -1136,7 +1136,7 @@
     - name: "5.2.4.4 | AUDIT | Find audit log files with wrong group"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
         stat -L -f "%N %Sg" "{{ cis_5_2_4_4_dir.stdout | trim }}"/* 2>/dev/null
-        | grep -Ev '\s(audit|wheel)$' | head -20 || true
+        | grep -Ev '[[:space:]](audit|wheel)$' | head -20 || true
       register: cis_5_2_4_4_group
       changed_when: cis_5_2_4_4_group.stdout | trim != ''
       failed_when: false
