@@ -314,7 +314,7 @@
 
     - name: "5.1.3 | AUDIT | Find log files with world-readable permissions"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
-        find /var/log -maxdepth 1 -type f -perm /o+r -exec stat -Lf "%N %Lp %Su %Sg" {} + 2>/dev/null | head -40 || true
+        find /var/log -type f -perm /o+r -exec stat -Lf "%N %Lp %Su %Sg" {} + 2>/dev/null | head -40 || true
       register: cis_5_1_3_world_read
       changed_when: cis_5_1_3_world_read.stdout | trim != ''
       failed_when: false
@@ -322,7 +322,7 @@
 
     - name: "5.1.3 | AUDIT | Find log files not owned by root"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
-        find /var/log -maxdepth 1 -type f ! -user root -exec stat -Lf "%N %Su %Sg" {} + 2>/dev/null | head -40 || true
+        find /var/log -type f ! -user root -exec stat -Lf "%N %Su %Sg" {} + 2>/dev/null | head -40 || true
       register: cis_5_1_3_owner
       changed_when: cis_5_1_3_owner.stdout | trim != ''
       failed_when: false
