@@ -16,7 +16,6 @@
       ansible.builtin.service:
         name: "{{ freebsd_cis_sshd_service }}"
         state: reloaded
-      register: cis_reload_sshd_result
 
   rescue:
     - name: Reload sshd | Warn if reload failed
