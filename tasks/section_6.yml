@@ -728,6 +728,7 @@
         o=$(stat -Lf '%Su' "$d" 2>/dev/null);
         [ "$o" != "root" ] && echo "NOT_ROOT_OWNED: $d (owner=$o)";
         p=$(stat -Lf '%Lp' "$d" 2>/dev/null);
+        [ -z "$p" ] && echo "MODE_UNKNOWN: $d (stat_failed)" && continue;
         printf '%s\n' "$p" | awk '
         {
         m=$0; gsub(/^0+/, "", m); if (m == "") m="0";
@@ -836,6 +837,7 @@
         owner=$(stat -Lf '%Su' "$home" 2>/dev/null);
         [ "$owner" != "$user" ] && echo "WRONG_OWNER: $home owned by $owner not $user";
         perms=$(stat -Lf '%Lp' "$home" 2>/dev/null);
+        [ -z "$perms" ] && echo "STAT_FAILED: unable to determine mode for $home" && continue;
         printf '%s\n' "$perms" | awk '
         {
         m=$0; gsub(/^0+/, "", m); if (m == "") m="0";
