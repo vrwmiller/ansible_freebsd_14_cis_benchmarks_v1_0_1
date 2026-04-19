@@ -377,6 +377,7 @@
       loop_control:
         label: "{{ item }}"
       register: cis_5_1_3_log_stats
+      failed_when: false
       when:
         - freebsd_cis_remediate | bool
         - freebsd_cis_log_files_to_fix | length > 0
@@ -410,6 +411,7 @@
   ansible.builtin.stat:
     path: /etc/security/audit_control
   register: cis_audit_control_stat
+  failed_when: false
   check_mode: false
   tags: [always]
 

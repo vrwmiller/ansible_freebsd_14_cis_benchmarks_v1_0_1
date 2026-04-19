@@ -109,12 +109,14 @@
       ansible.builtin.stat:
         path: /var/cron/allow
       register: cis_4_1_1_3_allow
+      failed_when: false
       check_mode: false
 
     - name: "4.1.1.3 | AUDIT | Stat /var/cron/deny"
       ansible.builtin.stat:
         path: /var/cron/deny
       register: cis_4_1_1_3_deny
+      failed_when: false
       check_mode: false
 
     - name: "4.1.1.3 | AUDIT | Evaluate cron access control state"
@@ -190,12 +192,14 @@
       ansible.builtin.stat:
         path: /var/at/at.allow
       register: cis_4_1_2_1_allow
+      failed_when: false
       check_mode: false
 
     - name: "4.1.2.1 | AUDIT | Stat /var/at/at.deny"
       ansible.builtin.stat:
         path: /var/at/at.deny
       register: cis_4_1_2_1_deny
+      failed_when: false
       check_mode: false
 
     - name: "4.1.2.1 | AUDIT | Evaluate at access control state"
@@ -406,6 +410,7 @@
       loop_control:
         label: "{{ item.path }}"
       register: cis_4_2_2_privkey_stats
+      failed_when: false
       check_mode: false
 
     - name: "4.2.2 | AUDIT | Report private key permission state"
@@ -476,6 +481,7 @@
       loop_control:
         label: "{{ item.path }}"
       register: cis_4_2_3_pubkey_stats
+      failed_when: false
       check_mode: false
 
     - name: "4.2.3 | AUDIT | Report public key permission state"
