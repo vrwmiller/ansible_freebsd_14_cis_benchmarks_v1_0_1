@@ -12,6 +12,7 @@ Python 3.11, Ansible 2.16, ansible-lint at production profile.
 - Open PRs with `gh pr create --body-file /tmp/<file>.txt`.
 - Use merge commits (`gh pr merge --merge`).
 - After merge: `git checkout main && git pull origin main && git branch -d <branch>`.
+- Never use heredocs or `python3 -c` for multi-line content. Write all scripts and data to `/tmp/` files with `create_file`, execute them, then delete.
 
 ---
 
