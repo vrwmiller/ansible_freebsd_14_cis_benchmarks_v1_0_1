@@ -1,6 +1,6 @@
 # Ansible FreeBSD 14 CIS Benchmarks (v1.0.1)
 
-I have some cloud-based VPS's just upgraded from upcoming EOL'd FreeBSD 13 to FreeBSD 14.4. This being the first FreeBSD CIS Benchmark in 22 years, I wanted it applied as a baseline security measure.
+I have some cloud-based VPSs just upgraded from the upcoming end-of-life (EOL) FreeBSD 13 to FreeBSD 14.4. This being the first FreeBSD CIS Benchmark in 22 years, I wanted it applied as a baseline security measure.
 
 Before running remediation mode, back up any files that may be modified. Run remediation in dry-run mode first with `--check`, review exactly what will change, and only then run remediation without `--check`.
 
