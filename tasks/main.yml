@@ -1,6 +1,20 @@
 ---
 # FreeBSD 14 CIS Benchmark v1.0.1 — Task Orchestrator
 
+- name: "Initialize | Validate exception variable types"
+  ansible.builtin.assert:
+    that:
+      - (freebsd_cis_global_exceptions | map('type_debug') | unique | difference(['str']) | length) == 0
+      - (freebsd_cis_local_exceptions | map('type_debug') | unique | difference(['str']) | length) == 0
+    fail_msg: >-
+      freebsd_cis_global_exceptions and freebsd_cis_local_exceptions must both be YAML lists
+      containing only string rule IDs. Got container types:
+      global={{ freebsd_cis_global_exceptions | type_debug }},
+      local={{ freebsd_cis_local_exceptions | type_debug }}.
+      Element types must all be 'str'; define them like ["1.1.1.1"] and not as dicts,
+      integers, or nested lists.
+  tags: [always]
+
 - name: "Initialize | Merge exception lists"
   ansible.builtin.set_fact:
     active_exceptions: "{{ (freebsd_cis_global_exceptions + freebsd_cis_local_exceptions) | unique }}"
