@@ -2,4 +2,932 @@
 # FreeBSD 14 CIS Benchmark v1.0.1
 # Section 6 — System Maintenance
 # Controls: 6.1.1 – 6.2.11
-[]
+# lint-clean: production profile
+
+# =============================================================
+# 6.1 System File Permissions
+# =============================================================
+
+# ---
+
+- name: "6.1.1 | Ensure permissions on /etc/passwd are configured"
+  # Benchmark divergence: the remediation says 'chown root:root /etc/passwd'
+  # but the Audit expected output and Default Value both show Gid: (0/wheel).
+  # FreeBSD convention is root:wheel. We use root:wheel and note the error.
+  when: "'6.1.1' not in active_exceptions"
+  tags: [rule_6.1.1, level1, section_6, automated]
+  block:
+
+    - name: "6.1.1 | AUDIT | Stat /etc/passwd"
+      ansible.builtin.stat:
+        path: /etc/passwd
+      register: cis_6_1_1_stat
+      changed_when: >-
+        not cis_6_1_1_stat.stat.exists or
+        cis_6_1_1_stat.stat.pw_name != 'root' or
+        cis_6_1_1_stat.stat.gr_name != 'wheel' or
+        ((cis_6_1_1_stat.stat.mode | int(base=8)) // 64) % 8 in [1, 3, 5, 7] or
+        ((cis_6_1_1_stat.stat.mode | int(base=8)) // 8) % 8 not in [0, 4] or
+        (cis_6_1_1_stat.stat.mode | int(base=8)) % 8 not in [0, 4]
+      failed_when: false
+      check_mode: false
+
+    - name: "6.1.1 | AUDIT | Report /etc/passwd permission state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: /etc/passwd owner=' ~
+             (cis_6_1_1_stat.stat.pw_name | default('?')) ~ ' group=' ~
+             (cis_6_1_1_stat.stat.gr_name | default('?')) ~ ' mode=' ~
+             (cis_6_1_1_stat.stat.mode | default('?')) ~
+             ' — expected root:wheel mode 644 or more restrictive'
+             if cis_6_1_1_stat is changed
+             else 'COMPLIANT: /etc/passwd is root:wheel mode 644 or more restrictive' }}
+
+    - name: "6.1.1 | REMEDIATE | Set /etc/passwd owner, group, and mode"
+      ansible.builtin.file:
+        path: /etc/passwd
+        owner: root
+        group: wheel
+        mode: '0644'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_6_1_1_stat.stat.exists
+        - cis_6_1_1_stat.stat.pw_name != 'root' or
+          cis_6_1_1_stat.stat.gr_name != 'wheel' or
+          ((cis_6_1_1_stat.stat.mode | int(base=8)) // 64) % 8 in [1, 3, 5, 7] or
+          ((cis_6_1_1_stat.stat.mode | int(base=8)) // 8) % 8 not in [0, 4] or
+          (cis_6_1_1_stat.stat.mode | int(base=8)) % 8 not in [0, 4]
+
+# ---
+
+- name: "6.1.2 | Ensure permissions on /etc/group are configured"
+  when: "'6.1.2' not in active_exceptions"
+  tags: [rule_6.1.2, level1, section_6, automated]
+  block:
+
+    - name: "6.1.2 | AUDIT | Stat /etc/group"
+      ansible.builtin.stat:
+        path: /etc/group
+      register: cis_6_1_2_stat
+      changed_when: >-
+        not cis_6_1_2_stat.stat.exists or
+        cis_6_1_2_stat.stat.pw_name != 'root' or
+        cis_6_1_2_stat.stat.gr_name != 'wheel' or
+        ((cis_6_1_2_stat.stat.mode | int(base=8)) // 64) % 8 in [1, 3, 5, 7] or
+        ((cis_6_1_2_stat.stat.mode | int(base=8)) // 8) % 8 not in [0, 4] or
+        (cis_6_1_2_stat.stat.mode | int(base=8)) % 8 not in [0, 4]
+      failed_when: false
+      check_mode: false
+
+    - name: "6.1.2 | AUDIT | Report /etc/group permission state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: /etc/group owner=' ~
+             (cis_6_1_2_stat.stat.pw_name | default('?')) ~ ' group=' ~
+             (cis_6_1_2_stat.stat.gr_name | default('?')) ~ ' mode=' ~
+             (cis_6_1_2_stat.stat.mode | default('?')) ~
+             ' — expected root:wheel mode 644 or more restrictive'
+             if cis_6_1_2_stat is changed
+             else 'COMPLIANT: /etc/group is root:wheel mode 644 or more restrictive' }}
+
+    - name: "6.1.2 | REMEDIATE | Set /etc/group owner, group, and mode"
+      ansible.builtin.file:
+        path: /etc/group
+        owner: root
+        group: wheel
+        mode: '0644'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_6_1_2_stat.stat.exists
+        - cis_6_1_2_stat.stat.pw_name != 'root' or
+          cis_6_1_2_stat.stat.gr_name != 'wheel' or
+          ((cis_6_1_2_stat.stat.mode | int(base=8)) // 64) % 8 in [1, 3, 5, 7] or
+          ((cis_6_1_2_stat.stat.mode | int(base=8)) // 8) % 8 not in [0, 4] or
+          (cis_6_1_2_stat.stat.mode | int(base=8)) % 8 not in [0, 4]
+
+# ---
+
+- name: "6.1.3 | Ensure permissions on /etc/master.passwd are configured"
+  when: "'6.1.3' not in active_exceptions"
+  tags: [rule_6.1.3, level1, section_6, automated]
+  block:
+
+    - name: "6.1.3 | AUDIT | Stat /etc/master.passwd"
+      ansible.builtin.stat:
+        path: /etc/master.passwd
+      register: cis_6_1_3_stat
+      changed_when: >-
+        not cis_6_1_3_stat.stat.exists or
+        cis_6_1_3_stat.stat.pw_name != 'root' or
+        cis_6_1_3_stat.stat.gr_name != 'wheel' or
+        ((cis_6_1_3_stat.stat.mode | int(base=8)) // 64) % 8 != 0 or
+        ((cis_6_1_3_stat.stat.mode | int(base=8)) // 8) % 8 != 0 or
+        (cis_6_1_3_stat.stat.mode | int(base=8)) % 8 != 0
+      failed_when: false
+      check_mode: false
+
+    - name: "6.1.3 | AUDIT | Report /etc/master.passwd permission state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: /etc/master.passwd owner=' ~
+             (cis_6_1_3_stat.stat.pw_name | default('?')) ~ ' group=' ~
+             (cis_6_1_3_stat.stat.gr_name | default('?')) ~ ' mode=' ~
+             (cis_6_1_3_stat.stat.mode | default('?')) ~
+             ' — expected root:wheel mode 0000'
+             if cis_6_1_3_stat is changed
+             else 'COMPLIANT: /etc/master.passwd is root:wheel mode 0000' }}
+
+    - name: "6.1.3 | REMEDIATE | Set /etc/master.passwd owner, group, and mode"
+      ansible.builtin.file:
+        path: /etc/master.passwd
+        owner: root
+        group: wheel
+        mode: '0000'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_6_1_3_stat.stat.exists
+        - cis_6_1_3_stat.stat.pw_name != 'root' or
+          cis_6_1_3_stat.stat.gr_name != 'wheel' or
+          ((cis_6_1_3_stat.stat.mode | int(base=8)) // 64) % 8 != 0 or
+          ((cis_6_1_3_stat.stat.mode | int(base=8)) // 8) % 8 != 0 or
+          (cis_6_1_3_stat.stat.mode | int(base=8)) % 8 != 0
+
+# ---
+
+- name: "6.1.4 | Ensure permissions on /etc/shells are configured"
+  when: "'6.1.4' not in active_exceptions"
+  tags: [rule_6.1.4, level1, section_6, automated]
+  block:
+
+    - name: "6.1.4 | AUDIT | Stat /etc/shells"
+      ansible.builtin.stat:
+        path: /etc/shells
+      register: cis_6_1_4_stat
+      changed_when: >-
+        not cis_6_1_4_stat.stat.exists or
+        cis_6_1_4_stat.stat.pw_name != 'root' or
+        cis_6_1_4_stat.stat.gr_name != 'wheel' or
+        ((cis_6_1_4_stat.stat.mode | int(base=8)) // 64) % 8 in [1, 3, 5, 7] or
+        ((cis_6_1_4_stat.stat.mode | int(base=8)) // 8) % 8 not in [0, 4] or
+        (cis_6_1_4_stat.stat.mode | int(base=8)) % 8 not in [0, 4]
+      failed_when: false
+      check_mode: false
+
+    - name: "6.1.4 | AUDIT | Report /etc/shells permission state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: /etc/shells owner=' ~
+             (cis_6_1_4_stat.stat.pw_name | default('?')) ~ ' group=' ~
+             (cis_6_1_4_stat.stat.gr_name | default('?')) ~ ' mode=' ~
+             (cis_6_1_4_stat.stat.mode | default('?')) ~
+             ' — expected root:wheel mode 644 or more restrictive'
+             if cis_6_1_4_stat is changed
+             else 'COMPLIANT: /etc/shells is root:wheel mode 644 or more restrictive' }}
+
+    - name: "6.1.4 | REMEDIATE | Set /etc/shells owner, group, and mode"
+      ansible.builtin.file:
+        path: /etc/shells
+        owner: root
+        group: wheel
+        mode: '0644'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_6_1_4_stat.stat.exists
+        - cis_6_1_4_stat.stat.pw_name != 'root' or
+          cis_6_1_4_stat.stat.gr_name != 'wheel' or
+          ((cis_6_1_4_stat.stat.mode | int(base=8)) // 64) % 8 in [1, 3, 5, 7] or
+          ((cis_6_1_4_stat.stat.mode | int(base=8)) // 8) % 8 not in [0, 4] or
+          (cis_6_1_4_stat.stat.mode | int(base=8)) % 8 not in [0, 4]
+
+# ---
+
+- name: "6.1.5 | Ensure world writable files and directories are secured"
+  # Note: scanning all filesystems without -xdev may be slow on large systems.
+  # /tmp is excluded because it is intentionally world-writable+sticky.
+  # /dev is excluded because device nodes are not regular files or dirs.
+  # World-writable file remediation is NOT automated — removing o-w from unknown
+  # files can break applications. Directories are remediated (sticky bit added,
+  # world-write removed) because that only restricts deletion, not file access.
+  when: "'6.1.5' not in active_exceptions"
+  tags: [rule_6.1.5, level1, section_6, manual]
+  block:
+
+    - name: "6.1.5 | AUDIT | Find world-writable files (excluding /tmp and /dev)"
+      ansible.builtin.command: >-
+        find / ! -path '/tmp/*' ! -path '/dev/*' -type f -perm -0002 -print
+      register: cis_6_1_5_ww_files
+      changed_when: cis_6_1_5_ww_files.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+
+    - name: "6.1.5 | AUDIT | Find world-writable dirs without sticky bit (excluding /tmp and /dev)"
+      ansible.builtin.command: >-
+        find / ! -path '/tmp/*' ! -path '/dev/*' -type d -perm -0002 ! -perm -1000 -print
+      register: cis_6_1_5_ww_dirs
+      changed_when: cis_6_1_5_ww_dirs.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+
+    - name: "6.1.5 | AUDIT | Report world-writable file state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: no world-writable files found outside /tmp and /dev'
+             if cis_6_1_5_ww_files.stdout | trim == ''
+             else 'NON-COMPLIANT: world-writable files found — manual review required before removing permissions' }}
+
+    - name: "6.1.5 | AUDIT | Show world-writable files"
+      ansible.builtin.debug:
+        msg: "{{ ['World-writable files:'] + cis_6_1_5_ww_files.stdout_lines }}"
+      when: cis_6_1_5_ww_files.stdout | trim != ''
+
+    - name: "6.1.5 | AUDIT | Report world-writable directory state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: no world-writable directories without sticky bit found outside /tmp and /dev'
+             if cis_6_1_5_ww_dirs.stdout | trim == ''
+             else 'NON-COMPLIANT: world-writable directories without sticky bit found' }}
+
+    - name: "6.1.5 | AUDIT | Show world-writable dirs without sticky bit"
+      ansible.builtin.debug:
+        msg: "{{ ['World-writable dirs without sticky bit:'] + cis_6_1_5_ww_dirs.stdout_lines }}"
+      when: cis_6_1_5_ww_dirs.stdout | trim != ''
+
+    - name: "6.1.5 | REMEDIATE | Add sticky bit and remove world-write from world-writable directories"
+      ansible.builtin.command: >-
+        find / ! -path '/tmp/*' ! -path '/dev/*' -type d -perm -0002 ! -perm -1000
+        -exec chmod a+t,o-w {} +
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_6_1_5_ww_dirs.stdout | trim != ''
+      changed_when: true
+      failed_when: false
+
+    - name: "6.1.5 | REMEDIATE | Warn — world-writable files require manual review"
+      ansible.builtin.debug:
+        msg: >-
+          MANUAL ACTION REQUIRED: world-writable files listed above need operator
+          review before removing permissions — use 'chmod o-w <file>' after
+          confirming no application depends on world-write access.
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_6_1_5_ww_files.stdout | trim != ''
+
+# ---
+
+- name: "6.1.6 | Ensure no unowned or ungrouped files or directories exist"
+  # Note: -xdev limits the scan to the root filesystem. Files on separately
+  # mounted filesystems (/home, /var, /usr) are not checked. This matches
+  # the benchmark's audit command but the scope limitation should be noted.
+  when: "'6.1.6' not in active_exceptions"
+  tags: [rule_6.1.6, level1, section_6, manual]
+  block:
+
+    - name: "6.1.6 | AUDIT | Find files and directories with no valid owner or group"
+      ansible.builtin.command: find / -xdev \( -nouser -o -nogroup \) -print
+      register: cis_6_1_6_unowned
+      changed_when: cis_6_1_6_unowned.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+
+    - name: "6.1.6 | AUDIT | Report unowned/ungrouped file state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: no unowned or ungrouped files or directories found'
+             if cis_6_1_6_unowned.stdout | trim == ''
+             else 'NON-COMPLIANT: files or directories found with no valid owner or group — review and reassign or remove' }}
+
+    - name: "6.1.6 | AUDIT | Show unowned or ungrouped files"
+      ansible.builtin.debug:
+        msg: "{{ ['Unowned or ungrouped files:'] + cis_6_1_6_unowned.stdout_lines }}"
+      when: cis_6_1_6_unowned.stdout | trim != ''
+
+    - name: "6.1.6 | REMEDIATE | Warn — operator action required"
+      ansible.builtin.debug:
+        msg: >-
+          MANUAL ACTION REQUIRED: review the files listed above and either assign
+          them to an active user/group or remove them.
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_6_1_6_unowned.stdout | trim != ''
+
+# ---
+
+- name: "6.1.7 | Ensure SUID and SGID files are reviewed"
+  when: "'6.1.7' not in active_exceptions"
+  tags: [rule_6.1.7, level1, section_6, manual]
+  block:
+
+    - name: "6.1.7 | AUDIT | Find SUID files"
+      ansible.builtin.command: find / -xdev -type f -perm -4000 -print
+      register: cis_6_1_7_suid
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "6.1.7 | AUDIT | Find SGID files"
+      ansible.builtin.command: find / -xdev -type f -perm -2000 -print
+      register: cis_6_1_7_sgid
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: "6.1.7 | AUDIT | Report SUID/SGID state"
+      ansible.builtin.debug:
+        msg: >-
+          MANUAL REVIEW REQUIRED: verify all SUID/SGID files below are legitimate
+          system binaries. Compare checksums against a trusted source if any look
+          suspicious. A SUID/SGID binary that has been replaced is an indicator of
+          compromise.
+
+    - name: "6.1.7 | AUDIT | Show SUID files"
+      ansible.builtin.debug:
+        msg: "{{ ['SUID files:'] + cis_6_1_7_suid.stdout_lines }}"
+      when: cis_6_1_7_suid.stdout | trim != ''
+
+    - name: "6.1.7 | AUDIT | Show SGID files"
+      ansible.builtin.debug:
+        msg: "{{ ['SGID files:'] + cis_6_1_7_sgid.stdout_lines }}"
+      when: cis_6_1_7_sgid.stdout | trim != ''
+
+# =============================================================
+# 6.2 Local User and Group Settings
+# =============================================================
+
+# Pre-flight: several 6.2 controls read /etc/master.passwd. Verify it exists
+# before running the awk-based audits to avoid false-COMPLIANT empty output.
+
+- name: "6.2 | PRE-FLIGHT | Stat /etc/master.passwd"
+  ansible.builtin.stat:
+    path: /etc/master.passwd
+  register: cis_master_passwd_stat
+  failed_when: false
+  check_mode: false
+  tags: [always]
+
+- name: "6.2 | PRE-FLIGHT | Warn — /etc/master.passwd absent"
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: /etc/master.passwd is absent — 6.2.1, 6.2.2, 6.2.3, 6.2.4,
+      6.2.6, 6.2.9 audits that read this file will be skipped.
+  when: not cis_master_passwd_stat.stat.exists
+  tags: [always]
+
+# ---
+
+- name: "6.2.1 | Ensure accounts in /etc/master.passwd use shadowed passwords"
+  # Benchmark note: this control uses Linux shadow terminology that does not
+  # apply cleanly to FreeBSD. In FreeBSD, /etc/master.passwd IS the shadow
+  # database — there is no separate /etc/shadow. The awk check for $2 == "*"
+  # finds LOCKED accounts (cannot log in via password), not accounts without
+  # shadowed passwords. A truly empty password field ($2 == "") is the real
+  # security risk and is checked in 6.2.2. Implementing as-written for
+  # benchmark compliance; the conceptual mismatch should be corrected in a
+  # future benchmark version.
+  when: "'6.2.1' not in active_exceptions"
+  tags: [rule_6.2.1, level1, section_6, manual]
+  block:
+
+    - name: "6.2.1 | AUDIT | Check master.passwd for accounts with locked password marker"
+      ansible.builtin.command: >-
+        awk -F: '($2 == "*") {print $1}' /etc/master.passwd
+      register: cis_6_2_1_locked
+      changed_when: cis_6_2_1_locked.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+      when: cis_master_passwd_stat.stat.exists
+
+    - name: "6.2.1 | AUDIT | Report locked account state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: accounts with locked password marker (*) found —
+          review whether each account is intentionally locked or needs a proper
+          password hash. Note: system accounts (daemon, nobody, etc.) are
+          expected to have * — investigate interactive accounts only.'
+             if (cis_6_2_1_locked.stdout | default('')) | trim != ''
+             else 'COMPLIANT: no accounts with bare * password marker found
+          (note: if locked accounts are expected on this system the benchmark
+          control definition does not align well with FreeBSD — see inline note)' }}
+      when: cis_master_passwd_stat.stat.exists
+
+    - name: "6.2.1 | AUDIT | Show accounts with locked password marker"
+      ansible.builtin.debug:
+        msg: "{{ ['Accounts with * password field:'] + cis_6_2_1_locked.stdout_lines }}"
+      when:
+        - cis_master_passwd_stat.stat.exists
+        - (cis_6_2_1_locked.stdout | default('')) | trim != ''
+
+    - name: "6.2.1 | AUDIT | Report — master.passwd absent"
+      ansible.builtin.debug:
+        msg: "NON-COMPLIANT: /etc/master.passwd is absent — cannot audit shadowed passwords"
+      when: not cis_master_passwd_stat.stat.exists
+
+    - name: "6.2.1 | REMEDIATE | Warn — operator investigation required"
+      ansible.builtin.debug:
+        msg: >-
+          MANUAL ACTION REQUIRED: investigate any non-system interactive accounts
+          listed above that have a * password marker. Determine if they should be
+          locked, given a password, or removed.
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_master_passwd_stat.stat.exists
+        - (cis_6_2_1_locked.stdout | default('')) | trim != ''
+
+# ---
+
+- name: "6.2.2 | Ensure /etc/master.passwd password fields are not empty"
+  # Benchmark divergence: the audit command in the benchmark uses $2 == "*"
+  # (locked) — the same as 6.2.1 — which is incorrect. An empty password
+  # field is $2 == "" (empty string), which allows passwordless login.
+  # We check $2 == "" to match the description's stated intent. This divergence
+  # should be corrected in a future benchmark version.
+  when: "'6.2.2' not in active_exceptions"
+  tags: [rule_6.2.2, level1, section_6, manual]
+  block:
+
+    - name: "6.2.2 | AUDIT | Check master.passwd for accounts with empty password fields"
+      ansible.builtin.command: >-
+        awk -F: '($2 == "") {print $1}' /etc/master.passwd
+      register: cis_6_2_2_empty_pw
+      changed_when: cis_6_2_2_empty_pw.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+      when: cis_master_passwd_stat.stat.exists
+
+    - name: "6.2.2 | AUDIT | Report empty password field state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'NON-COMPLIANT: accounts with empty password field found — anyone
+          can log in as these users without a password'
+             if (cis_6_2_2_empty_pw.stdout | default('')) | trim != ''
+             else 'COMPLIANT: no accounts with empty password fields found' }}
+      when: cis_master_passwd_stat.stat.exists
+
+    - name: "6.2.2 | AUDIT | Show accounts with empty password fields"
+      ansible.builtin.debug:
+        msg: "{{ ['Accounts with empty password field:'] + cis_6_2_2_empty_pw.stdout_lines }}"
+      when:
+        - cis_master_passwd_stat.stat.exists
+        - (cis_6_2_2_empty_pw.stdout | default('')) | trim != ''
+
+    - name: "6.2.2 | AUDIT | Report — master.passwd absent"
+      ansible.builtin.debug:
+        msg: "NON-COMPLIANT: /etc/master.passwd is absent — cannot audit password fields"
+      when: not cis_master_passwd_stat.stat.exists
+
+    - name: "6.2.2 | REMEDIATE | Warn — lock accounts with empty passwords"
+      ansible.builtin.debug:
+        msg: >-
+          MANUAL ACTION REQUIRED: run 'pw lock <username>' for each account listed
+          above, then investigate what the account is being used for and whether
+          it needs a password set or should be removed entirely.
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_master_passwd_stat.stat.exists
+        - (cis_6_2_2_empty_pw.stdout | default('')) | trim != ''
+
+# ---
+
+- name: "6.2.3 | Ensure all groups in /etc/passwd exist in /etc/group"
+  when: "'6.2.3' not in active_exceptions"
+  tags: [rule_6.2.3, level1, section_6, manual]
+  block:
+
+    - name: "6.2.3 | AUDIT | Check for GIDs in /etc/passwd with no matching /etc/group entry"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        awk -F: '{print $4}' /etc/passwd | sort -un | while read -r gid; do
+        awk -F: -v g="$gid" '$3==g{found=1}END{if(!found)print "GID " g
+        " referenced in /etc/passwd but not in /etc/group"}' /etc/group;
+        done
+      register: cis_6_2_3_missing_groups
+      changed_when: cis_6_2_3_missing_groups.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+
+    - name: "6.2.3 | AUDIT | Report missing group state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: all GIDs referenced in /etc/passwd have entries in /etc/group'
+             if cis_6_2_3_missing_groups.stdout | trim == ''
+             else 'NON-COMPLIANT: GIDs found in /etc/passwd with no /etc/group entry' }}
+
+    - name: "6.2.3 | AUDIT | Show missing groups"
+      ansible.builtin.debug:
+        msg: "{{ ['Missing groups:'] + cis_6_2_3_missing_groups.stdout_lines }}"
+      when: cis_6_2_3_missing_groups.stdout | trim != ''
+
+    - name: "6.2.3 | REMEDIATE | Warn — operator action required"
+      ansible.builtin.debug:
+        msg: >-
+          MANUAL ACTION REQUIRED: add missing groups to /etc/group or correct
+          the GID assignments in /etc/passwd as appropriate.
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_6_2_3_missing_groups.stdout | trim != ''
+
+# ---
+
+- name: "6.2.4 | Ensure no duplicate UIDs exist"
+  # FreeBSD note: FreeBSD ships with a 'toor' account at UID 0 by design.
+  # This is intended to allow a third-party shell for root. If toor is the
+  # only duplicate UID 0 entry and your site policy permits it, exception-list
+  # this control with '6.2.4' in freebsd_cis_local_exceptions.
+  when: "'6.2.4' not in active_exceptions"
+  tags: [rule_6.2.4, level1, section_6, manual]
+  block:
+
+    - name: "6.2.4 | AUDIT | Check for duplicate UIDs in /etc/passwd"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        awk -F: '{print $3}' /etc/passwd | sort | uniq -d | while read -r uid; do
+        echo "DUPLICATE_UID: $uid";
+        awk -F: -v u="$uid" '$3==u{print "  user: "$1}' /etc/passwd;
+        done
+      register: cis_6_2_4_dup_uids
+      changed_when: cis_6_2_4_dup_uids.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+
+    - name: "6.2.4 | AUDIT | Report duplicate UID state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: no duplicate UIDs found in /etc/passwd'
+             if cis_6_2_4_dup_uids.stdout | trim == ''
+             else 'NON-COMPLIANT: duplicate UIDs found — NOTE: FreeBSD ships with
+          toor at UID 0 by design; exception-list 6.2.4 if this is the only
+          duplicate and your site policy accepts it' }}
+
+    - name: "6.2.4 | AUDIT | Show duplicate UIDs"
+      ansible.builtin.debug:
+        msg: "{{ ['Duplicate UIDs:'] + cis_6_2_4_dup_uids.stdout_lines }}"
+      when: cis_6_2_4_dup_uids.stdout | trim != ''
+
+    - name: "6.2.4 | REMEDIATE | Warn — operator action required"
+      ansible.builtin.debug:
+        msg: >-
+          MANUAL ACTION REQUIRED: establish unique UIDs for each account listed
+          above. Review files owned by shared UIDs to determine correct ownership.
+          Exception: the toor/root UID 0 pair is a FreeBSD base system design
+          choice and may be acceptable per site policy.
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_6_2_4_dup_uids.stdout | trim != ''
+
+# ---
+
+- name: "6.2.5 | Ensure no duplicate GIDs exist"
+  when: "'6.2.5' not in active_exceptions"
+  tags: [rule_6.2.5, level1, section_6, manual]
+  block:
+
+    - name: "6.2.5 | AUDIT | Check for duplicate GIDs in /etc/group"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        awk -F: '{print $3}' /etc/group | sort | uniq -d | while read -r gid; do
+        echo "DUPLICATE_GID: $gid";
+        awk -F: -v g="$gid" '$3==g{print "  group: "$1}' /etc/group;
+        done
+      register: cis_6_2_5_dup_gids
+      changed_when: cis_6_2_5_dup_gids.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+
+    - name: "6.2.5 | AUDIT | Report duplicate GID state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: no duplicate GIDs found in /etc/group'
+             if cis_6_2_5_dup_gids.stdout | trim == ''
+             else 'NON-COMPLIANT: duplicate GIDs found' }}
+
+    - name: "6.2.5 | AUDIT | Show duplicate GIDs"
+      ansible.builtin.debug:
+        msg: "{{ ['Duplicate GIDs:'] + cis_6_2_5_dup_gids.stdout_lines }}"
+      when: cis_6_2_5_dup_gids.stdout | trim != ''
+
+    - name: "6.2.5 | REMEDIATE | Warn — operator action required"
+      ansible.builtin.debug:
+        msg: >-
+          MANUAL ACTION REQUIRED: establish unique GIDs for each group listed
+          above. File group ownerships will automatically reflect the change
+          once GIDs are unique.
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_6_2_5_dup_gids.stdout | trim != ''
+
+# ---
+
+- name: "6.2.6 | Ensure no duplicate user names exist"
+  when: "'6.2.6' not in active_exceptions"
+  tags: [rule_6.2.6, level1, section_6, manual]
+  block:
+
+    - name: "6.2.6 | AUDIT | Check for duplicate usernames in /etc/passwd"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        awk -F: '{print $1}' /etc/passwd | sort | uniq -d | while read -r name; do
+        echo "DUPLICATE_USER: $name";
+        done
+      register: cis_6_2_6_dup_users
+      changed_when: cis_6_2_6_dup_users.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+
+    - name: "6.2.6 | AUDIT | Report duplicate username state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: no duplicate usernames found in /etc/passwd'
+             if cis_6_2_6_dup_users.stdout | trim == ''
+             else 'NON-COMPLIANT: duplicate usernames found — the first UID for
+          the username is used on login; the second entry effectively shares
+          the first entry UID which is a security risk' }}
+
+    - name: "6.2.6 | AUDIT | Show duplicate usernames"
+      ansible.builtin.debug:
+        msg: "{{ ['Duplicate usernames:'] + cis_6_2_6_dup_users.stdout_lines }}"
+      when: cis_6_2_6_dup_users.stdout | trim != ''
+
+    - name: "6.2.6 | REMEDIATE | Warn — operator action required"
+      ansible.builtin.debug:
+        msg: >-
+          MANUAL ACTION REQUIRED: establish unique usernames. As long as each
+          account has a unique UID, file ownership will automatically reflect
+          any username change.
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_6_2_6_dup_users.stdout | trim != ''
+
+# ---
+
+- name: "6.2.7 | Ensure no duplicate group names exist"
+  when: "'6.2.7' not in active_exceptions"
+  tags: [rule_6.2.7, level1, section_6, manual]
+  block:
+
+    - name: "6.2.7 | AUDIT | Check for duplicate group names in /etc/group"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        awk -F: '{print $1}' /etc/group | sort | uniq -d | while read -r name; do
+        echo "DUPLICATE_GROUP: $name";
+        done
+      register: cis_6_2_7_dup_groups
+      changed_when: cis_6_2_7_dup_groups.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+
+    - name: "6.2.7 | AUDIT | Report duplicate group name state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: no duplicate group names found in /etc/group'
+             if cis_6_2_7_dup_groups.stdout | trim == ''
+             else 'NON-COMPLIANT: duplicate group names found' }}
+
+    - name: "6.2.7 | AUDIT | Show duplicate group names"
+      ansible.builtin.debug:
+        msg: "{{ ['Duplicate group names:'] + cis_6_2_7_dup_groups.stdout_lines }}"
+      when: cis_6_2_7_dup_groups.stdout | trim != ''
+
+    - name: "6.2.7 | REMEDIATE | Warn — operator action required"
+      ansible.builtin.debug:
+        msg: >-
+          MANUAL ACTION REQUIRED: establish unique group names. File group
+          ownerships will automatically reflect the change as long as GIDs
+          remain unique.
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_6_2_7_dup_groups.stdout | trim != ''
+
+# ---
+
+- name: "6.2.8 | Ensure root path integrity"
+  when: "'6.2.8' not in active_exceptions"
+  tags: [rule_6.2.8, level1, section_6, manual]
+  block:
+
+    - name: "6.2.8 | AUDIT | Check root PATH for dangerous string-level entries"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        out="";
+        echo "$PATH" | grep -qE '(^|:)\.(:|$)' && out="${out}DOT_IN_PATH ";
+        echo "$PATH" | grep -q '::' && out="${out}EMPTY_ENTRY ";
+        echo "$PATH" | grep -qE ':$' && out="${out}TRAILING_COLON ";
+        echo "${out:-CLEAN}"
+      register: cis_6_2_8_path_str
+      changed_when: cis_6_2_8_path_str.stdout | trim != 'CLEAN'
+      failed_when: false
+      check_mode: false
+
+    - name: "6.2.8 | AUDIT | Check root PATH directory ownership and permissions"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        echo "$PATH" | tr ':' '\n' | while read -r d; do
+        [ -z "$d" ] && continue;
+        [ "$d" = "." ] && continue;
+        [ ! -d "$d" ] && echo "NOT_DIR: $d" && continue;
+        o=$(stat -Lf '%Su' "$d" 2>/dev/null);
+        [ "$o" != "root" ] && echo "NOT_ROOT_OWNED: $d (owner=$o)";
+        p=$(stat -Lf '%Lp' "$d" 2>/dev/null);
+        [ "$p" -gt 755 ] && echo "TOO_PERMISSIVE: $d (mode=$p)";
+        done
+      register: cis_6_2_8_path_dirs
+      changed_when: cis_6_2_8_path_dirs.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+
+    - name: "6.2.8 | AUDIT | Report root PATH state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: root PATH contains no dangerous entries and all directories are root-owned mode <= 755'
+             if (cis_6_2_8_path_str.stdout | trim == 'CLEAN') and (cis_6_2_8_path_dirs.stdout | trim == '')
+             else 'NON-COMPLIANT: root PATH has issues — see details below' }}
+
+    - name: "6.2.8 | AUDIT | Show root PATH string-level issues"
+      ansible.builtin.debug:
+        msg: "PATH issues: {{ cis_6_2_8_path_str.stdout | trim }}"
+      when: cis_6_2_8_path_str.stdout | trim != 'CLEAN'
+
+    - name: "6.2.8 | AUDIT | Show root PATH directory issues"
+      ansible.builtin.debug:
+        msg: "{{ ['PATH directory issues:'] + cis_6_2_8_path_dirs.stdout_lines }}"
+      when: cis_6_2_8_path_dirs.stdout | trim != ''
+
+    - name: "6.2.8 | REMEDIATE | Warn — operator action required"
+      ansible.builtin.debug:
+        msg: >-
+          MANUAL ACTION REQUIRED: correct any PATH issues listed above.
+          Remove . and empty entries, fix trailing colon, chown non-root
+          directories to root, and tighten any directories more permissive
+          than 0755.
+      when:
+        - freebsd_cis_remediate | bool
+        - (cis_6_2_8_path_str.stdout | trim != 'CLEAN') or
+          (cis_6_2_8_path_dirs.stdout | trim != '')
+
+# ---
+
+- name: "6.2.9 | Ensure root is the only UID 0 account"
+  # FreeBSD note: FreeBSD ships with 'toor' at UID 0 by design (provides a
+  # root shell with a third-party shell binary). This control will always
+  # report NON-COMPLIANT on a stock FreeBSD install unless toor is removed.
+  # If your site policy retains toor, exception-list this control with
+  # '6.2.9' in freebsd_cis_local_exceptions.
+  when: "'6.2.9' not in active_exceptions"
+  tags: [rule_6.2.9, level1, section_6, manual]
+  block:
+
+    - name: "6.2.9 | AUDIT | Find all accounts with UID 0"
+      ansible.builtin.command: >-
+        awk -F: '($3 == 0) {print $1}' /etc/passwd
+      register: cis_6_2_9_uid0
+      changed_when: cis_6_2_9_uid0.stdout_lines | reject('equalto', 'root') | list | length > 0
+      failed_when: false
+      check_mode: false
+
+    - name: "6.2.9 | AUDIT | Report UID 0 account state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: only root has UID 0'
+             if cis_6_2_9_uid0.stdout_lines | reject('equalto', 'root') | list | length == 0
+             else 'NON-COMPLIANT: non-root accounts with UID 0 found: ' ~
+             (cis_6_2_9_uid0.stdout_lines | reject('equalto', 'root') | list | join(', ')) ~
+             ' — NOTE: FreeBSD ships toor at UID 0 by design; see inline comment' }}
+
+    - name: "6.2.9 | REMEDIATE | Warn — operator action required"
+      ansible.builtin.debug:
+        msg: >-
+          MANUAL ACTION REQUIRED: remove or reassign UID 0 from any account
+          listed above other than root. The 'toor' account is a FreeBSD
+          base system account — remove only after reviewing site policy.
+          Use 'pw userdel toor' to remove toor, or 'pw usermod toor -u <new_uid>'
+          to reassign it.
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_6_2_9_uid0.stdout_lines | reject('equalto', 'root') | list | length > 0
+
+# ---
+
+- name: "6.2.10 | Ensure local interactive user home directories are configured"
+  # Benchmark divergence: the benchmark labels this control "(Automated)" but
+  # the remediation requires choosing between locking the user, removing the
+  # user, or creating a home directory — decisions that cannot be automated
+  # safely. Tagging as manual and reporting only. Future benchmark versions
+  # should correct the automated label.
+  when: "'6.2.10' not in active_exceptions"
+  tags: [rule_6.2.10, level1, section_6, manual]
+  block:
+
+    - name: "6.2.10 | AUDIT | Check interactive user home directories"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        awk -F: '($3 >= 1000 && $3 < 65534 &&
+        $7 != "/sbin/nologin" && $7 != "/bin/false" && $7 != "/bin/nologin")
+        {print $1 ":" $6 ":" $3}' /etc/passwd | while read -r entry; do
+        user=$(echo "$entry" | cut -d: -f1);
+        home=$(echo "$entry" | cut -d: -f2);
+        [ ! -d "$home" ] && echo "NO_HOMEDIR: $user ($home)" && continue;
+        owner=$(stat -Lf '%Su' "$home" 2>/dev/null);
+        [ "$owner" != "$user" ] && echo "WRONG_OWNER: $home owned by $owner not $user";
+        perms=$(stat -Lf '%Lp' "$home" 2>/dev/null);
+        [ "$perms" -gt 755 ] && echo "TOO_PERMISSIVE: $home mode $perms (should be <= 755)";
+        done
+      register: cis_6_2_10_homedirs
+      changed_when: cis_6_2_10_homedirs.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+
+    - name: "6.2.10 | AUDIT | Report home directory state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: all interactive user home directories exist, are owned by
+          their user, and have mode 755 or more restrictive'
+             if cis_6_2_10_homedirs.stdout | trim == ''
+             else 'NON-COMPLIANT: home directory issues found' }}
+
+    - name: "6.2.10 | AUDIT | Show home directory issues"
+      ansible.builtin.debug:
+        msg: "{{ ['Home directory issues:'] + cis_6_2_10_homedirs.stdout_lines }}"
+      when: cis_6_2_10_homedirs.stdout | trim != ''
+
+    - name: "6.2.10 | REMEDIATE | Warn — operator action required"
+      ansible.builtin.debug:
+        msg: >-
+          MANUAL ACTION REQUIRED: for each issue above — lock the user account,
+          remove the user, or create/correct the home directory. For missing
+          home dirs, edit /etc/passwd to set the correct path then run
+          'mkdir -p <homedir> && chown <user> <homedir> && chmod 750 <homedir>'.
+          For permission issues: 'chmod g-w,o-rwx <homedir>'.
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_6_2_10_homedirs.stdout | trim != ''
+
+# ---
+
+- name: "6.2.11 | Ensure local interactive user dot files access is configured"
+  # Benchmark divergence: the benchmark labels this control "(Automated)" but
+  # the remediation text explicitly states "Making global modifications to
+  # users' files without alerting the user community can result in unexpected
+  # outages." Tagging as manual. Future benchmark versions should correct the
+  # automated label.
+  when: "'6.2.11' not in active_exceptions"
+  tags: [rule_6.2.11, level1, section_6, manual]
+  block:
+
+    - name: "6.2.11 | AUDIT | Find dangerous dot files in interactive user home directories"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        awk -F: '($3 >= 1000 && $3 < 65534 &&
+        $7 != "/sbin/nologin" && $7 != "/bin/false" && $7 != "/bin/nologin")
+        {print $1 ":" $6}' /etc/passwd | while read -r entry; do
+        user=$(echo "$entry" | cut -d: -f1);
+        home=$(echo "$entry" | cut -d: -f2);
+        [ ! -d "$home" ] && continue;
+        for f in .forward .rhost .netrc; do
+        [ -e "$home/$f" ] && echo "INSECURE_FILE: $home/$f ($user) — should not exist";
+        done;
+        done
+      register: cis_6_2_11_dangerous
+      changed_when: cis_6_2_11_dangerous.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+
+    - name: "6.2.11 | AUDIT | Find dot files with excessive permissions"  # noqa: risky-shell-pipe
+      ansible.builtin.shell: >-
+        awk -F: '($3 >= 1000 && $3 < 65534 &&
+        $7 != "/sbin/nologin" && $7 != "/bin/false" && $7 != "/bin/nologin")
+        {print $1 ":" $6}' /etc/passwd | while read -r entry; do
+        user=$(echo "$entry" | cut -d: -f1);
+        home=$(echo "$entry" | cut -d: -f2);
+        [ ! -d "$home" ] && continue;
+        find "$home" -maxdepth 1 -name '.*' ! -name '.' ! -name '..' | while read -r df; do
+        bn=$(basename "$df");
+        p=$(stat -Lf '%Lp' "$df" 2>/dev/null);
+        case "$bn" in
+        .sh_history|.history)
+        [ "$p" -gt 600 ] && echo "PERM_TOO_OPEN: $df mode $p (should be <= 600)";;
+        *)
+        [ "$p" -gt 644 ] && echo "PERM_TOO_OPEN: $df mode $p (should be <= 644)";;
+        esac;
+        done;
+        done
+      register: cis_6_2_11_perms
+      changed_when: cis_6_2_11_perms.stdout | trim != ''
+      failed_when: false
+      check_mode: false
+
+    - name: "6.2.11 | AUDIT | Report dot file state"
+      ansible.builtin.debug:
+        msg: >-
+          {{ 'COMPLIANT: no dangerous dot files and no excessively permissive dot files found'
+             if (cis_6_2_11_dangerous.stdout | trim == '') and (cis_6_2_11_perms.stdout | trim == '')
+             else 'NON-COMPLIANT: dot file issues found — see details below' }}
+
+    - name: "6.2.11 | AUDIT | Show dangerous dot files"
+      ansible.builtin.debug:
+        msg: "{{ ['Dangerous dot files to remove:'] + cis_6_2_11_dangerous.stdout_lines }}"
+      when: cis_6_2_11_dangerous.stdout | trim != ''
+
+    - name: "6.2.11 | AUDIT | Show dot files with excessive permissions"
+      ansible.builtin.debug:
+        msg: "{{ ['Dot files with excessive permissions:'] + cis_6_2_11_perms.stdout_lines }}"
+      when: cis_6_2_11_perms.stdout | trim != ''
+
+    - name: "6.2.11 | REMEDIATE | Warn — operator action required"
+      ansible.builtin.debug:
+        msg: >-
+          MANUAL ACTION REQUIRED: remove any .forward, .rhost, or .netrc files
+          listed above. Tighten permissions on dot files with 'chmod go-w <file>'
+          or 'chmod 600 <histfile>' after notifying affected users to avoid
+          unexpected disruption.
+      when:
+        - freebsd_cis_remediate | bool
+        - (cis_6_2_11_dangerous.stdout | trim != '') or (cis_6_2_11_perms.stdout | trim != '')
