@@ -34,9 +34,9 @@
     - name: "1.1.1.1 | AUDIT | Report ext2fs module state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'FAIL: ext2fs kernel module is loaded'
+          {{ 'NON-COMPLIANT: ext2fs kernel module is loaded'
              if cis_1_1_1_1_kld.rc == 0
-             else 'PASS: ext2fs kernel module is NOT loaded' }}
+             else 'COMPLIANT: ext2fs kernel module is NOT loaded' }}
 
     - name: "1.1.1.1 | REMEDIATE | Unload ext2fs from the running kernel"
       ansible.builtin.command: kldunload -f ext2fs
@@ -86,9 +86,9 @@
     - name: "1.1.1.2 | AUDIT | Report msdosfs module state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'FAIL: msdosfs kernel module is loaded'
+          {{ 'NON-COMPLIANT: msdosfs kernel module is loaded'
              if cis_1_1_1_2_kld.rc == 0
-             else 'PASS: msdosfs kernel module is NOT loaded' }}
+             else 'COMPLIANT: msdosfs kernel module is NOT loaded' }}
 
     - name: "1.1.1.2 | REMEDIATE | Unload msdosfs from the running kernel"
       ansible.builtin.command: kldunload -f msdosfs
@@ -138,9 +138,9 @@
     - name: "1.1.1.3 | AUDIT | Report zfs module state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'FAIL: zfs kernel module is loaded'
+          {{ 'NON-COMPLIANT: zfs kernel module is loaded'
              if cis_1_1_1_3_kld.rc == 0
-             else 'PASS: zfs kernel module is NOT loaded' }}
+             else 'COMPLIANT: zfs kernel module is NOT loaded' }}
 
     - name: "1.1.1.3 | REMEDIATE | Check for active ZFS pools before unloading"
       ansible.builtin.command: zpool list -H
@@ -252,9 +252,9 @@
     - name: "1.1.2.1.1 | AUDIT | Report /tmp partition state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'PASS: /tmp is a separate partition'
+          {{ 'COMPLIANT: /tmp is a separate partition'
              if cis_1_1_2_1_1_mount.rc == 0
-             else 'FAIL: /tmp is not a separate partition (sysrc tmpmfs='
+             else 'NON-COMPLIANT: /tmp is not a separate partition (sysrc tmpmfs='
                ~ (cis_1_1_2_1_1_sysrc.stdout | default('unset')) ~ ')' }}
 
     - name: "1.1.2.1.1 | REMEDIATE | Enable tmpfs for /tmp at boot"
@@ -300,9 +300,9 @@
     - name: "1.1.2.1.2 | AUDIT | Report nosuid state on /tmp"
       ansible.builtin.debug:
         msg: >-
-          {{ 'FAIL: /tmp is mounted without nosuid'
+          {{ 'NON-COMPLIANT: /tmp is mounted without nosuid'
              if cis_1_1_2_1_2_nosuid.rc == 0
-             else 'PASS: nosuid is set on /tmp or /tmp is not a separate partition' }}
+             else 'COMPLIANT: nosuid is set on /tmp or /tmp is not a separate partition' }}
 
     - name: "1.1.2.1.2 | REMEDIATE | Apply nosuid to /tmp mount" # noqa: command-instead-of-module
       ansible.builtin.command: mount -u -o nosuid /tmp
@@ -350,9 +350,9 @@
     - name: "1.1.2.1.3 | AUDIT | Report noexec state on /tmp"
       ansible.builtin.debug:
         msg: >-
-          {{ 'FAIL: /tmp is mounted without noexec'
+          {{ 'NON-COMPLIANT: /tmp is mounted without noexec'
              if cis_1_1_2_1_3_noexec.rc == 0
-             else 'PASS: noexec is set on /tmp or /tmp is not a separate partition' }}
+             else 'COMPLIANT: noexec is set on /tmp or /tmp is not a separate partition' }}
 
     - name: "1.1.2.1.3 | REMEDIATE | Apply noexec to /tmp mount" # noqa: command-instead-of-module
       ansible.builtin.command: mount -u -o noexec /tmp
@@ -404,9 +404,9 @@
     - name: "1.1.2.2.1 | AUDIT | Report /home partition state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'PASS: /home is a separate partition'
+          {{ 'COMPLIANT: /home is a separate partition'
              if cis_1_1_2_2_1_mount.rc == 0
-             else 'FAIL: /home is not a separate partition — manual repartitioning required' }}
+             else 'NON-COMPLIANT: /home is not a separate partition — manual repartitioning required' }}
 
 # ---
 
@@ -424,9 +424,9 @@
     - name: "1.1.2.2.2 | AUDIT | Report nosuid state on /home"
       ansible.builtin.debug:
         msg: >-
-          {{ 'FAIL: /home is mounted without nosuid'
+          {{ 'NON-COMPLIANT: /home is mounted without nosuid'
              if cis_1_1_2_2_2_nosuid.rc == 0
-             else 'PASS: nosuid is set on /home or /home is not a separate partition' }}
+             else 'COMPLIANT: nosuid is set on /home or /home is not a separate partition' }}
 
     - name: "1.1.2.2.2 | REMEDIATE | Apply nosuid to /home mount" # noqa: command-instead-of-module
       ansible.builtin.command: mount -u -o nosuid /home
@@ -465,9 +465,9 @@
     - name: "1.1.2.3.1 | AUDIT | Report /var partition state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'PASS: /var is a separate partition'
+          {{ 'COMPLIANT: /var is a separate partition'
              if cis_1_1_2_3_1_mount.rc == 0
-             else 'FAIL: /var is not a separate partition — manual repartitioning required' }}
+             else 'NON-COMPLIANT: /var is not a separate partition — manual repartitioning required' }}
 
 # ---
 
@@ -485,9 +485,9 @@
     - name: "1.1.2.3.2 | AUDIT | Report nosuid state on /var"
       ansible.builtin.debug:
         msg: >-
-          {{ 'FAIL: /var is mounted without nosuid'
+          {{ 'NON-COMPLIANT: /var is mounted without nosuid'
              if cis_1_1_2_3_2_nosuid.rc == 0
-             else 'PASS: nosuid is set on /var or /var is not a separate partition' }}
+             else 'COMPLIANT: nosuid is set on /var or /var is not a separate partition' }}
 
     - name: "1.1.2.3.2 | REMEDIATE | Apply nosuid to /var mount" # noqa: command-instead-of-module
       ansible.builtin.command: mount -u -o nosuid /var
@@ -526,9 +526,9 @@
     - name: "1.1.2.4.1 | AUDIT | Report /var/tmp partition state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'PASS: /var/tmp is a separate partition'
+          {{ 'COMPLIANT: /var/tmp is a separate partition'
              if cis_1_1_2_4_1_mount.rc == 0
-             else 'FAIL: /var/tmp is not a separate partition — manual repartitioning required' }}
+             else 'NON-COMPLIANT: /var/tmp is not a separate partition — manual repartitioning required' }}
 
 # ---
 
@@ -546,9 +546,9 @@
     - name: "1.1.2.4.2 | AUDIT | Report nosuid state on /var/tmp"
       ansible.builtin.debug:
         msg: >-
-          {{ 'FAIL: /var/tmp is mounted without nosuid'
+          {{ 'NON-COMPLIANT: /var/tmp is mounted without nosuid'
              if cis_1_1_2_4_2_nosuid.rc == 0
-             else 'PASS: nosuid is set on /var/tmp or /var/tmp is not a separate partition' }}
+             else 'COMPLIANT: nosuid is set on /var/tmp or /var/tmp is not a separate partition' }}
 
     - name: "1.1.2.4.2 | REMEDIATE | Apply nosuid to /var/tmp mount" # noqa: command-instead-of-module
       ansible.builtin.command: mount -u -o nosuid /var/tmp
@@ -583,9 +583,9 @@
     - name: "1.1.2.4.3 | AUDIT | Report noexec state on /var/tmp"
       ansible.builtin.debug:
         msg: >-
-          {{ 'FAIL: /var/tmp is mounted without noexec'
+          {{ 'NON-COMPLIANT: /var/tmp is mounted without noexec'
              if cis_1_1_2_4_3_noexec.rc == 0
-             else 'PASS: noexec is set on /var/tmp or /var/tmp is not a separate partition' }}
+             else 'COMPLIANT: noexec is set on /var/tmp or /var/tmp is not a separate partition' }}
 
     - name: "1.1.2.4.3 | REMEDIATE | Apply noexec to /var/tmp mount" # noqa: command-instead-of-module
       ansible.builtin.command: mount -u -o noexec /var/tmp
@@ -624,9 +624,9 @@
     - name: "1.1.2.5.1 | AUDIT | Report /var/log partition state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'PASS: /var/log is a separate partition'
+          {{ 'COMPLIANT: /var/log is a separate partition'
              if cis_1_1_2_5_1_mount.rc == 0
-             else 'FAIL: /var/log is not a separate partition — manual repartitioning required' }}
+             else 'NON-COMPLIANT: /var/log is not a separate partition — manual repartitioning required' }}
 
 # ---
 
@@ -644,9 +644,9 @@
     - name: "1.1.2.5.2 | AUDIT | Report nosuid state on /var/log"
       ansible.builtin.debug:
         msg: >-
-          {{ 'FAIL: /var/log is mounted without nosuid'
+          {{ 'NON-COMPLIANT: /var/log is mounted without nosuid'
              if cis_1_1_2_5_2_nosuid.rc == 0
-             else 'PASS: nosuid is set on /var/log or /var/log is not a separate partition' }}
+             else 'COMPLIANT: nosuid is set on /var/log or /var/log is not a separate partition' }}
 
     - name: "1.1.2.5.2 | REMEDIATE | Apply nosuid to /var/log mount" # noqa: command-instead-of-module
       ansible.builtin.command: mount -u -o nosuid /var/log
@@ -681,9 +681,9 @@
     - name: "1.1.2.5.3 | AUDIT | Report noexec state on /var/log"
       ansible.builtin.debug:
         msg: >-
-          {{ 'FAIL: /var/log is mounted without noexec'
+          {{ 'NON-COMPLIANT: /var/log is mounted without noexec'
              if cis_1_1_2_5_3_noexec.rc == 0
-             else 'PASS: noexec is set on /var/log or /var/log is not a separate partition' }}
+             else 'COMPLIANT: noexec is set on /var/log or /var/log is not a separate partition' }}
 
     - name: "1.1.2.5.3 | REMEDIATE | Apply noexec to /var/log mount" # noqa: command-instead-of-module
       ansible.builtin.command: mount -u -o noexec /var/log
@@ -722,9 +722,9 @@
     - name: "1.1.2.6.1 | AUDIT | Report /var/audit partition state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'PASS: /var/audit is a separate partition'
+          {{ 'COMPLIANT: /var/audit is a separate partition'
              if cis_1_1_2_6_1_mount.rc == 0
-             else 'FAIL: /var/audit is not a separate partition — manual repartitioning required' }}
+             else 'NON-COMPLIANT: /var/audit is not a separate partition — manual repartitioning required' }}
 
 # ---
 
@@ -742,9 +742,9 @@
     - name: "1.1.2.6.2 | AUDIT | Report nosuid state on /var/audit"
       ansible.builtin.debug:
         msg: >-
-          {{ 'FAIL: /var/audit is mounted without nosuid'
+          {{ 'NON-COMPLIANT: /var/audit is mounted without nosuid'
              if cis_1_1_2_6_2_nosuid.rc == 0
-             else 'PASS: nosuid is set on /var/audit or /var/audit is not a separate partition' }}
+             else 'COMPLIANT: nosuid is set on /var/audit or /var/audit is not a separate partition' }}
 
     - name: "1.1.2.6.2 | REMEDIATE | Apply nosuid to /var/audit mount" # noqa: command-instead-of-module
       ansible.builtin.command: mount -u -o nosuid /var/audit
@@ -779,9 +779,9 @@
     - name: "1.1.2.6.3 | AUDIT | Report noexec state on /var/audit"
       ansible.builtin.debug:
         msg: >-
-          {{ 'FAIL: /var/audit is mounted without noexec'
+          {{ 'NON-COMPLIANT: /var/audit is mounted without noexec'
              if cis_1_1_2_6_3_noexec.rc == 0
-             else 'PASS: noexec is set on /var/audit or /var/audit is not a separate partition' }}
+             else 'COMPLIANT: noexec is set on /var/audit or /var/audit is not a separate partition' }}
 
     - name: "1.1.2.6.3 | REMEDIATE | Apply noexec to /var/audit mount" # noqa: command-instead-of-module
       ansible.builtin.command: mount -u -o noexec /var/audit
@@ -823,9 +823,9 @@
     - name: "1.2.1 | AUDIT | Report update server key fingerprint state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'PASS: KeyPrint is configured in /etc/freebsd-update.conf'
+          {{ 'COMPLIANT: KeyPrint is configured in /etc/freebsd-update.conf'
              if cis_1_2_1_keyprint.rc == 0
-             else 'FAIL: KeyPrint is not present in /etc/freebsd-update.conf — manual verification required' }}
+             else 'NON-COMPLIANT: KeyPrint is not present in /etc/freebsd-update.conf — manual verification required' }}
 
     - name: "1.2.1 | AUDIT | Note — manual fingerprint verification required"
       ansible.builtin.debug:
@@ -850,9 +850,9 @@
     - name: "1.2.2 | AUDIT | Report repository configuration"
       ansible.builtin.debug:
         msg: >-
-          {{ 'PASS: pkg repository configuration found — verify settings match site policy'
+          {{ 'COMPLIANT: pkg repository configuration found — verify settings match site policy'
              if cis_1_2_2_repos.rc == 0 and cis_1_2_2_repos.stdout | length > 0
-             else 'FAIL: unable to read pkg repository configuration' }}
+             else 'NON-COMPLIANT: unable to read pkg repository configuration' }}
 
 # ---
 
@@ -870,9 +870,9 @@
     - name: "1.2.3 | AUDIT | Report base system update state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'FAIL: base system updates are available — run freebsd-update fetch install'
+          {{ 'NON-COMPLIANT: base system updates are available — run freebsd-update fetch install'
              if cis_1_2_3_base.rc == 0
-             else 'PASS: no pending base system updates' }}
+             else 'COMPLIANT: no pending base system updates' }}
 
     - name: "1.2.3 | AUDIT | Check for pending pkg package upgrades"
       ansible.builtin.command: pkg upgrade -n
@@ -886,10 +886,10 @@
     - name: "1.2.3 | AUDIT | Report pkg package update state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'PASS: installed pkg packages are current'
+          {{ 'COMPLIANT: installed pkg packages are current'
              if 'Your packages are up to date.' in
                 ((cis_1_2_3_pkg.stdout | default('')) ~ (cis_1_2_3_pkg.stderr | default('')))
-             else 'FAIL: pkg package upgrades are available' }}
+             else 'NON-COMPLIANT: pkg package upgrades are available' }}
 
     - name: "1.2.3 | REMEDIATE | Fetch and install base system updates"
       ansible.builtin.command: freebsd-update fetch install
@@ -932,9 +932,9 @@
     - name: "1.3.1 | AUDIT | Report bootloader password state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'PASS: bootloader password is set in /boot/loader.conf'
+          {{ 'COMPLIANT: bootloader password is set in /boot/loader.conf'
              if cis_1_3_1_pw.rc == 0
-             else 'FAIL: no bootloader password found in /boot/loader.conf' }}
+             else 'NON-COMPLIANT: no bootloader password found in /boot/loader.conf' }}
 
     - name: "1.3.1 | REMEDIATE | Set bootloader password in loader.conf"
       ansible.builtin.lineinfile:
@@ -980,9 +980,9 @@
           {% elif cis_1_3_2_stat.stat.mode == '0600' and
                   cis_1_3_2_stat.stat.pw_name == 'root' and
                   cis_1_3_2_stat.stat.gr_name == 'wheel' %}
-          PASS: /boot/loader.conf is mode 0600, owner root:wheel
+          COMPLIANT: /boot/loader.conf is mode 0600, owner root:wheel
           {% else %}
-          FAIL: /boot/loader.conf — mode={{ cis_1_3_2_stat.stat.mode }}
+          NON-COMPLIANT: /boot/loader.conf — mode={{ cis_1_3_2_stat.stat.mode }}
           owner={{ cis_1_3_2_stat.stat.pw_name }}:{{ cis_1_3_2_stat.stat.gr_name }}
           (expected 0600 root:wheel)
           {% endif %}
@@ -1025,9 +1025,9 @@
     - name: "1.4.1 | AUDIT | Report ASLR state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'PASS: ASLR is enabled (kern.elf64.aslr.enable=1)'
+          {{ 'COMPLIANT: ASLR is enabled (kern.elf64.aslr.enable=1)'
              if cis_1_4_1_aslr.stdout | default('0') | trim == '1'
-             else 'FAIL: ASLR is disabled (kern.elf64.aslr.enable=' ~ (cis_1_4_1_aslr.stdout | default('unknown') | trim) ~ ')' }}
+             else 'NON-COMPLIANT: ASLR is disabled (kern.elf64.aslr.enable=' ~ (cis_1_4_1_aslr.stdout | default('unknown') | trim) ~ ')' }}
 
     - name: "1.4.1 | REMEDIATE | Persist ASLR setting in /etc/sysctl.conf"
       ansible.builtin.lineinfile:
@@ -1064,9 +1064,9 @@
     - name: "1.4.2 | AUDIT | Report savecore state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'FAIL: savecore_enable is YES — core dump backtraces are enabled'
+          {{ 'NON-COMPLIANT: savecore_enable is YES — core dump backtraces are enabled'
              if (cis_1_4_2_savecore.stdout | default('') | upper) == 'YES'
-             else 'PASS: savecore is disabled' }}
+             else 'COMPLIANT: savecore is disabled' }}
 
     - name: "1.4.2 | REMEDIATE | Stop savecore service" # noqa: command-instead-of-module
       ansible.builtin.command: service savecore onestop
@@ -1099,9 +1099,9 @@
     - name: "1.4.3 | AUDIT | Report dumpdev state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'PASS: dumpdev is set to NO'
+          {{ 'COMPLIANT: dumpdev is set to NO'
              if (cis_1_4_3_dumpdev.stdout | default('') | upper) == 'NO'
-             else 'FAIL: dumpdev is set to ' ~ (cis_1_4_3_dumpdev.stdout | default('undefined') | trim) }}
+             else 'NON-COMPLIANT: dumpdev is set to ' ~ (cis_1_4_3_dumpdev.stdout | default('undefined') | trim) }}
 
     - name: "1.4.3 | REMEDIATE | Set dumpdev=NO"
       ansible.builtin.command: sysrc dumpdev="NO"
@@ -1129,9 +1129,9 @@
     - name: "1.6.1 | AUDIT | Report /etc/motd state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'FAIL: /etc/motd contains OS version information — update per site policy'
+          {{ 'NON-COMPLIANT: /etc/motd contains OS version information — update per site policy'
              if cis_1_6_1_motd.rc == 0
-             else 'PASS: /etc/motd does not expose OS version information' }}
+             else 'COMPLIANT: /etc/motd does not expose OS version information' }}
 
     - name: "1.6.1 | REMEDIATE | Write site-policy warning banner to /etc/motd"
       ansible.builtin.copy:
@@ -1169,9 +1169,9 @@
     - name: "1.6.2 | AUDIT | Report /etc/issue state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'FAIL: /etc/issue contains OS version information — update per site policy'
+          {{ 'NON-COMPLIANT: /etc/issue contains OS version information — update per site policy'
              if cis_1_6_2_issue.rc == 0
-             else 'PASS: /etc/issue does not expose OS version information (or does not exist)' }}
+             else 'COMPLIANT: /etc/issue does not expose OS version information (or does not exist)' }}
 
     - name: "1.6.2 | REMEDIATE | Write site-policy warning banner to /etc/issue"
       ansible.builtin.copy:
@@ -1201,9 +1201,9 @@
     - name: "1.6.3 | AUDIT | Report /etc/issue.net state"
       ansible.builtin.debug:
         msg: >-
-          {{ 'FAIL: /etc/issue.net contains OS version information — update per site policy'
+          {{ 'NON-COMPLIANT: /etc/issue.net contains OS version information — update per site policy'
              if cis_1_6_3_issue_net.rc == 0
-             else 'PASS: /etc/issue.net does not expose OS version information (or does not exist)' }}
+             else 'COMPLIANT: /etc/issue.net does not expose OS version information (or does not exist)' }}
 
     - name: "1.6.3 | REMEDIATE | Write site-policy warning banner to /etc/issue.net"
       ansible.builtin.copy:
@@ -1235,9 +1235,9 @@
           {% elif (cis_1_6_4_stat.stat.mode | int(base=8)) <= 0o644 and
                   cis_1_6_4_stat.stat.pw_name == 'root' and
                   cis_1_6_4_stat.stat.gr_name == 'wheel' %}
-          PASS: /etc/motd permissions are acceptable
+          COMPLIANT: /etc/motd permissions are acceptable
           {% else %}
-          FAIL: /etc/motd — mode={{ cis_1_6_4_stat.stat.mode }}
+          NON-COMPLIANT: /etc/motd — mode={{ cis_1_6_4_stat.stat.mode }}
           owner={{ cis_1_6_4_stat.stat.pw_name }}:{{ cis_1_6_4_stat.stat.gr_name }}
           (expected mode <=0644, owner root:wheel)
           {% endif %}
@@ -1271,9 +1271,9 @@
           {% elif (cis_1_6_5_stat.stat.mode | int(base=8)) <= 0o644 and
                   cis_1_6_5_stat.stat.pw_name == 'root' and
                   cis_1_6_5_stat.stat.gr_name == 'wheel' %}
-          PASS: /etc/issue permissions are acceptable
+          COMPLIANT: /etc/issue permissions are acceptable
           {% else %}
-          FAIL: /etc/issue — mode={{ cis_1_6_5_stat.stat.mode }}
+          NON-COMPLIANT: /etc/issue — mode={{ cis_1_6_5_stat.stat.mode }}
           owner={{ cis_1_6_5_stat.stat.pw_name }}:{{ cis_1_6_5_stat.stat.gr_name }}
           (expected mode <=0644, owner root:wheel)
           {% endif %}
