@@ -367,8 +367,8 @@
 - name: "6.2 | PRE-FLIGHT | Warn — /etc/master.passwd absent"
   ansible.builtin.debug:
     msg: >-
-      WARNING: /etc/master.passwd is absent — 6.2.1, 6.2.2, 6.2.3, 6.2.4,
-      6.2.6, 6.2.9 audits that read this file will be skipped.
+      WARNING: /etc/master.passwd is absent — 6.2.1 and 6.2.2 audits that
+      read this file will be skipped.
   when: not cis_master_passwd_stat.stat.exists
   tags: [always]
 
@@ -389,7 +389,7 @@
 
     - name: "6.2.1 | AUDIT | Check master.passwd for accounts with locked password marker"
       ansible.builtin.command: >-
-        awk -F: '($2 == "*") {print $1}' /etc/master.passwd
+        awk -F: '($2 ~ /^\*/) {print $1}' /etc/master.passwd
       register: cis_6_2_1_locked
       changed_when: cis_6_2_1_locked.stdout | trim != ''
       failed_when: false
@@ -419,6 +419,7 @@
     - name: "6.2.1 | AUDIT | Report — master.passwd absent"
       ansible.builtin.debug:
         msg: "NON-COMPLIANT: /etc/master.passwd is absent — cannot audit shadowed passwords"
+      changed_when: not cis_master_passwd_stat.stat.exists
       when: not cis_master_passwd_stat.stat.exists
 
     - name: "6.2.1 | REMEDIATE | Warn — operator investigation required"
@@ -472,6 +473,7 @@
     - name: "6.2.2 | AUDIT | Report — master.passwd absent"
       ansible.builtin.debug:
         msg: "NON-COMPLIANT: /etc/master.passwd is absent — cannot audit password fields"
+      changed_when: not cis_master_passwd_stat.stat.exists
       when: not cis_master_passwd_stat.stat.exists
 
     - name: "6.2.2 | REMEDIATE | Warn — lock accounts with empty passwords"
@@ -811,7 +813,7 @@
     - name: "6.2.10 | AUDIT | Check interactive user home directories"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
         awk -F: '($3 >= 1000 && $3 < 65534 &&
-        $7 != "/sbin/nologin" && $7 != "/bin/false" && $7 != "/bin/nologin")
+        $7!~/^(\/usr)?\/sbin\/nologin$/ && $7 != "/bin/false" && $7 != "/bin/nologin")
         {print $1 ":" $6 ":" $3}' /etc/passwd | while read -r entry; do
         user=$(echo "$entry" | cut -d: -f1);
         home=$(echo "$entry" | cut -d: -f2);
@@ -866,7 +868,7 @@
     - name: "6.2.11 | AUDIT | Find dangerous dot files in interactive user home directories"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
         awk -F: '($3 >= 1000 && $3 < 65534 &&
-        $7 != "/sbin/nologin" && $7 != "/bin/false" && $7 != "/bin/nologin")
+        $7!~/^(\/usr)?\/sbin\/nologin$/ && $7 != "/bin/false" && $7 != "/bin/nologin")
         {print $1 ":" $6}' /etc/passwd | while read -r entry; do
         user=$(echo "$entry" | cut -d: -f1);
         home=$(echo "$entry" | cut -d: -f2);
@@ -883,7 +885,7 @@
     - name: "6.2.11 | AUDIT | Find dot files with excessive permissions"  # noqa: risky-shell-pipe
       ansible.builtin.shell: >-
         awk -F: '($3 >= 1000 && $3 < 65534 &&
-        $7 != "/sbin/nologin" && $7 != "/bin/false" && $7 != "/bin/nologin")
+        $7!~/^(\/usr)?\/sbin\/nologin$/ && $7 != "/bin/false" && $7 != "/bin/nologin")
         {print $1 ":" $6}' /etc/passwd | while read -r entry; do
         user=$(echo "$entry" | cut -d: -f1);
         home=$(echo "$entry" | cut -d: -f2);
