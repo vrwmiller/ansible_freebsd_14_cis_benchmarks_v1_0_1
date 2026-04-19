@@ -1,5 +1,9 @@
 # Ansible FreeBSD 14 CIS Benchmarks (v1.0.1)
 
+I have some cloud-based VPSs just upgraded from the upcoming end-of-life (EOL) FreeBSD 13 to FreeBSD 14.4. This being the first FreeBSD CIS Benchmark in 22 years, I wanted it applied as a baseline security measure.
+
+Before running remediation mode, back up any files that may be modified. Run remediation in dry-run mode first with `--check --diff` when available, review the planned changes, and only then run remediation without `--check`.
+
 An Ansible role for auditing and optionally remediating FreeBSD 14 hosts against CIS Benchmark v1.0.1 controls.
 
 ## What This Role Does
