@@ -602,6 +602,20 @@
              if cis_4_2_4_access_configured | bool
              else 'NON-COMPLIANT: no AllowUsers/AllowGroups/DenyUsers/DenyGroups directive found — set at least one per site policy' }}
 
+    - name: "4.2.4 | WARN | Remediation enabled but all SSH access variables are empty"
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: freebsd_cis_remediate is true but freebsd_cis_sshd_allow_users,
+          freebsd_cis_sshd_allow_groups, freebsd_cis_sshd_deny_users, and
+          freebsd_cis_sshd_deny_groups are all empty — SSH access restriction (4.2.4)
+          will not be remediated. Set at least one variable to enforce access control.
+      when:
+        - freebsd_cis_remediate | bool
+        - freebsd_cis_sshd_allow_users | length == 0
+        - freebsd_cis_sshd_allow_groups | length == 0
+        - freebsd_cis_sshd_deny_users | length == 0
+        - freebsd_cis_sshd_deny_groups | length == 0
+
     - name: "4.2.4 | REMEDIATE | Set AllowUsers if configured"
       ansible.builtin.lineinfile:
         path: "{{ freebsd_cis_sshd_config }}"
