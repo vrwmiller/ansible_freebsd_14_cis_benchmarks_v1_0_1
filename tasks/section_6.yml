@@ -721,7 +721,15 @@
         o=$(stat -Lf '%Su' "$d" 2>/dev/null);
         [ "$o" != "root" ] && echo "NOT_ROOT_OWNED: $d (owner=$o)";
         p=$(stat -Lf '%Lp' "$d" 2>/dev/null);
-        [ "$p" -gt 755 ] && echo "TOO_PERMISSIVE: $d (mode=$p)";
+        printf '%s\n' "$p" | awk '
+        {
+        m=$0; gsub(/^0+/, "", m); if (m == "") m="0";
+        if (length(m) == 4) { s=substr(m,1,1); u=substr(m,2,1); g=substr(m,3,1); o=substr(m,4,1); }
+        else if (length(m) <= 3) { while (length(m) < 3) m="0" m; s="0"; u=substr(m,1,1); g=substr(m,2,1); o=substr(m,3,1); }
+        else { exit 1; }
+        if (s != "0" || g ~ /[2367]/ || o ~ /[2367]/) exit 1;
+        exit 0;
+        }' || echo "TOO_PERMISSIVE: $d (mode=$p)";
         done
       register: cis_6_2_8_path_dirs
       changed_when: cis_6_2_8_path_dirs.stdout | trim != ''
@@ -821,7 +829,15 @@
         owner=$(stat -Lf '%Su' "$home" 2>/dev/null);
         [ "$owner" != "$user" ] && echo "WRONG_OWNER: $home owned by $owner not $user";
         perms=$(stat -Lf '%Lp' "$home" 2>/dev/null);
-        [ "$perms" -gt 755 ] && echo "TOO_PERMISSIVE: $home mode $perms (should be <= 755)";
+        printf '%s\n' "$perms" | awk '
+        {
+        m=$0; gsub(/^0+/, "", m); if (m == "") m="0";
+        if (length(m) == 4) { s=substr(m,1,1); u=substr(m,2,1); g=substr(m,3,1); o=substr(m,4,1); }
+        else if (length(m) <= 3) { while (length(m) < 3) m="0" m; s="0"; u=substr(m,1,1); g=substr(m,2,1); o=substr(m,3,1); }
+        else { exit 1; }
+        if (s != "0" || g ~ /[2367]/ || o ~ /[2367]/) exit 1;
+        exit 0;
+        }' || echo "TOO_PERMISSIVE: $home mode $perms (should be <= 755)";
         done
       register: cis_6_2_10_homedirs
       changed_when: cis_6_2_10_homedirs.stdout | trim != ''
@@ -890,14 +906,31 @@
         user=$(echo "$entry" | cut -d: -f1);
         home=$(echo "$entry" | cut -d: -f2);
         [ ! -d "$home" ] && continue;
-        find "$home" -maxdepth 1 -name '.*' ! -name '.' ! -name '..' | while read -r df; do
+        find "$home" -maxdepth 1 -type f -name '.*' ! -name '.' ! -name '..' | while read -r df; do
         bn=$(basename "$df");
         p=$(stat -Lf '%Lp' "$df" 2>/dev/null);
+        [ -z "$p" ] && continue;
         case "$bn" in
         .sh_history|.history)
-        [ "$p" -gt 600 ] && echo "PERM_TOO_OPEN: $df mode $p (should be <= 600)";;
+        printf '%s\n' "$p" | awk '
+        {
+        m=$0; gsub(/^0+/, "", m); if (m == "") m="0";
+        if (length(m) == 4) { s=substr(m,1,1); u=substr(m,2,1); g=substr(m,3,1); o=substr(m,4,1); }
+        else if (length(m) <= 3) { while (length(m) < 3) m="0" m; s="0"; u=substr(m,1,1); g=substr(m,2,1); o=substr(m,3,1); }
+        else { exit 1; }
+        if (s != "0" || u ~ /[1357]/ || g != "0" || o != "0") exit 1;
+        exit 0;
+        }' || echo "PERM_TOO_OPEN: $df mode $p (should be <= 600)";;
         *)
-        [ "$p" -gt 644 ] && echo "PERM_TOO_OPEN: $df mode $p (should be <= 644)";;
+        printf '%s\n' "$p" | awk '
+        {
+        m=$0; gsub(/^0+/, "", m); if (m == "") m="0";
+        if (length(m) == 4) { s=substr(m,1,1); u=substr(m,2,1); g=substr(m,3,1); o=substr(m,4,1); }
+        else if (length(m) <= 3) { while (length(m) < 3) m="0" m; s="0"; u=substr(m,1,1); g=substr(m,2,1); o=substr(m,3,1); }
+        else { exit 1; }
+        if (s != "0" || u ~ /[1357]/ || g ~ /[2367]/ || o ~ /[2367]/) exit 1;
+        exit 0;
+        }' || echo "PERM_TOO_OPEN: $df mode $p (should be <= 644)";;
         esac;
         done;
         done
