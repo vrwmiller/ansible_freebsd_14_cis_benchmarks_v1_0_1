@@ -610,6 +610,7 @@
           freebsd_cis_sshd_deny_groups are all empty — SSH access restriction (4.2.4)
           will not be remediated. Set at least one variable to enforce access control.
       when:
+        - not (cis_4_2_4_access_configured | bool)
         - freebsd_cis_remediate | bool
         - freebsd_cis_sshd_allow_users | length == 0
         - freebsd_cis_sshd_allow_groups | length == 0
