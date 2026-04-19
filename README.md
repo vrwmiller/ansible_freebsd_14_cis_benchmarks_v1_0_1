@@ -24,7 +24,7 @@ An Ansible role for auditing and optionally remediating FreeBSD 14 hosts against
 
 ## Section Coverage
 
-5 of 6 CIS sections are implemented. Section 6 is a stub.
+All 6 CIS sections are implemented.
 
 | Section | Title | Status | Controls |
 | --- | --- | --- | --- |
@@ -33,7 +33,7 @@ An Ansible role for auditing and optionally remediating FreeBSD 14 hosts against
 | 3 | Network | Implemented | 3.1.1 – 3.4.1.2 |
 | 4 | Access, Authentication and Authorization | Implemented | 4.1.1.1 – 4.5.3.2 |
 | 5 | Logging and Auditing | Implemented | 5.1.1.1 – 5.3.2 |
-| 6 | System Maintenance | Stub | — |
+| 6 | System Maintenance | Implemented | 6.1.1 – 6.2.11 |
 
 ### Level gating
 
@@ -43,6 +43,7 @@ An Ansible role for auditing and optionally remediating FreeBSD 14 hosts against
 ### Manual controls
 
 Some controls emit COMPLIANT/NON-COMPLIANT but cannot be fully auto-remediated — they require operator review or site-specific configuration. These are tagged `manual`. Examples:
+
 - **5.1.1.5** — Remote syslog forwarding: the audit detects any remote logging mechanism (syslog `@remote`, Splunk UF, rsyslog, syslog-ng). Automated `syslog.conf` remediation is only applied when `freebsd_cis_syslog_remote_host` is set.
 - **5.1.1.3** — newsyslog.conf log file permissions: flags a permissions violation, but site-specific log rotation configs may intentionally vary.
 - **2.2.12** — Other inetd-managed services: requires operator review of each entry.
@@ -50,6 +51,7 @@ Some controls emit COMPLIANT/NON-COMPLIANT but cannot be fully auto-remediated �
 ### Pre-flight behavior
 
 The role includes pre-flight `stat` checks for optional files and binaries. When a dependency is absent, the role warns and guards remediation tasks that require that file or binary — audit tasks may still run and report non-compliance. The play does not fail. Affected items:
+
 - `/etc/security/audit_control` — required for Section 5.2.x BSM controls
 - `/etc/syslog.conf` — required for Section 5.1.1.5 syslog forwarding remediation
 - AIDE binary (`/usr/local/bin/aide`) — required for Section 5.3.2 file integrity checks
@@ -67,7 +69,10 @@ freebsd_cis_global_exceptions: []   # role-level skips
 freebsd_cis_local_exceptions: []    # playbook/host-level skips
 ```
 
-Effective set computed in `tasks/main.yml`:
+Both variables must be YAML lists of string rule IDs. `tasks/main.yml` validates this at
+play start and fails with a clear message if either variable is set to a dict or contains
+non-string elements. The effective set is then computed:
+
 ```yaml
 active_exceptions: "{{ (freebsd_cis_global_exceptions + freebsd_cis_local_exceptions) | unique }}"
 ```
@@ -145,12 +150,12 @@ All operator-tunable variables live in `defaults/main.yml`.
 
 ```bash
 source venv/bin/activate
-ansible-lint tasks/section_<N>.yml   # lint a single section
+ansible-lint --profile production tasks/section_<N>.yml   # lint a single section
 ```
 
 ## Project Layout
 
-```
+```bash
 defaults/main.yml       # Operator tunables and exception lists
 vars/main.yml           # Internal role metadata (benchmark name/version)
 tasks/main.yml          # Orchestrator: merge exceptions, import sections
@@ -159,7 +164,7 @@ tasks/section_2.yml     # CIS Section 2 — Services
 tasks/section_3.yml     # CIS Section 3 — Network
 tasks/section_4.yml     # CIS Section 4 — Access, Authentication and Authorization
 tasks/section_5.yml     # CIS Section 5 — Logging and Auditing
-tasks/section_6.yml     # CIS Section 6 — System Maintenance (stub)
+tasks/section_6.yml     # CIS Section 6 — System Maintenance
 handlers/main.yml       # Service reload/resync handlers
 docs/DESIGN.md          # Canonical task patterns and rationale
 docs/ARCHITECTURE.md    # Execution flow and file structure
@@ -174,4 +179,3 @@ meta/main.yml           # Galaxy metadata
 - The `freebsd_cis_bootloader_password` variable is stored in **plaintext** in `/boot/loader.conf` — use with caution.
 
 See `.github/instructions/security.instructions.md` for full policy.
-
