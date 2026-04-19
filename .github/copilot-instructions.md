@@ -159,6 +159,7 @@ exist. Fix pattern:
   ansible.builtin.stat:
     path: /etc/some/file
   register: cis_X_X_X_stat
+  changed_when: not cis_X_X_X_stat.stat.exists
   failed_when: false
   check_mode: false
 

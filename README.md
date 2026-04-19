@@ -24,7 +24,7 @@ An Ansible role for auditing and optionally remediating FreeBSD 14 hosts against
 
 | Section | Title | Status | Controls |
 | --- | --- | --- | --- |
-| 1 | Initial Setup | Implemented | 1.1.1.1 – 1.8.1 |
+| 1 | Initial Setup | Implemented | 1.1.1.1 – 1.6.5 |
 | 2 | Services | Implemented | 2.1.1 – 2.2.12 |
 | 3 | Network | Implemented | 3.1.1 – 3.4.1.2 |
 | 4 | Access, Authentication and Authorization | Implemented | 4.1.1.1 – 4.5.3.2 |
@@ -45,7 +45,7 @@ Some controls emit COMPLIANT/NON-COMPLIANT but cannot be fully auto-remediated �
 
 ### Pre-flight behavior
 
-The role includes pre-flight `stat` checks for optional files and binaries. When a dependency is absent, the role emits a warning and skips related tasks — it does not fail the play. Affected items:
+The role includes pre-flight `stat` checks for optional files and binaries. When a dependency is absent, the role warns and guards remediation tasks that require that file or binary — audit tasks may still run and report non-compliance. The play does not fail. Affected items:
 - `/etc/security/audit_control` — required for Section 5.2.x BSM controls
 - `/etc/syslog.conf` — required for Section 5.1.1.5 syslog forwarding remediation
 - AIDE binary (`/usr/local/bin/aide`) — required for Section 5.3.2 file integrity checks
