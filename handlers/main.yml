@@ -16,7 +16,16 @@
       ansible.builtin.service:
         name: "{{ freebsd_cis_sshd_service }}"
         state: reloaded
+      register: cis_reload_sshd_result
       failed_when: false  # acceptable: sshd may not be running
+
+    - name: Reload sshd | Warn if reload failed
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: sshd reload failed ({{ cis_reload_sshd_result.msg | default('unknown error') }}).
+          The hardened sshd_config has been written to disk but the running sshd daemon
+          may still be using the previous configuration. Restart sshd manually to apply changes.
+      when: cis_reload_sshd_result.failed | default(false) | bool
 
 - name: Reload syslogd
   ansible.builtin.service:
