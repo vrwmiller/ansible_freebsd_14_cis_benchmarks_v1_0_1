@@ -17,3 +17,14 @@
         name: "{{ freebsd_cis_sshd_service }}"
         state: reloaded
       failed_when: false  # acceptable: sshd may not be running
+
+- name: Reload syslogd
+  ansible.builtin.service:
+    name: syslogd
+    state: reloaded
+  failed_when: false  # acceptable: syslogd may not be running; reload sends SIGHUP without starting the service
+
+- name: Resync auditd
+  ansible.builtin.command: /usr/sbin/audit -s
+  changed_when: false
+  failed_when: false  # acceptable: auditd may not be running on all managed nodes

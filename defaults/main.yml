@@ -135,3 +135,34 @@ freebsd_cis_pw_max_age: 365
 
 # 4.5.1.3 — Password expiration warning in days (>= 7).
 freebsd_cis_pw_warn_days: 7
+
+# -------------------------------------------------------------------
+# Section 5 — Logging and Auditing
+# -------------------------------------------------------------------
+
+# 5.1.1.5 — FQDN or IP of the remote syslog host used for syslog.conf remediation.
+# The audit always runs and detects any remote logging mechanism (syslog @remote
+# entries, Splunk Universal Forwarder, rsyslog, syslog-ng).
+# This variable only controls whether automated remediation adds a syslog.conf
+# forwarding entry. Leave empty ("") when remote logging is handled by another
+# mechanism (e.g. Splunk UF) and no syslog.conf change is needed.
+freebsd_cis_syslog_remote_host: ""
+
+# 5.1.3 — List of log files to enforce 0640 root:wheel or more restrictive on during remediation.
+# Extend or override as appropriate for your environment.
+freebsd_cis_log_files_to_fix:
+  - /var/log/messages
+  - /var/log/cron
+  - /var/log/auth.log
+  - /var/log/maillog
+  - /var/log/security
+  - /var/log/debug.log
+
+# 5.2.2.1 — Maximum audit trail file size before rotation.
+# Supports B, K, M, G suffixes. Default: 2M.
+freebsd_cis_audit_filesz: "2M"
+
+# 5.2.2.2 — Minimum age/size before audit logs expire.
+# Supports age (60d, 1y) and/or size (1G) with AND/OR conjunction.
+# Default: 10M (do not auto-delete until 10M accumulated).
+freebsd_cis_audit_expire_after: "10M"
