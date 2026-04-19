@@ -1459,6 +1459,7 @@
         path: /usr/local/etc/sudoers.d
       register: cis_4_3_4_sudoers_d
       changed_when: false
+      failed_when: false
       check_mode: false
 
     - name: "4.3.4 | AUDIT | Check for NOPASSWD in sudoers"
@@ -1509,6 +1510,7 @@
         path: /usr/local/etc/sudoers.d
       register: cis_4_3_5_sudoers_d
       changed_when: false
+      failed_when: false
       check_mode: false
 
     - name: "4.3.5 | AUDIT | Check for !authenticate in sudoers"
