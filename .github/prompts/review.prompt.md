@@ -26,6 +26,7 @@ Follow these steps exactly.
 
 4. Classify every comment.
 - Valid: the claim is accurate AND the fix prevents a realistic failure — a wrong result, a broken command, data loss, a security breach, or an operator being blocked from completing the procedure. The bar is "would a careful operator fail without this fix?"
+- Copilot suggestion: a code-change suggestion from the Copilot reviewer. Accept and implement it unless it introduces operational risk (behavior change, service disruption) or security risk. Do not require further justification beyond the absence of those risks.
 - Rejected: claim is factually wrong, contradicts current code or documented project decisions, OR is technically accurate but does not prevent a realistic operator failure (e.g. wording preferences, hypothetical edge cases in manually-executed runbooks, style inconsistencies, defensive improvements without a demonstrated failure path).
 - Ambiguous: cannot be resolved from available evidence; pause and ask user.
 
