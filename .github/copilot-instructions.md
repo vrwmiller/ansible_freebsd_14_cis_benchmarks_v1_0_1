@@ -9,7 +9,7 @@ Python 3.11, Ansible 2.16, ansible-lint at production profile.
 
 - Never commit directly to `main`. All changes go through a PR.
 - Branch naming: `feat/<topic>`, `fix/<topic>`, `chore/<topic>` (lowercase, hyphen-separated).
-- **Resolve all lint errors before committing changes or opening a PR.** Run `ansible-lint --profile production` on every touched `tasks/` file; all failures must be fixed or suppressed with `noqa` (with justification) before staging.
+- **Resolve all lint errors before committing changes or opening a PR.** Run `ansible-lint --profile production` on every touched `tasks/` file; all failures must be fixed or suppressed with an inline `# noqa: <rule-id>` comment (with justification) before staging.
 - Open PRs with `gh pr create --body-file /tmp/<file>.txt`.
 - Use merge commits (`gh pr merge --merge`).
 - After merge: `git checkout main && git pull origin main && git branch -d <branch>`.
@@ -243,10 +243,11 @@ Every section file must pass with 0 failures before merging. Once a section file
 lint-clean, add `# lint-clean: production profile` at the top to record that baseline.
 Run lint before committing any change to a `tasks/` file.
 
-**Pre-commit gate (mandatory):** Run `ansible-lint --profile production` on every touched
-`tasks/` file before staging a commit or opening a PR. All lint failures must be resolved
-(fix or `noqa` with justification) before the commit is made. Do not defer lint cleanup to
-a follow-up commit — lint-clean state is required at every commit boundary, not just at merge.
+**Manual lint requirement (mandatory):** Run `ansible-lint --profile production` on every
+touched `tasks/` file before staging a commit or opening a PR. All lint failures must be
+resolved (fix or `# noqa: <rule-id>` comment with justification) before the commit is made.
+Do not defer lint cleanup to a follow-up commit — lint-clean state is required at every
+commit boundary, not just at merge.
 
 ---
 
