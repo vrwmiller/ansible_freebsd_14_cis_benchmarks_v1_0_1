@@ -42,7 +42,7 @@
       ansible.builtin.command: kldunload -f ext2fs
       when:
         - freebsd_cis_remediate | bool
-        - cis_1_1_1_1_kld.rc == 0 or cis_1_1_1_1_loader_no.rc != 0
+        - cis_1_1_1_1_kld.rc == 0
       changed_when: true
 
     - name: "1.1.1.1 | REMEDIATE | Prevent ext2fs from loading at boot"
@@ -56,7 +56,7 @@
         mode: '0600'
       when:
         - freebsd_cis_remediate | bool
-        - cis_1_1_1_1_kld.rc == 0 or cis_1_1_1_1_loader_no.rc != 0
+        - cis_1_1_1_1_loader_no.rc != 0
 
 # ---
 
@@ -187,7 +187,7 @@
       changed_when: true
       failed_when: false
 
-    - name: "1.1.1.3 | REMEDIATE | Stop the zfs service"
+    - name: "1.1.1.3 | REMEDIATE | Stop the zfs service" # noqa: command-instead-of-module
       ansible.builtin.command: service zfs stop
       when:
         - freebsd_cis_remediate | bool
@@ -235,7 +235,7 @@
   when: "'1.1.2.1.1' not in active_exceptions"
   tags: [rule_1.1.2.1.1, level1, section_1]
   block:
-    - name: "1.1.2.1.1 | AUDIT | Check if /tmp is a separately mounted filesystem"
+    - name: "1.1.2.1.1 | AUDIT | Check if /tmp is a separately mounted filesystem" # noqa: command-instead-of-module risky-shell-pipe
       ansible.builtin.shell: mount -p | grep -E '[[:space:]]/tmp[[:space:]]'
       register: cis_1_1_2_1_1_mount
       changed_when: cis_1_1_2_1_1_mount.rc != 0
@@ -290,7 +290,7 @@
   when: "'1.1.2.1.2' not in active_exceptions"
   tags: [rule_1.1.2.1.2, level1, section_1]
   block:
-    - name: "1.1.2.1.2 | AUDIT | Check /tmp mount for missing nosuid"
+    - name: "1.1.2.1.2 | AUDIT | Check /tmp mount for missing nosuid" # noqa: command-instead-of-module risky-shell-pipe
       ansible.builtin.shell: mount | grep -E '[[:space:]]/tmp([[:space:]]|$)' | grep -v nosuid
       register: cis_1_1_2_1_2_nosuid
       changed_when: cis_1_1_2_1_2_nosuid.rc == 0
@@ -304,7 +304,7 @@
              if cis_1_1_2_1_2_nosuid.rc == 0
              else 'PASS: nosuid is set on /tmp or /tmp is not a separate partition' }}
 
-    - name: "1.1.2.1.2 | REMEDIATE | Apply nosuid to /tmp mount"
+    - name: "1.1.2.1.2 | REMEDIATE | Apply nosuid to /tmp mount" # noqa: command-instead-of-module
       ansible.builtin.command: mount -u -o nosuid /tmp
       when:
         - freebsd_cis_remediate | bool
@@ -323,7 +323,10 @@
 
     - name: "1.1.2.1.2 | REMEDIATE | Persist nosuid in tmpmfs_flags in rc.conf"
       ansible.builtin.command: >-
-        sysrc tmpmfs_flags="{{ (cis_1_1_2_1_2_tmpmfs_flags.stdout | default('') | trim) ~ (' -o nosuid' if (cis_1_1_2_1_2_tmpmfs_flags.stdout | default('') | trim | length > 0) else '-o nosuid') }}"
+        sysrc tmpmfs_flags="{{
+        (cis_1_1_2_1_2_tmpmfs_flags.stdout | default('') | trim) ~
+        (' -o nosuid' if (cis_1_1_2_1_2_tmpmfs_flags.stdout | default('') | trim | length > 0) else '-o nosuid')
+        }}"
       when:
         - freebsd_cis_remediate | bool
         - cis_1_1_2_1_2_nosuid.rc == 0
@@ -337,7 +340,7 @@
   when: "'1.1.2.1.3' not in active_exceptions"
   tags: [rule_1.1.2.1.3, level1, section_1]
   block:
-    - name: "1.1.2.1.3 | AUDIT | Check /tmp mount for missing noexec"
+    - name: "1.1.2.1.3 | AUDIT | Check /tmp mount for missing noexec" # noqa: command-instead-of-module risky-shell-pipe
       ansible.builtin.shell: mount | grep -E '[[:space:]]/tmp([[:space:]]|$)' | grep -v noexec
       register: cis_1_1_2_1_3_noexec
       changed_when: cis_1_1_2_1_3_noexec.rc == 0
@@ -351,7 +354,7 @@
              if cis_1_1_2_1_3_noexec.rc == 0
              else 'PASS: noexec is set on /tmp or /tmp is not a separate partition' }}
 
-    - name: "1.1.2.1.3 | REMEDIATE | Apply noexec to /tmp mount"
+    - name: "1.1.2.1.3 | REMEDIATE | Apply noexec to /tmp mount" # noqa: command-instead-of-module
       ansible.builtin.command: mount -u -o noexec /tmp
       when:
         - freebsd_cis_remediate | bool
@@ -370,7 +373,10 @@
 
     - name: "1.1.2.1.3 | REMEDIATE | Persist noexec in tmpmfs_flags in rc.conf"
       ansible.builtin.command: >-
-        sysrc tmpmfs_flags="{{ (cis_1_1_2_1_3_tmpmfs_flags.stdout | default('') | trim) ~ (' -o noexec' if (cis_1_1_2_1_3_tmpmfs_flags.stdout | default('') | trim | length > 0) else '-o noexec') }}"
+        sysrc tmpmfs_flags="{{
+        (cis_1_1_2_1_3_tmpmfs_flags.stdout | default('') | trim) ~
+        (' -o noexec' if (cis_1_1_2_1_3_tmpmfs_flags.stdout | default('') | trim | length > 0) else '-o noexec')
+        }}"
       when:
         - freebsd_cis_remediate | bool
         - cis_1_1_2_1_3_noexec.rc == 0
@@ -388,7 +394,7 @@
     - freebsd_cis_level | int >= 2
   tags: [rule_1.1.2.2.1, level2, section_1]
   block:
-    - name: "1.1.2.2.1 | AUDIT | Check if /home is a separately mounted filesystem"
+    - name: "1.1.2.2.1 | AUDIT | Check if /home is a separately mounted filesystem" # noqa: command-instead-of-module risky-shell-pipe
       ansible.builtin.shell: mount | grep -E '[[:space:]]/home([[:space:]]|$)'
       register: cis_1_1_2_2_1_mount
       changed_when: cis_1_1_2_2_1_mount.rc != 0
@@ -408,7 +414,7 @@
   when: "'1.1.2.2.2' not in active_exceptions"
   tags: [rule_1.1.2.2.2, level1, section_1]
   block:
-    - name: "1.1.2.2.2 | AUDIT | Check /home mount for missing nosuid"
+    - name: "1.1.2.2.2 | AUDIT | Check /home mount for missing nosuid" # noqa: command-instead-of-module risky-shell-pipe
       ansible.builtin.shell: mount | grep -E '[[:space:]]/home([[:space:]]|$)' | grep -v nosuid
       register: cis_1_1_2_2_2_nosuid
       changed_when: cis_1_1_2_2_2_nosuid.rc == 0
@@ -422,7 +428,7 @@
              if cis_1_1_2_2_2_nosuid.rc == 0
              else 'PASS: nosuid is set on /home or /home is not a separate partition' }}
 
-    - name: "1.1.2.2.2 | REMEDIATE | Apply nosuid to /home mount"
+    - name: "1.1.2.2.2 | REMEDIATE | Apply nosuid to /home mount" # noqa: command-instead-of-module
       ansible.builtin.command: mount -u -o nosuid /home
       when:
         - freebsd_cis_remediate | bool
@@ -449,7 +455,7 @@
     - freebsd_cis_level | int >= 2
   tags: [rule_1.1.2.3.1, level2, section_1]
   block:
-    - name: "1.1.2.3.1 | AUDIT | Check if /var is a separately mounted filesystem"
+    - name: "1.1.2.3.1 | AUDIT | Check if /var is a separately mounted filesystem" # noqa: command-instead-of-module risky-shell-pipe
       ansible.builtin.shell: mount | grep -E '[[:space:]]/var([[:space:]]|$)'
       register: cis_1_1_2_3_1_mount
       changed_when: cis_1_1_2_3_1_mount.rc != 0
@@ -469,7 +475,7 @@
   when: "'1.1.2.3.2' not in active_exceptions"
   tags: [rule_1.1.2.3.2, level1, section_1]
   block:
-    - name: "1.1.2.3.2 | AUDIT | Check /var mount for missing nosuid"
+    - name: "1.1.2.3.2 | AUDIT | Check /var mount for missing nosuid" # noqa: command-instead-of-module risky-shell-pipe
       ansible.builtin.shell: mount | grep -E '[[:space:]]/var([[:space:]]|$)' | grep -v nosuid
       register: cis_1_1_2_3_2_nosuid
       changed_when: cis_1_1_2_3_2_nosuid.rc == 0
@@ -483,7 +489,7 @@
              if cis_1_1_2_3_2_nosuid.rc == 0
              else 'PASS: nosuid is set on /var or /var is not a separate partition' }}
 
-    - name: "1.1.2.3.2 | REMEDIATE | Apply nosuid to /var mount"
+    - name: "1.1.2.3.2 | REMEDIATE | Apply nosuid to /var mount" # noqa: command-instead-of-module
       ansible.builtin.command: mount -u -o nosuid /var
       when:
         - freebsd_cis_remediate | bool
@@ -510,7 +516,7 @@
     - freebsd_cis_level | int >= 2
   tags: [rule_1.1.2.4.1, level2, section_1]
   block:
-    - name: "1.1.2.4.1 | AUDIT | Check if /var/tmp is a separately mounted filesystem"
+    - name: "1.1.2.4.1 | AUDIT | Check if /var/tmp is a separately mounted filesystem" # noqa: command-instead-of-module risky-shell-pipe
       ansible.builtin.shell: mount | grep -E '[[:space:]]/var/tmp([[:space:]]|$)'
       register: cis_1_1_2_4_1_mount
       changed_when: cis_1_1_2_4_1_mount.rc != 0
@@ -530,7 +536,7 @@
   when: "'1.1.2.4.2' not in active_exceptions"
   tags: [rule_1.1.2.4.2, level1, section_1]
   block:
-    - name: "1.1.2.4.2 | AUDIT | Check /var/tmp mount for missing nosuid"
+    - name: "1.1.2.4.2 | AUDIT | Check /var/tmp mount for missing nosuid" # noqa: command-instead-of-module risky-shell-pipe
       ansible.builtin.shell: mount | grep -E '[[:space:]]/var/tmp([[:space:]]|$)' | grep -v nosuid
       register: cis_1_1_2_4_2_nosuid
       changed_when: cis_1_1_2_4_2_nosuid.rc == 0
@@ -544,7 +550,7 @@
              if cis_1_1_2_4_2_nosuid.rc == 0
              else 'PASS: nosuid is set on /var/tmp or /var/tmp is not a separate partition' }}
 
-    - name: "1.1.2.4.2 | REMEDIATE | Apply nosuid to /var/tmp mount"
+    - name: "1.1.2.4.2 | REMEDIATE | Apply nosuid to /var/tmp mount" # noqa: command-instead-of-module
       ansible.builtin.command: mount -u -o nosuid /var/tmp
       when:
         - freebsd_cis_remediate | bool
@@ -567,7 +573,7 @@
   when: "'1.1.2.4.3' not in active_exceptions"
   tags: [rule_1.1.2.4.3, level1, section_1]
   block:
-    - name: "1.1.2.4.3 | AUDIT | Check /var/tmp mount for missing noexec"
+    - name: "1.1.2.4.3 | AUDIT | Check /var/tmp mount for missing noexec" # noqa: command-instead-of-module risky-shell-pipe
       ansible.builtin.shell: mount | grep -E '[[:space:]]/var/tmp([[:space:]]|$)' | grep -v noexec
       register: cis_1_1_2_4_3_noexec
       changed_when: cis_1_1_2_4_3_noexec.rc == 0
@@ -581,7 +587,7 @@
              if cis_1_1_2_4_3_noexec.rc == 0
              else 'PASS: noexec is set on /var/tmp or /var/tmp is not a separate partition' }}
 
-    - name: "1.1.2.4.3 | REMEDIATE | Apply noexec to /var/tmp mount"
+    - name: "1.1.2.4.3 | REMEDIATE | Apply noexec to /var/tmp mount" # noqa: command-instead-of-module
       ansible.builtin.command: mount -u -o noexec /var/tmp
       when:
         - freebsd_cis_remediate | bool
@@ -608,7 +614,7 @@
     - freebsd_cis_level | int >= 2
   tags: [rule_1.1.2.5.1, level2, section_1]
   block:
-    - name: "1.1.2.5.1 | AUDIT | Check if /var/log is a separately mounted filesystem"
+    - name: "1.1.2.5.1 | AUDIT | Check if /var/log is a separately mounted filesystem" # noqa: command-instead-of-module risky-shell-pipe
       ansible.builtin.shell: mount | grep -E '[[:space:]]/var/log([[:space:]]|$)'
       register: cis_1_1_2_5_1_mount
       changed_when: cis_1_1_2_5_1_mount.rc != 0
@@ -628,7 +634,7 @@
   when: "'1.1.2.5.2' not in active_exceptions"
   tags: [rule_1.1.2.5.2, level1, section_1]
   block:
-    - name: "1.1.2.5.2 | AUDIT | Check /var/log mount for missing nosuid"
+    - name: "1.1.2.5.2 | AUDIT | Check /var/log mount for missing nosuid" # noqa: command-instead-of-module risky-shell-pipe
       ansible.builtin.shell: mount | grep -E '[[:space:]]/var/log([[:space:]]|$)' | grep -v nosuid
       register: cis_1_1_2_5_2_nosuid
       changed_when: cis_1_1_2_5_2_nosuid.rc == 0
@@ -642,7 +648,7 @@
              if cis_1_1_2_5_2_nosuid.rc == 0
              else 'PASS: nosuid is set on /var/log or /var/log is not a separate partition' }}
 
-    - name: "1.1.2.5.2 | REMEDIATE | Apply nosuid to /var/log mount"
+    - name: "1.1.2.5.2 | REMEDIATE | Apply nosuid to /var/log mount" # noqa: command-instead-of-module
       ansible.builtin.command: mount -u -o nosuid /var/log
       when:
         - freebsd_cis_remediate | bool
@@ -665,7 +671,7 @@
   when: "'1.1.2.5.3' not in active_exceptions"
   tags: [rule_1.1.2.5.3, level1, section_1]
   block:
-    - name: "1.1.2.5.3 | AUDIT | Check /var/log mount for missing noexec"
+    - name: "1.1.2.5.3 | AUDIT | Check /var/log mount for missing noexec" # noqa: command-instead-of-module risky-shell-pipe
       ansible.builtin.shell: mount | grep -E '[[:space:]]/var/log([[:space:]]|$)' | grep -v noexec
       register: cis_1_1_2_5_3_noexec
       changed_when: cis_1_1_2_5_3_noexec.rc == 0
@@ -679,7 +685,7 @@
              if cis_1_1_2_5_3_noexec.rc == 0
              else 'PASS: noexec is set on /var/log or /var/log is not a separate partition' }}
 
-    - name: "1.1.2.5.3 | REMEDIATE | Apply noexec to /var/log mount"
+    - name: "1.1.2.5.3 | REMEDIATE | Apply noexec to /var/log mount" # noqa: command-instead-of-module
       ansible.builtin.command: mount -u -o noexec /var/log
       when:
         - freebsd_cis_remediate | bool
@@ -706,7 +712,7 @@
     - freebsd_cis_level | int >= 2
   tags: [rule_1.1.2.6.1, level2, section_1]
   block:
-    - name: "1.1.2.6.1 | AUDIT | Check if /var/audit is a separately mounted filesystem"
+    - name: "1.1.2.6.1 | AUDIT | Check if /var/audit is a separately mounted filesystem" # noqa: command-instead-of-module risky-shell-pipe
       ansible.builtin.shell: mount | grep -E '[[:space:]]/var/audit([[:space:]]|$)'
       register: cis_1_1_2_6_1_mount
       changed_when: cis_1_1_2_6_1_mount.rc != 0
@@ -726,7 +732,7 @@
   when: "'1.1.2.6.2' not in active_exceptions"
   tags: [rule_1.1.2.6.2, level1, section_1]
   block:
-    - name: "1.1.2.6.2 | AUDIT | Check /var/audit mount for missing nosuid"
+    - name: "1.1.2.6.2 | AUDIT | Check /var/audit mount for missing nosuid" # noqa: command-instead-of-module risky-shell-pipe
       ansible.builtin.shell: mount | grep -E '[[:space:]]/var/audit([[:space:]]|$)' | grep -v nosuid
       register: cis_1_1_2_6_2_nosuid
       changed_when: cis_1_1_2_6_2_nosuid.rc == 0
@@ -740,7 +746,7 @@
              if cis_1_1_2_6_2_nosuid.rc == 0
              else 'PASS: nosuid is set on /var/audit or /var/audit is not a separate partition' }}
 
-    - name: "1.1.2.6.2 | REMEDIATE | Apply nosuid to /var/audit mount"
+    - name: "1.1.2.6.2 | REMEDIATE | Apply nosuid to /var/audit mount" # noqa: command-instead-of-module
       ansible.builtin.command: mount -u -o nosuid /var/audit
       when:
         - freebsd_cis_remediate | bool
@@ -763,7 +769,7 @@
   when: "'1.1.2.6.3' not in active_exceptions"
   tags: [rule_1.1.2.6.3, level1, section_1]
   block:
-    - name: "1.1.2.6.3 | AUDIT | Check /var/audit mount for missing noexec"
+    - name: "1.1.2.6.3 | AUDIT | Check /var/audit mount for missing noexec" # noqa: command-instead-of-module risky-shell-pipe
       ansible.builtin.shell: mount | grep -E '[[:space:]]/var/audit([[:space:]]|$)' | grep -v noexec
       register: cis_1_1_2_6_3_noexec
       changed_when: cis_1_1_2_6_3_noexec.rc == 0
@@ -777,7 +783,7 @@
              if cis_1_1_2_6_3_noexec.rc == 0
              else 'PASS: noexec is set on /var/audit or /var/audit is not a separate partition' }}
 
-    - name: "1.1.2.6.3 | REMEDIATE | Apply noexec to /var/audit mount"
+    - name: "1.1.2.6.3 | REMEDIATE | Apply noexec to /var/audit mount" # noqa: command-instead-of-module
       ansible.builtin.command: mount -u -o noexec /var/audit
       when:
         - freebsd_cis_remediate | bool
@@ -834,7 +840,7 @@
   when: "'1.2.2' not in active_exceptions"
   tags: [rule_1.2.2, level1, section_1]
   block:
-    - name: "1.2.2 | AUDIT | Check pkg repository configuration"
+    - name: "1.2.2 | AUDIT | Check pkg repository configuration" # noqa: risky-shell-pipe
       ansible.builtin.shell: pkg -vv 2>/dev/null | sed '1,/^Repositories/d'
       register: cis_1_2_2_repos
       changed_when: not (cis_1_2_2_repos.rc == 0 and cis_1_2_2_repos.stdout | length > 0)
@@ -1062,7 +1068,7 @@
              if (cis_1_4_2_savecore.stdout | default('') | upper) == 'YES'
              else 'PASS: savecore is disabled' }}
 
-    - name: "1.4.2 | REMEDIATE | Stop savecore service"
+    - name: "1.4.2 | REMEDIATE | Stop savecore service" # noqa: command-instead-of-module
       ansible.builtin.command: service savecore onestop
       when:
         - freebsd_cis_remediate | bool
