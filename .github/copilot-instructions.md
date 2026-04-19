@@ -242,6 +242,11 @@ Every section file must pass with 0 failures before merging. Once a section file
 lint-clean, add `# lint-clean: production profile` at the top to record that baseline.
 Run lint before committing any change to a `tasks/` file.
 
+**Pre-commit gate (mandatory):** Run `ansible-lint --profile production` on every touched
+`tasks/` file before staging a commit or opening a PR. All lint failures must be resolved
+(fix or `noqa` with justification) before the commit is made. Do not defer lint cleanup to
+a follow-up commit — lint-clean state is required at every commit boundary, not just at merge.
+
 ---
 
 ## File Layout

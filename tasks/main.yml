@@ -1,6 +1,18 @@
 ---
 # FreeBSD 14 CIS Benchmark v1.0.1 — Task Orchestrator
 
+- name: "Initialize | Validate exception variable types"
+  ansible.builtin.assert:
+    that:
+      - freebsd_cis_global_exceptions is sequence and freebsd_cis_global_exceptions is not mapping
+      - freebsd_cis_local_exceptions is sequence and freebsd_cis_local_exceptions is not mapping
+    fail_msg: >-
+      freebsd_cis_global_exceptions and freebsd_cis_local_exceptions must both be lists.
+      Got: global={{ freebsd_cis_global_exceptions | type_debug }},
+      local={{ freebsd_cis_local_exceptions | type_debug }}.
+      Define them as YAML lists (e.g. ["1.1.1.1"]) not as dicts.
+  tags: [always]
+
 - name: "Initialize | Merge exception lists"
   ansible.builtin.set_fact:
     active_exceptions: "{{ (freebsd_cis_global_exceptions + freebsd_cis_local_exceptions) | unique }}"
