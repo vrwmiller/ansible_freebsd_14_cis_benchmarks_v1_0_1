@@ -3,11 +3,12 @@
 ## Python and Ansible Requirements
 
 * Must be python 3.11-compatible
-* Deployed in a Python venv 
+* Deployed in a Python venv
 * Has an appropriate env.sh that activates the python venv
 * Must be Ansible 2.16-compatible
 
 ## Task Implementation Pattern
+
 Each CIS control is defined as a block to keep audit and remediation logic grouped together.
 
 ```yaml
@@ -54,7 +55,6 @@ conditions are preferred for long-term maintainability in this role.
     active_exceptions: "{{ (freebsd_cis_global_exceptions + freebsd_cis_local_exceptions) | unique }}"
 ```
 
-
 ## Layout Recommendations
 
 ### Return States & Visual Indicators
@@ -68,8 +68,8 @@ conditions are preferred for long-term maintainability in this role.
 | `failed` | Red | Any | Unexpected error during audit or remediation task |
 
 ### Variable Naming Conventions
-- `freebsd_cis_remediate`: Boolean flag controlling whether remediation is applied (default: false).
-- `freebsd_cis_global_exceptions`: List of rule IDs defined at the role level.
-- `freebsd_cis_local_exceptions`: List of rule IDs defined by the user (playbook or host-level).
-- `cis_<id>_<purpose>`: Internal variables used to store audit/remediation task results for each rule (for example: `cis_1_1_1_1_kld`, `cis_1_1_2_1_1_mount`).
 
+* `freebsd_cis_remediate`: Boolean flag controlling whether remediation is applied (default: false).
+* `freebsd_cis_global_exceptions`: List of rule IDs defined at the role level.
+* `freebsd_cis_local_exceptions`: List of rule IDs defined by the user (playbook or host-level).
+* `cis_<id>_<purpose>`: Internal variables used to store audit/remediation task results for each rule (for example: `cis_1_1_1_1_kld`, `cis_1_1_2_1_1_mount`).
