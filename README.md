@@ -40,7 +40,7 @@ An Ansible role for auditing and optionally remediating FreeBSD 14 hosts against
 
 Some controls emit COMPLIANT/NON-COMPLIANT but cannot be fully auto-remediated — they require operator review or site-specific configuration. These are tagged `manual`. Examples:
 - **5.1.1.5** — Remote syslog forwarding: the audit detects any remote logging mechanism (syslog `@remote`, Splunk UF, rsyslog, syslog-ng). Automated `syslog.conf` remediation is only applied when `freebsd_cis_syslog_remote_host` is set.
-- **5.1.1.2** — newsyslog.conf log file permissions: flags a permissions violation, but site-specific log rotation configs may intentionally vary.
+- **5.1.1.3** — newsyslog.conf log file permissions: flags a permissions violation, but site-specific log rotation configs may intentionally vary.
 - **2.2.12** — Other inetd-managed services: requires operator review of each entry.
 
 ### Pre-flight behavior
@@ -89,7 +89,7 @@ All operator-tunable variables live in `defaults/main.yml`.
 | --- | --- | --- |
 | `freebsd_cis_tmp_size` | `"2g"` | tmpfs size for `/tmp` when enabling tmpfs via sysrc (1.1.2.1.1). |
 | `freebsd_cis_bootloader_password` | `""` | Bootloader password written to `/boot/loader.conf`. Empty = skip. **Stored in plaintext.** |
-| `freebsd_cis_warning_banner` | `"Authorized users only..."` | Warning banner text for `/etc/motd`, `/etc/issue`, and `/etc/issue.net` (1.6.1–1.6.3). |
+| `freebsd_cis_warning_banner` | `"Authorized users only. All activity may be monitored and reported."` | Warning banner text for `/etc/motd`, `/etc/issue`, and `/etc/issue.net` (1.6.1–1.6.3). |
 
 ### Section 4 — Access, Authentication and Authorization
 
@@ -105,13 +105,13 @@ All operator-tunable variables live in `defaults/main.yml`.
 | `freebsd_cis_sshd_deny_users` | `""` | `DenyUsers` value. Empty = skip remediation. |
 | `freebsd_cis_sshd_deny_groups` | `""` | `DenyGroups` value. Empty = skip remediation. |
 | `freebsd_cis_sshd_banner` | `/etc/issue.net` | Banner file path sent to remote users before authentication (4.2.5). |
-| `freebsd_cis_sshd_weak_ciphers` | `"3des-cbc,aes128-cbc,..."` | Comma-separated list of weak ciphers to remove (minus-prefix syntax, 4.2.6). |
+| `freebsd_cis_sshd_weak_ciphers` | `"3des-cbc,aes128-cbc,aes192-cbc,aes256-cbc,rijndael-cbc@lysator.liu.se"` | Comma-separated list of weak ciphers to remove (minus-prefix syntax, 4.2.6). |
 | `freebsd_cis_sshd_client_alive_interval` | `15` | `ClientAliveInterval` in seconds (4.2.7). |
 | `freebsd_cis_sshd_client_alive_count_max` | `3` | `ClientAliveCountMax` (4.2.7). |
-| `freebsd_cis_sshd_weak_kex` | `"diffie-hellman-group1-sha1,..."` | Weak key-exchange algorithms to remove (4.2.11). |
+| `freebsd_cis_sshd_weak_kex` | `"diffie-hellman-group1-sha1,diffie-hellman-group14-sha1,diffie-hellman-group-exchange-sha1"` | Weak key-exchange algorithms to remove (4.2.11). |
 | `freebsd_cis_sshd_login_grace_time` | `60` | `LoginGraceTime` in seconds (4.2.12). |
 | `freebsd_cis_sshd_log_level` | `"VERBOSE"` | sshd log verbosity (4.2.13). |
-| `freebsd_cis_sshd_weak_macs` | `"hmac-md5,..."` | Weak MAC algorithms to remove (4.2.14). |
+| `freebsd_cis_sshd_weak_macs` | abbreviated; see `defaults/main.yml` | Weak MAC algorithms to remove (4.2.14). Full list in `defaults/main.yml`. |
 | `freebsd_cis_sshd_max_auth_tries` | `4` | `MaxAuthTries` (4.2.15). |
 | `freebsd_cis_sshd_max_sessions` | `10` | `MaxSessions` (4.2.16). |
 | `freebsd_cis_sshd_max_startups` | `"10:30:60"` | `MaxStartups` throttle (4.2.17). |

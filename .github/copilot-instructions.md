@@ -60,8 +60,10 @@ Every CIS control is one top-level block. Target pattern (see `docs/DESIGN.md`):
   service is already stopped.
 - **`|| true` is banned in REMEDIATE shell/command tasks.** It swallows real errors and can
   mask false-COMPLIANT results. Use `failed_when: false` instead.
-- Every `stat` task used for compliance checks must carry `failed_when: false` — `stat` raises
-  an error by default when the path does not exist.
+- Every `stat` task used for compliance checks must carry `failed_when: false` — `ansible.builtin.stat`
+  does not error on a missing path (it returns `stat.exists: false`), but can fail due to permission
+  errors or unexpected module failures. `failed_when: false` ensures non-compliance is never masked
+  by a task error and the play continues to the report task.
 
 ---
 
