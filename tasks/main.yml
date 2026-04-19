@@ -4,8 +4,8 @@
 - name: "Initialize | Validate exception variable types"
   ansible.builtin.assert:
     that:
-      - freebsd_cis_global_exceptions is sequence and freebsd_cis_global_exceptions is not mapping
-      - freebsd_cis_local_exceptions is sequence and freebsd_cis_local_exceptions is not mapping
+      - freebsd_cis_global_exceptions | type_debug == 'list'
+      - freebsd_cis_local_exceptions | type_debug == 'list'
     fail_msg: >-
       freebsd_cis_global_exceptions and freebsd_cis_local_exceptions must both be lists.
       Got: global={{ freebsd_cis_global_exceptions | type_debug }},
