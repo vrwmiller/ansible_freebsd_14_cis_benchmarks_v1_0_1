@@ -69,9 +69,10 @@ freebsd_cis_global_exceptions: []   # role-level skips
 freebsd_cis_local_exceptions: []    # playbook/host-level skips
 ```
 
-Both variables must be YAML lists of string rule IDs. `tasks/main.yml` validates this at
-play start by asserting that all elements are string rule IDs, and fails with a clear
-message when non-string elements are present. The effective set is then computed:
+Both variables are intended to be YAML lists of string rule IDs. At play start,
+`tasks/main.yml` validates that the iterated exception values are string rule IDs and
+fails with a clear message when non-string elements are present. The effective set is
+then computed:
 
 ```yaml
 active_exceptions: "{{ (freebsd_cis_global_exceptions + freebsd_cis_local_exceptions) | unique }}"
