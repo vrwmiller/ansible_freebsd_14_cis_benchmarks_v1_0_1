@@ -15,6 +15,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 
 echo "Running ansible-lint (production profile)..."
-ansible-lint --profile production "$REPO_ROOT/tasks/"
+ansible-lint --profile production \
+  "$REPO_ROOT/tasks/" \
+  "$REPO_ROOT/handlers/" \
+  "$REPO_ROOT/defaults/" \
+  "$REPO_ROOT/vars/"
 
 echo "✓ ansible-lint passed"

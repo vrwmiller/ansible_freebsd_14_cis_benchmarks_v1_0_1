@@ -29,9 +29,11 @@
       forwarded or reviewed. Consider a value such as '60d and 512M' so logs survive long enough
       for review or forwarding.
   when: >-
-    (freebsd_cis_audit_expire_after | regex_search('^[0-9]+[BKbk]$') is not none) or
-    (freebsd_cis_audit_expire_after | regex_search('^[0-9]+[Mm]$') is not none and
-    (freebsd_cis_audit_expire_after | regex_replace('[^0-9]', '') | int) < 100)
+    (freebsd_cis_audit_expire_after | regex_search('^[0-9]+[BKMbkm]$') is not none) and
+    (((freebsd_cis_audit_expire_after | regex_replace('[^0-9]', '') | int) *
+    (1048576 if (freebsd_cis_audit_expire_after | lower | regex_search('m$') is not none)
+    else 1024 if (freebsd_cis_audit_expire_after | lower | regex_search('k$') is not none)
+    else 1)) < 104857600)
   tags: [always]
 
 - name: "Section 1 | Initial Setup"
