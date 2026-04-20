@@ -4,3 +4,12 @@ repos:
     hooks:
       - id: detect-secrets
         args: ["--baseline", ".secrets.baseline"]
+
+  - repo: local
+    hooks:
+      - id: ansible-syntax-check
+        name: Ansible syntax check
+        entry: scripts/syntax-check.sh
+        language: script
+        files: (tasks/|handlers/|defaults/|vars/|tests/).*\.ya?ml$
+        pass_filenames: false
