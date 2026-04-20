@@ -20,6 +20,22 @@
     active_exceptions: "{{ (freebsd_cis_global_exceptions + freebsd_cis_local_exceptions) | unique }}"
   tags: [always]
 
+- name: "Initialize | Warn — freebsd_cis_audit_expire_after is a small size-only value"
+  ansible.builtin.debug:
+    msg: >-
+      SECURITY WARNING: freebsd_cis_audit_expire_after is '{{ freebsd_cis_audit_expire_after }}',
+      a size-only threshold below 100 MiB. On a busy or actively probed host, BSM audit logs can
+      exceed this within minutes, causing auditd to auto-delete forensic evidence before it is
+      forwarded or reviewed. Consider a value such as '60d and 512M' so logs survive long enough
+      for review or forwarding.
+  when: >-
+    (freebsd_cis_audit_expire_after | trim | regex_search('^[0-9]+[BKMbkm]$') is not none) and
+    (((freebsd_cis_audit_expire_after | trim | regex_replace('[^0-9]', '') | int) *
+    (1048576 if (freebsd_cis_audit_expire_after | trim | lower | regex_search('m$') is not none)
+    else 1024 if (freebsd_cis_audit_expire_after | trim | lower | regex_search('k$') is not none)
+    else 1)) < 104857600)
+  tags: [always]
+
 - name: "Section 1 | Initial Setup"
   ansible.builtin.import_tasks: section_1.yml
   tags: section_1

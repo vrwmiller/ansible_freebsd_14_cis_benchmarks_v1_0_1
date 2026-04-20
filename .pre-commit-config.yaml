@@ -13,3 +13,10 @@ repos:
         language: script
         files: (tasks/|handlers/|defaults/|vars/|tests/).*\.ya?ml$
         pass_filenames: false
+
+      - id: ansible-lint
+        name: Ansible lint
+        entry: scripts/lint-check.sh
+        language: script
+        files: (tasks/|handlers/|defaults/|vars/).*\.ya?ml$
+        pass_filenames: false

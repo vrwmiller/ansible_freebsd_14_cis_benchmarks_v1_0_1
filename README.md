@@ -138,7 +138,7 @@ All operator-tunable variables live in `defaults/main.yml`.
 | `freebsd_cis_syslog_remote_host` | `""` | FQDN/IP of remote syslog host for `syslog.conf` remediation (5.1.1.5). Empty = skip syslog.conf change. Audit always runs. |
 | `freebsd_cis_log_files_to_fix` | *(list of `/var/log/...` paths)* | Log files to enforce `0640 root:wheel` or more restrictive on during remediation (5.1.3). |
 | `freebsd_cis_audit_filesz` | `"2M"` | BSM audit trail max file size before rotation (5.2.2.1). |
-| `freebsd_cis_audit_expire_after` | `"10M"` | BSM audit log minimum age/size before expiry (5.2.2.2). |
+| `freebsd_cis_audit_expire_after` | `"60d and 512M"` | BSM audit log minimum age/size before expiry (5.2.2.2). Age+size conjunction ensures logs survive at least 60 days AND 512 MB before expiry. **Avoid small size-only values** (e.g. `10M`) — on a busy host audit logs can exceed that threshold in minutes, destroying forensic evidence. A pre-flight warning is emitted at role startup when a size-only value below 100 MiB is detected. |
 
 ## Requirements
 
