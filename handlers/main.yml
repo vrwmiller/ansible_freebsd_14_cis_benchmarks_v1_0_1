@@ -2,6 +2,7 @@
 # FreeBSD 14 CIS Benchmark v1.0.1 — Role Handlers
 
 - name: Reload sshd | Validate sshd configuration
+  listen: Reload sshd
   ansible.builtin.command:
     argv:
       - "{{ freebsd_cis_sshd_bin }}"
