@@ -9,7 +9,7 @@ Python 3.11, Ansible 2.16, ansible-lint at production profile.
 
 - Never commit directly to `main`. All changes go through a PR.
 - Branch naming: `feat/<topic>`, `fix/<topic>`, `chore/<topic>` (lowercase, hyphen-separated).
-- **Resolve all lint errors before committing changes or opening a PR.** Run `ansible-lint --profile production` on every touched `tasks/` file; all failures must be fixed or suppressed with an inline `# noqa: <rule-id>` comment (with justification) before staging.
+- **Resolve all lint errors before committing changes or opening a PR.** The pre-commit hooks enforce `ansible-lint --profile production` at commit time via `scripts/lint-check.sh`; fix all failures or add an inline `# noqa: <rule-id>` comment with justification before retrying the commit. Manual `ansible-lint` runs are optional for earlier feedback but are not required as a separate gate.
 - Open PRs with `gh pr create --body-file /tmp/<file>.txt`.
 - Use merge commits (`gh pr merge --merge`).
 - After merge: `git checkout main && git pull origin main && git branch -d <branch>`.
@@ -241,13 +241,13 @@ notify: Resync auditd
 Target: `ansible-lint tasks/section_<N>.yml` (production profile).
 Every section file must pass with 0 failures before merging. Once a section file is verified
 lint-clean, add `# lint-clean: production profile` at the top to record that baseline.
-Run lint before committing any change to a `tasks/` file.
+Pre-commit runs lint automatically before each commit.
 
-**Manual lint requirement (mandatory):** Run `ansible-lint --profile production` on every
-touched `tasks/` file before staging a commit or opening a PR. All lint failures must be
-resolved (fix or `# noqa: <rule-id>` comment with justification) before the commit is made.
-Do not defer lint cleanup to a follow-up commit — lint-clean state is required at every
-commit boundary, not just at merge.
+**Commit-bound lint requirement (mandatory):** Every commit that touches role YAML must pass
+`ansible-lint --profile production` via the pre-commit hook. If the commit fails due to a lint
+error, fix it or add a justified inline `# noqa: <rule-id>` suppression, then retry the commit.
+Do not defer lint cleanup to a follow-up commit — lint-clean state is required at every commit
+boundary, not just at merge. Manual `ansible-lint` runs remain optional for earlier local feedback.
 
 ---
 
