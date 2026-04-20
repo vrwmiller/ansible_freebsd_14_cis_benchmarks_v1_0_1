@@ -124,7 +124,7 @@ freebsd_cis_sudo_timeout: 15
 # 4.4.1.1.1 / 4.4.1.1.2 — pam_passwdqc minlen argument string.
 # Format: disabled,N1,N2,N3,N4 (see pam_passwdqc(8)).
 # N1 must be >= 14 per CIS benchmark.
-freebsd_cis_pam_passwdqc_minlen: "disabled,14,12,8,6"
+freebsd_cis_pam_passwdqc_minlen: "disabled,14,12,8,6"  # pragma: allowlist secret
 
 # -------------------------------------------------------------------
 # Section 4.5 — User accounts and environment
