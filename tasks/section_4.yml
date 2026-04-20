@@ -1832,9 +1832,9 @@
     - name: "4.5.1.1 | AUDIT | Report password hashing state"  # pragma: allowlist secret
       ansible.builtin.debug:
         msg: >-  # pragma: allowlist secret
-           {{ 'COMPLIANT: passwd_format=sha512 is set in /etc/login.conf'
+          {{ 'COMPLIANT: passwd_format=sha512 is set in /etc/login.conf'
              if cis_4_5_1_1_hash.stdout != ''
-              else 'NON-COMPLIANT: passwd_format=sha512 not found in /etc/login.conf' }}
+             else 'NON-COMPLIANT: passwd_format=sha512 not found in /etc/login.conf' }}
 
     - name: "4.5.1.1 | REMEDIATE | Set passwd_format=sha512 in /etc/login.conf"  # pragma: allowlist secret
       ansible.builtin.lineinfile:
