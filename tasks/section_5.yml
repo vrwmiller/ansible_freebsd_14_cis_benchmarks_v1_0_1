@@ -246,13 +246,15 @@
     - name: "5.1.1.5 | REMEDIATE | Warn — freebsd_cis_syslog_remote_host failed format validation"
       ansible.builtin.debug:
         msg: >-
-          REMEDIATION SKIPPED: freebsd_cis_syslog_remote_host value '{{ freebsd_cis_syslog_remote_host }}'
+          REMEDIATION SKIPPED: freebsd_cis_syslog_remote_host value '{{ freebsd_cis_syslog_remote_host
+          | replace('\\r', '\\\\r') | replace('\\n', '\\\\n') }}'
           failed format validation. Value must match '^[a-zA-Z0-9][a-zA-Z0-9._-]*$' to prevent
           syslog.conf injection. This may indicate inventory tampering or operator error.
       when:
         - freebsd_cis_remediate | bool
         - not cis_5_1_1_5_remote_configured
         - freebsd_cis_syslog_remote_host | length > 0
+        - cis_5_1_1_5_syslog_conf_stat.stat.exists
         - freebsd_cis_syslog_remote_host | regex_search('^[a-zA-Z0-9][a-zA-Z0-9._-]*$') is none
 
     - name: "5.1.1.5 | REMEDIATE | Warn — syslog.conf absent, cannot add remote host entry"
