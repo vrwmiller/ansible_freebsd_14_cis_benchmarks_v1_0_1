@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Syntax check for FreeBSD CIS Ansible role
 # Validates YAML, Jinja2, and Ansible playbook syntax before commit
 
