@@ -89,7 +89,7 @@ Stage only the touched files, then commit. Pre-commit hooks run automatically an
 - `ansible-syntax-check`
 - `ansible-lint --profile production` (via `scripts/lint-check.sh`)
 
-Do **not** run ansible-lint manually before committing — the pre-commit hook handles it. If the commit fails due to a lint error, fix the error and retry.
+Manual `ansible-lint` runs are optional for earlier feedback, but not required as a separate gate before committing because the pre-commit hook handles them. If the commit fails due to a lint error, fix the error and retry.
 
 Commit message format:
 
