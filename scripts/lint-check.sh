@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ansible-lint pre-commit hook for FreeBSD CIS Ansible role
-# Runs ansible-lint at the production profile against all task files.
+# Runs ansible-lint at the production profile against tasks/, handlers/, defaults/, and vars/.
 
 set -e
 

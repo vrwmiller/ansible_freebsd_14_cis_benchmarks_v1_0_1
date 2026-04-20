@@ -164,7 +164,7 @@ freebsd_cis_audit_filesz: "2M"
 
 # 5.2.2.2 — Minimum age/size before audit logs expire.
 # Supports age (e.g. 60d, 1y) and/or size (e.g. 512M, 2G) with AND/OR conjunction.
-# SECURITY: A size-only default below 100 MB is dangerous — on a busy or actively probed
+# SECURITY: A size-only default below 100 MiB is dangerous — on a busy or actively probed
 # host, BSM audit logs can exceed that threshold within minutes, causing auditd to purge
 # forensic evidence before it is forwarded or reviewed. The default uses an age+size
 # conjunction so logs are retained for at least 60 days AND 512 MB has accumulated.

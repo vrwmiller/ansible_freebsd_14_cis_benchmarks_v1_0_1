@@ -24,15 +24,15 @@
   ansible.builtin.debug:
     msg: >-
       SECURITY WARNING: freebsd_cis_audit_expire_after is '{{ freebsd_cis_audit_expire_after }}',
-      a size-only threshold below 100 MB. On a busy or actively probed host, BSM audit logs can
+      a size-only threshold below 100 MiB. On a busy or actively probed host, BSM audit logs can
       exceed this within minutes, causing auditd to auto-delete forensic evidence before it is
       forwarded or reviewed. Consider a value such as '60d and 512M' so logs survive long enough
       for review or forwarding.
   when: >-
-    (freebsd_cis_audit_expire_after | regex_search('^[0-9]+[BKMbkm]$') is not none) and
-    (((freebsd_cis_audit_expire_after | regex_replace('[^0-9]', '') | int) *
-    (1048576 if (freebsd_cis_audit_expire_after | lower | regex_search('m$') is not none)
-    else 1024 if (freebsd_cis_audit_expire_after | lower | regex_search('k$') is not none)
+    (freebsd_cis_audit_expire_after | trim | regex_search('^[0-9]+[BKMbkm]$') is not none) and
+    (((freebsd_cis_audit_expire_after | trim | regex_replace('[^0-9]', '') | int) *
+    (1048576 if (freebsd_cis_audit_expire_after | trim | lower | regex_search('m$') is not none)
+    else 1024 if (freebsd_cis_audit_expire_after | trim | lower | regex_search('k$') is not none)
     else 1)) < 104857600)
   tags: [always]
 
