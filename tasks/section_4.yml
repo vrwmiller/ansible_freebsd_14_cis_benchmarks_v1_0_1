@@ -602,6 +602,21 @@
              if cis_4_2_4_access_configured | bool
              else 'NON-COMPLIANT: no AllowUsers/AllowGroups/DenyUsers/DenyGroups directive found — set at least one per site policy' }}
 
+    - name: "4.2.4 | WARN | Remediation enabled but all SSH access variables are empty"
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: freebsd_cis_remediate is true but freebsd_cis_sshd_allow_users,
+          freebsd_cis_sshd_allow_groups, freebsd_cis_sshd_deny_users, and
+          freebsd_cis_sshd_deny_groups are all empty — SSH access restriction (4.2.4)
+          will not be remediated. Set at least one variable to enforce access control.
+      when:
+        - not (cis_4_2_4_access_configured | bool)
+        - freebsd_cis_remediate | bool
+        - freebsd_cis_sshd_allow_users | length == 0
+        - freebsd_cis_sshd_allow_groups | length == 0
+        - freebsd_cis_sshd_deny_users | length == 0
+        - freebsd_cis_sshd_deny_groups | length == 0
+
     - name: "4.2.4 | REMEDIATE | Set AllowUsers if configured"
       ansible.builtin.lineinfile:
         path: "{{ freebsd_cis_sshd_config }}"
@@ -1802,32 +1817,32 @@
 
 # ---
 
-- name: "4.5.1.1 | Ensure strong password hashing algorithm is configured"
+- name: "4.5.1.1 | Ensure strong password hashing algorithm is configured"  # pragma: allowlist secret
   when: "'4.5.1.1' not in active_exceptions"
   tags: [rule_4.5.1.1, level1, section_4, manual]
   block:
 
     - name: "4.5.1.1 | AUDIT | Check passwd_format in /etc/login.conf"
-      ansible.builtin.command: grep -E ':passwd_format=sha512:' /etc/login.conf
+      ansible.builtin.command: grep -E ':passwd_format=sha512:' /etc/login.conf  # pragma: allowlist secret
       register: cis_4_5_1_1_hash
       changed_when: cis_4_5_1_1_hash.stdout == ''
       failed_when: false
       check_mode: false
 
-    - name: "4.5.1.1 | AUDIT | Report password hashing state"
+    - name: "4.5.1.1 | AUDIT | Report password hashing state"  # pragma: allowlist secret
       ansible.builtin.debug:
-        msg: >-
+        msg: >-  # pragma: allowlist secret
           {{ 'COMPLIANT: passwd_format=sha512 is set in /etc/login.conf'
              if cis_4_5_1_1_hash.stdout != ''
              else 'NON-COMPLIANT: passwd_format=sha512 not found in /etc/login.conf' }}
 
-    - name: "4.5.1.1 | REMEDIATE | Set passwd_format=sha512 in /etc/login.conf"
+    - name: "4.5.1.1 | REMEDIATE | Set passwd_format=sha512 in /etc/login.conf"  # pragma: allowlist secret
       ansible.builtin.lineinfile:
         path: /etc/login.conf
         regexp: '^\s*:passwd_format='
         insertafter: '^default:\\$'
         firstmatch: true
-        line: ":passwd_format=sha512:\\"
+        line: ":passwd_format=sha512:\\"  # pragma: allowlist secret
       when:
         - freebsd_cis_remediate | bool
         - cis_4_5_1_1_hash.stdout == ''

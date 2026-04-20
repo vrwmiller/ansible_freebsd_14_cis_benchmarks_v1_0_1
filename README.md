@@ -150,8 +150,14 @@ All operator-tunable variables live in `defaults/main.yml`.
 ## Local Development
 
 ```bash
+python3 -m venv venv
 source venv/bin/activate
+pip install -r requirements-dev.txt
+pre-commit install
+
+pre-commit run --all-files                             # run configured commit gates
 ansible-lint --profile production tasks/section_<N>.yml   # lint a single section
+bash scripts/syntax-check.sh                              # validate playbook syntax
 ```
 
 ## Project Layout

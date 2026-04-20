@@ -1,0 +1,8 @@
+---
+- name: Syntax check playbook for FreeBSD CIS role
+  hosts: localhost
+  gather_facts: false
+  roles:
+    - role: ../
+      vars:
+        freebsd_cis_remediate: false
