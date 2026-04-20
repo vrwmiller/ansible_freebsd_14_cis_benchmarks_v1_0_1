@@ -1920,7 +1920,7 @@
       changed_when: true
       when:
         - freebsd_cis_remediate | bool
-        - cis_4_5_1_2_pwexp.rc != 0 or
+        - (cis_4_5_1_2_pwexp.stdout | trim) == '' or
           (cis_4_5_1_2_pwexp.stdout | trim | int) == 0 or
           (cis_4_5_1_2_pwexp.stdout | trim | int) > (freebsd_cis_pw_max_age | int)
         - cis_4_5_1_2_users is defined
