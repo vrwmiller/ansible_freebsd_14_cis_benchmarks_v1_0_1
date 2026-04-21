@@ -853,7 +853,9 @@
 
     - name: "1.2.2 | AUDIT | Warn if pkg is not bootstrapped"
       ansible.builtin.debug:
-        msg: "NON-COMPLIANT: pkg is not bootstrapped — no repository configuration possible"
+        msg: >-
+          NON-COMPLIANT: pkg is not bootstrapped — cannot audit repository
+          configuration via pkg -vv because /usr/local/sbin/pkg is absent
       when: not cis_1_2_2_pkg_stat.stat.exists
 
     - name: "1.2.2 | AUDIT | Check pkg repository configuration" # noqa: risky-shell-pipe
