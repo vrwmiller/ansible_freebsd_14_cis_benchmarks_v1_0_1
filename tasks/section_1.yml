@@ -840,12 +840,29 @@
   when: "'1.2.2' not in active_exceptions"
   tags: [rule_1.2.2, level1, section_1]
   block:
+    # Guard against the pkg bootstrap stub hanging: the stub at /usr/sbin/pkg
+    # prompts for interactive input when pkg is not yet bootstrapped.
+    # Only run pkg -vv when the real pkg binary is present.
+    - name: "1.2.2 | AUDIT | Check if pkg is bootstrapped"
+      ansible.builtin.stat:
+        path: /usr/local/sbin/pkg
+      register: cis_1_2_2_pkg_stat
+      changed_when: not cis_1_2_2_pkg_stat.stat.exists
+      failed_when: false
+      check_mode: false
+
+    - name: "1.2.2 | AUDIT | Warn if pkg is not bootstrapped"
+      ansible.builtin.debug:
+        msg: "NON-COMPLIANT: pkg is not bootstrapped — no repository configuration possible"
+      when: not cis_1_2_2_pkg_stat.stat.exists
+
     - name: "1.2.2 | AUDIT | Check pkg repository configuration" # noqa: risky-shell-pipe
       ansible.builtin.shell: pkg -vv 2>/dev/null | sed '1,/^Repositories/d'
       register: cis_1_2_2_repos
       changed_when: not (cis_1_2_2_repos.rc == 0 and cis_1_2_2_repos.stdout | length > 0)
       failed_when: false
       check_mode: false
+      when: cis_1_2_2_pkg_stat.stat.exists
 
     - name: "1.2.2 | AUDIT | Report repository configuration"
       ansible.builtin.debug:
@@ -853,6 +870,7 @@
           {{ 'COMPLIANT: pkg repository configuration found — verify settings match site policy'
              if cis_1_2_2_repos.rc == 0 and cis_1_2_2_repos.stdout | length > 0
              else 'NON-COMPLIANT: unable to read pkg repository configuration' }}
+      when: cis_1_2_2_pkg_stat.stat.exists
 
 # ---
 
