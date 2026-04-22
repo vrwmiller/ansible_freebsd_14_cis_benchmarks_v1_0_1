@@ -148,10 +148,16 @@
                if (cis_4_1_1_3_allow_ok | bool) and (cis_4_1_1_3_deny_ok | bool)
                else 'NON-COMPLIANT: see details above — review /var/cron/allow contents per site policy'] }}"
 
-    - name: "4.1.1.3 | REMEDIATE | Create /var/cron/allow if absent"
-      ansible.builtin.file:
-        path: /var/cron/allow
-        state: touch
+    # Benchmark divergence: the CIS control specifies existence and permissions of
+    # /var/cron/allow but is silent on contents (hence the manual tag — contents
+    # are site policy). Creating an empty file locks out all users including root.
+    # We seed root as a safe operational default. Operators must add additional
+    # authorized users per site policy. An existing file's contents are never modified.
+    - name: "4.1.1.3 | REMEDIATE | Create /var/cron/allow seeded with root if absent"
+      ansible.builtin.copy:
+        dest: /var/cron/allow
+        content: "root\n"
+        force: false
         owner: root
         group: wheel
         mode: '0640'
