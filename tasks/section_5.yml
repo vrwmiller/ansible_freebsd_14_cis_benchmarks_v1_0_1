@@ -1624,22 +1624,64 @@
         - freebsd_cis_remediate | bool
         - cis_5_3_1_aide.stdout | trim == ''
 
+    # Benchmark divergence: CIS FreeBSD 14 v1.0.1 specifies /var/lib/aide/ (Linux path).
+    # The FreeBSD AIDE port (security/aide) uses /var/db/aide/databases/ and ships
+    # aide.conf with file:// URI prefixes that the port binary does not support.
+    # This role patches aide.conf to strip the file:// prefix and uses the correct
+    # FreeBSD paths throughout.
+
+    - name: "5.3.1 | REMEDIATE | Stat aide.conf"
+      ansible.builtin.stat:
+        path: /usr/local/etc/aide.conf
+      register: cis_5_3_1_conf_stat
+      failed_when: false
+      check_mode: false
+
+    - name: "5.3.1 | REMEDIATE | Warn if aide.conf not found"
+      ansible.builtin.debug:
+        msg: "WARNING: /usr/local/etc/aide.conf not found — AIDE config fix and database init skipped"
+      when:
+        - freebsd_cis_remediate | bool
+        - not cis_5_3_1_conf_stat.stat.exists
+
+    - name: "5.3.1 | REMEDIATE | Fix file:// URI scheme in aide.conf database paths"
+      ansible.builtin.replace:
+        path: /usr/local/etc/aide.conf
+        regexp: '^(database(?:_out)?=)file://'
+        replace: '\1'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_3_1_conf_stat.stat.exists
+
+    - name: "5.3.1 | REMEDIATE | Ensure AIDE database directory exists"
+      ansible.builtin.file:
+        path: /var/db/aide/databases
+        state: directory
+        owner: root
+        group: wheel
+        mode: '0700'
+      when:
+        - freebsd_cis_remediate | bool
+        - cis_5_3_1_conf_stat.stat.exists
+
     - name: "5.3.1 | REMEDIATE | Initialize AIDE database"
       ansible.builtin.command: /usr/local/bin/aide --init
       args:
-        creates: /var/lib/aide/aide.db.new.gz
+        creates: /var/db/aide/databases/aide.db.new
+      changed_when: true
       when:
         - freebsd_cis_remediate | bool
-        - cis_5_3_1_aide.stdout | trim == ''
+        - cis_5_3_1_conf_stat.stat.exists
 
     - name: "5.3.1 | REMEDIATE | Move AIDE database into place"
-      ansible.builtin.command: mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz
+      ansible.builtin.command: mv /var/db/aide/databases/aide.db.new /var/db/aide/databases/aide.db
       args:
-        creates: /var/lib/aide/aide.db.gz
-        removes: /var/lib/aide/aide.db.new.gz
+        creates: /var/db/aide/databases/aide.db
+        removes: /var/db/aide/databases/aide.db.new
+      changed_when: true
       when:
         - freebsd_cis_remediate | bool
-        - cis_5_3_1_aide.stdout | trim == ''
+        - cis_5_3_1_conf_stat.stat.exists
 
 # ---
 

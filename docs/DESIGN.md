@@ -73,3 +73,30 @@ conditions are preferred for long-term maintainability in this role.
 * `freebsd_cis_global_exceptions`: List of rule IDs defined at the role level.
 * `freebsd_cis_local_exceptions`: List of rule IDs defined by the user (playbook or host-level).
 * `cis_<id>_<purpose>`: Internal variables used to store audit/remediation task results for each rule (for example: `cis_1_1_1_1_kld`, `cis_1_1_2_1_1_mount`).
+
+## Benchmark Fidelity and Known Divergences
+
+The CIS FreeBSD 14 Benchmark v1.0.1 is the authoritative source for control intent, but it contains
+errors — most commonly Linux-ism paths and procedures copied into a FreeBSD benchmark. Where the
+role diverges from the benchmark text for correctness, the divergence is documented here and
+inline in the task file.
+
+### 5.3.1 — AIDE paths and aide.conf URI scheme
+
+**Benchmark text:** specifies `/var/lib/aide/` for database paths (a Linux FHS path that does not
+exist on FreeBSD).
+
+**Actual FreeBSD port layout:** the `security/aide` port writes databases to
+`/var/db/aide/databases/` and ships `/usr/local/etc/aide.conf` with `database=` and `database_out=`
+values using `file:///` URI prefixes (e.g. `database=file:///var/db/aide/databases/aide.db`).
+
+**Problem:** The AIDE binary from the FreeBSD port does not support the `file://` URI scheme — it
+produces `ERROR: unexpected character: ':'` and exits non-zero.
+
+**Role fix:** A remediation task uses `ansible.builtin.replace` to strip the `file://` prefix from
+both `database=` and `database_out=` lines before running `aide --init`. All path references in the
+init and move tasks use `/var/db/aide/databases/` (the correct FreeBSD path).
+
+**Verified against:** FreeBSD 14 with `security/aide` port installed; aide binary at
+`/usr/local/bin/aide`; aide.conf at `/usr/local/etc/aide.conf` (line 75 and corresponding
+`database_out` line both affected).
