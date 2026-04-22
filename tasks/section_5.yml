@@ -10,7 +10,7 @@
 # =============================================================
 
 - name: "5.1.1.1 | Ensure syslog is installed"
-  when: "'5.1.1.1' not in active_exceptions"
+  when: "'5.1.1.1' not in active_exclusions"
   tags: [rule_5.1.1.1, level1, section_5, manual]
   block:
     - name: "5.1.1.1 | AUDIT | Check syslogd binary and rc.d script are present"
@@ -41,7 +41,7 @@
 # ---
 
 - name: "5.1.1.2 | Ensure syslogd service is enabled"
-  when: "'5.1.1.2' not in active_exceptions"
+  when: "'5.1.1.2' not in active_exclusions"
   tags: [rule_5.1.1.2, level1, section_5, automated]
   block:
     - name: "5.1.1.2 | AUDIT | Check syslogd_enable rc.conf setting"
@@ -69,7 +69,7 @@
 # ---
 
 - name: "5.1.1.3 | Ensure syslogd default file permissions are configured"
-  when: "'5.1.1.3' not in active_exceptions"
+  when: "'5.1.1.3' not in active_exclusions"
   tags: [rule_5.1.1.3, level1, section_5, manual]
   block:
     - name: "5.1.1.3 | AUDIT | Check /etc/newsyslog.conf exists"
@@ -111,7 +111,7 @@
 # ---
 
 - name: "5.1.1.4 | Ensure logging is configured"
-  when: "'5.1.1.4' not in active_exceptions"
+  when: "'5.1.1.4' not in active_exclusions"
   tags: [rule_5.1.1.4, level1, section_5, manual]
   block:
     - name: "5.1.1.4 | AUDIT | List syslog.conf files present"
@@ -157,7 +157,7 @@
 # ---
 
 - name: "5.1.1.5 | Ensure syslog is configured to send logs to a remote log host"
-  when: "'5.1.1.5' not in active_exceptions"
+  when: "'5.1.1.5' not in active_exclusions"
   tags: [rule_5.1.1.5, level1, section_5, manual]
   block:
     # --- Detection: syslog @remote entries ---
@@ -282,7 +282,7 @@
 # ---
 
 - name: "5.1.1.6 | Ensure rsyslog is not configured to receive logs from a remote client"
-  when: "'5.1.1.6' not in active_exceptions"
+  when: "'5.1.1.6' not in active_exclusions"
   tags: [rule_5.1.1.6, level1, section_5, manual]
   block:
     - name: "5.1.1.6 | AUDIT | Check syslogd_flags for -s flag"
@@ -325,7 +325,7 @@
 # =============================================================
 
 - name: "5.1.2 | Ensure newsyslog is configured"
-  when: "'5.1.2' not in active_exceptions"
+  when: "'5.1.2' not in active_exclusions"
   tags: [rule_5.1.2, level1, section_5, manual]
   block:
     - name: "5.1.2 | AUDIT | Check newsyslog.conf exists"
@@ -348,7 +348,7 @@
 # =============================================================
 
 - name: "5.1.3 | Ensure all logfiles have appropriate access configured"
-  when: "'5.1.3' not in active_exceptions"
+  when: "'5.1.3' not in active_exclusions"
   tags: [rule_5.1.3, level1, section_5, manual]
   block:
 
@@ -441,7 +441,7 @@
 
 - name: "5.2.1.1 | Ensure auditd service is enabled"
   when:
-    - "'5.2.1.1' not in active_exceptions"
+    - "'5.2.1.1' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_5.2.1.1, level2, section_5, manual]
   block:
@@ -474,7 +474,7 @@
 
 - name: "5.2.2.1 | Ensure audit log storage size is configured"
   when:
-    - "'5.2.2.1' not in active_exceptions"
+    - "'5.2.2.1' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_5.2.2.1, level2, section_5, manual]
   block:
@@ -509,7 +509,7 @@
 
 - name: "5.2.2.2 | Ensure audit logs are not automatically deleted"
   when:
-    - "'5.2.2.2' not in active_exceptions"
+    - "'5.2.2.2' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_5.2.2.2, level2, section_5, manual]
   block:
@@ -546,7 +546,7 @@
 
 - name: "5.2.3.1 | Ensure actions as another user are always logged"
   when:
-    - "'5.2.3.1' not in active_exceptions"
+    - "'5.2.3.1' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_5.2.3.1, level2, section_5, manual]
   block:
@@ -606,7 +606,7 @@
 
 - name: "5.2.3.2 | Ensure events that modify the sudo log file are collected"
   when:
-    - "'5.2.3.2' not in active_exceptions"
+    - "'5.2.3.2' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_5.2.3.2, level2, section_5, manual]
   block:
@@ -671,7 +671,7 @@
 
 - name: "5.2.3.3 | Ensure use of privileged commands are collected"
   when:
-    - "'5.2.3.3' not in active_exceptions"
+    - "'5.2.3.3' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_5.2.3.3, level2, section_5, manual]
   block:
@@ -731,7 +731,7 @@
 
 - name: "5.2.3.4 | Ensure discretionary access control permission modification events are collected"
   when:
-    - "'5.2.3.4' not in active_exceptions"
+    - "'5.2.3.4' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_5.2.3.4, level2, section_5, manual]
   block:
@@ -791,7 +791,7 @@
 
 - name: "5.2.3.5 | Ensure successful file system mounts are collected"
   when:
-    - "'5.2.3.5' not in active_exceptions"
+    - "'5.2.3.5' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_5.2.3.5, level2, section_5, manual]
   block:
@@ -851,7 +851,7 @@
 
 - name: "5.2.3.6 | Ensure login and logout events are collected"
   when:
-    - "'5.2.3.6' not in active_exceptions"
+    - "'5.2.3.6' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_5.2.3.6, level2, section_5, manual]
   block:
@@ -911,7 +911,7 @@
 
 - name: "5.2.3.7 | Ensure file deletion events by users are collected"
   when:
-    - "'5.2.3.7' not in active_exceptions"
+    - "'5.2.3.7' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_5.2.3.7, level2, section_5, manual]
   block:
@@ -971,7 +971,7 @@
 
 - name: "5.2.3.8 | Ensure successful and unsuccessful attempts to use the usermod command are recorded"
   when:
-    - "'5.2.3.8' not in active_exceptions"
+    - "'5.2.3.8' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_5.2.3.8, level2, section_5, manual]
   block:
@@ -1033,7 +1033,7 @@
 
 - name: "5.2.4.1 | Ensure the audit log directory is 0750 or more restrictive"
   when:
-    - "'5.2.4.1' not in active_exceptions"
+    - "'5.2.4.1' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_5.2.4.1, level2, section_5, manual]
   block:
@@ -1103,7 +1103,7 @@
 
 - name: "5.2.4.2 | Ensure audit log files are mode 0640 or less permissive"
   when:
-    - "'5.2.4.2' not in active_exceptions"
+    - "'5.2.4.2' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_5.2.4.2, level2, section_5, manual]
   block:
@@ -1181,7 +1181,7 @@
 
 - name: "5.2.4.3 | Ensure only authorized users own audit log files"
   when:
-    - "'5.2.4.3' not in active_exceptions"
+    - "'5.2.4.3' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_5.2.4.3, level2, section_5, manual]
   block:
@@ -1254,7 +1254,7 @@
 
 - name: "5.2.4.4 | Ensure only authorized groups are assigned ownership of audit log files"
   when:
-    - "'5.2.4.4' not in active_exceptions"
+    - "'5.2.4.4' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_5.2.4.4, level2, section_5, manual]
   block:
@@ -1332,7 +1332,7 @@
 
 - name: "5.2.4.5 | Ensure audit configuration files are restrictive"
   when:
-    - "'5.2.4.5' not in active_exceptions"
+    - "'5.2.4.5' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_5.2.4.5, level2, section_5, manual]
   block:
@@ -1431,7 +1431,7 @@
 
 - name: "5.2.4.6 | Ensure audit configuration files are owned by root"
   when:
-    - "'5.2.4.6' not in active_exceptions"
+    - "'5.2.4.6' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_5.2.4.6, level2, section_5, manual]
   block:
@@ -1462,7 +1462,7 @@
 
 - name: "5.2.4.7 | Ensure audit configuration files belong to group wheel"
   when:
-    - "'5.2.4.7' not in active_exceptions"
+    - "'5.2.4.7' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_5.2.4.7, level2, section_5, manual]
   block:
@@ -1493,7 +1493,7 @@
 
 - name: "5.2.4.8 | Ensure audit tools are 555 or more restrictive"
   when:
-    - "'5.2.4.8' not in active_exceptions"
+    - "'5.2.4.8' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_5.2.4.8, level2, section_5, manual]
   block:
@@ -1528,7 +1528,7 @@
 
 - name: "5.2.4.9 | Ensure audit tools are owned by root"
   when:
-    - "'5.2.4.9' not in active_exceptions"
+    - "'5.2.4.9' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_5.2.4.9, level2, section_5, manual]
   block:
@@ -1563,7 +1563,7 @@
 
 - name: "5.2.4.10 | Ensure audit tools belong to group wheel"
   when:
-    - "'5.2.4.10' not in active_exceptions"
+    - "'5.2.4.10' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_5.2.4.10, level2, section_5, manual]
   block:
@@ -1599,7 +1599,7 @@
 # =============================================================
 
 - name: "5.3.1 | Ensure AIDE is installed"
-  when: "'5.3.1' not in active_exceptions"
+  when: "'5.3.1' not in active_exclusions"
   tags: [rule_5.3.1, level1, section_5, manual]
   block:
     - name: "5.3.1 | AUDIT | Check if aide package is installed"
@@ -1715,7 +1715,7 @@
 # ---
 
 - name: "5.3.2 | Ensure filesystem integrity is regularly checked"
-  when: "'5.3.2' not in active_exceptions"
+  when: "'5.3.2' not in active_exclusions"
   tags: [rule_5.3.2, level1, section_5, manual]
   block:
     - name: "5.3.2 | AUDIT | Check root crontab for aide --check or --update"  # noqa: risky-shell-pipe

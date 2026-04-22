@@ -1,23 +1,25 @@
 ---
 # FreeBSD 14 CIS Benchmark v1.0.1 — Task Orchestrator
 
-- name: "Initialize | Validate exception variable types"
+- name: "Initialize | Validate exclusion variable types"
   ansible.builtin.assert:
     that:
-      - (freebsd_cis_global_exceptions | map('type_debug') | unique | difference(['str']) | length) == 0
-      - (freebsd_cis_local_exceptions | map('type_debug') | unique | difference(['str']) | length) == 0
+      - (freebsd_cis_global_exclusions | type_debug) == 'list'
+      - (freebsd_cis_local_exclusions | type_debug) == 'list'
+      - (freebsd_cis_global_exclusions | map('type_debug') | unique | difference(['str']) | length) == 0
+      - (freebsd_cis_local_exclusions | map('type_debug') | unique | difference(['str']) | length) == 0
     fail_msg: >-
-      freebsd_cis_global_exceptions and freebsd_cis_local_exceptions must both be YAML lists
+      freebsd_cis_global_exclusions and freebsd_cis_local_exclusions must both be YAML lists
       containing only string rule IDs. Got container types:
-      global={{ freebsd_cis_global_exceptions | type_debug }},
-      local={{ freebsd_cis_local_exceptions | type_debug }}.
+      global={{ freebsd_cis_global_exclusions | type_debug }},
+      local={{ freebsd_cis_local_exclusions | type_debug }}.
       Element types must all be 'str'; define them like ["1.1.1.1"] and not as dicts,
       integers, or nested lists.
   tags: [always]
 
-- name: "Initialize | Merge exception lists"
+- name: "Initialize | Merge exclusion lists"
   ansible.builtin.set_fact:
-    active_exceptions: "{{ (freebsd_cis_global_exceptions + freebsd_cis_local_exceptions) | unique }}"
+    active_exclusions: "{{ (freebsd_cis_global_exclusions + freebsd_cis_local_exclusions) | unique }}"
   tags: [always]
 
 - name: "Initialize | Warn — freebsd_cis_audit_expire_after is a small size-only value"

@@ -23,7 +23,7 @@ Every CIS control is one top-level block. Target pattern (see `docs/DESIGN.md`):
 
 ```yaml
 - name: "<id> | Ensure <description>"
-  when: "'<id>' not in active_exceptions"
+  when: "'<id>' not in active_exclusions"
   tags: [rule_<id>, level1|level2, section_<N>]
   block:
 
@@ -92,13 +92,13 @@ Additional tags are allowed for special cases: `automated`, `manual`.
 
 ---
 
-## Exception Handling
+## Exclusion Handling
 
 Initialized in `tasks/main.yml`:
 ```yaml
-active_exceptions: "{{ (freebsd_cis_global_exceptions + freebsd_cis_local_exceptions) | unique }}"
+active_exclusions: "{{ (freebsd_cis_global_exclusions + freebsd_cis_local_exclusions) | unique }}"
 ```
-Every top-level control block has `when: "'<id>' not in active_exceptions"`.
+Every top-level control block has `when: "'<id>' not in active_exclusions"`.
 Skipped controls appear as `skipped` in Ansible output — do not use `ignore_errors`.
 
 ---
@@ -106,7 +106,7 @@ Skipped controls appear as `skipped` in Ansible output — do not use `ignore_er
 ## Defaults vs Vars
 
 - `defaults/main.yml` — operator-tunable settings (`freebsd_cis_remediate`, `freebsd_cis_level`,
-  exception lists, control-specific tunables like `freebsd_cis_tmp_size`). All should have comments.
+  exclusion lists, control-specific tunables like `freebsd_cis_tmp_size`). All should have comments.
 - `vars/main.yml` — internal, non-overridable role metadata (`freebsd_cis_benchmark_version`, etc.).
 - New control-specific tunables go in `defaults/main.yml` under the relevant section header comment.
 
@@ -265,9 +265,9 @@ boundary, not just at merge. Manual `ansible-lint` runs remain optional for earl
 ## File Layout
 
 ```
-defaults/main.yml       # Operator tunables and exception lists
+defaults/main.yml       # Operator tunables and exclusion lists
 vars/main.yml           # Internal role metadata (benchmark name/version)
-tasks/main.yml          # Orchestrator: merge exceptions, import sections
+tasks/main.yml          # Orchestrator: merge exclusions, import sections
 tasks/section_1.yml     # CIS Section 1 — Initial Setup
 tasks/section_2.yml     # CIS Section 2 — Services
 tasks/section_3.yml     # CIS Section 3 — Network

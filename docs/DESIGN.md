@@ -27,9 +27,9 @@ Each CIS control is defined as a block to keep audit and remediation logic group
         msg: "Applying fix for /tmp partition..."
       # Replace with actual remediation logic
       when: 
-        - cis_1_1_1_mount.rc != 0   # Use .rc directly, not .changed
         - freebsd_cis_remediate | bool
-  when: "'1.1.1' not in active_exceptions"
+        - cis_1_1_1_mount.rc != 0   # Use .rc directly, not .changed
+  when: "'1.1.1' not in active_exclusions"
   tags: [rule_1.1.1, level1, section_1]
 ```
 
@@ -47,12 +47,12 @@ the same raw signal the audit task used, regardless of how `changed_when` is exp
 Both approaches are semantically equivalent when `changed_when` is set correctly, but `.rc`-based
 conditions are preferred for long-term maintainability in this role.
 
-## Exception Handling Initialization
+## Exclusion Handling Initialization
 
 ```yaml
 - name: "Initialize Compliance Configuration"
   set_fact:
-    active_exceptions: "{{ (freebsd_cis_global_exceptions + freebsd_cis_local_exceptions) | unique }}"
+    active_exclusions: "{{ (freebsd_cis_global_exclusions + freebsd_cis_local_exclusions) | unique }}"
 ```
 
 ## Layout Recommendations
@@ -64,14 +64,14 @@ conditions are preferred for long-term maintainability in this role.
 | `ok` | Green | Any | Check passed — system is compliant |
 | `changed` | Yellow | Audit | Check failed — non-compliance detected, no changes made |
 | `changed` | Yellow | Remediation | Check failed — remediation applied successfully |
-| `skipped` | Blue/Cyan | Any | Rule ID is in `active_exceptions` — not evaluated |
+| `skipped` | Blue/Cyan | Any | Rule ID is in `active_exclusions` — not evaluated |
 | `failed` | Red | Any | Unexpected error during audit or remediation task |
 
 ### Variable Naming Conventions
 
 * `freebsd_cis_remediate`: Boolean flag controlling whether remediation is applied (default: false).
-* `freebsd_cis_global_exceptions`: List of rule IDs defined at the role level.
-* `freebsd_cis_local_exceptions`: List of rule IDs defined by the user (playbook or host-level).
+* `freebsd_cis_global_exclusions`: List of rule IDs defined at the role level.
+* `freebsd_cis_local_exclusions`: List of rule IDs defined by the user (playbook or host-level).
 * `cis_<id>_<purpose>`: Internal variables used to store audit/remediation task results for each rule (for example: `cis_1_1_1_1_kld`, `cis_1_1_2_1_1_mount`).
 
 ## Benchmark Fidelity and Known Divergences

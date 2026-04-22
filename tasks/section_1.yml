@@ -9,7 +9,7 @@
 # =============================================================
 
 - name: "1.1.1.1 | Ensure ext2fs kernel module is not available"
-  when: "'1.1.1.1' not in active_exceptions"
+  when: "'1.1.1.1' not in active_exclusions"
   tags: [rule_1.1.1.1, level1, section_1]
   block:
     - name: "1.1.1.1 | AUDIT | Check whether ext2fs module is loaded"
@@ -61,7 +61,7 @@
 # ---
 
 - name: "1.1.1.2 | Ensure msdosfs kernel module is not available"
-  when: "'1.1.1.2' not in active_exceptions"
+  when: "'1.1.1.2' not in active_exclusions"
   tags: [rule_1.1.1.2, level1, section_1]
   block:
     - name: "1.1.1.2 | AUDIT | Check whether msdosfs module is loaded"
@@ -113,7 +113,7 @@
 # ---
 
 - name: "1.1.1.3 | Ensure zfs kernel module is not available"
-  when: "'1.1.1.3' not in active_exceptions"
+  when: "'1.1.1.3' not in active_exclusions"
   tags: [rule_1.1.1.3, level1, section_1]
   block:
     - name: "1.1.1.3 | AUDIT | Check whether zfs module is loaded"
@@ -232,7 +232,7 @@
 # =============================================================
 
 - name: "1.1.2.1.1 | Ensure /tmp is a separate partition"
-  when: "'1.1.2.1.1' not in active_exceptions"
+  when: "'1.1.2.1.1' not in active_exclusions"
   tags: [rule_1.1.2.1.1, level1, section_1]
   block:
     - name: "1.1.2.1.1 | AUDIT | Check if /tmp is a separately mounted filesystem" # noqa: command-instead-of-module risky-shell-pipe
@@ -287,7 +287,7 @@
 # ---
 
 - name: "1.1.2.1.2 | Ensure nosuid option set on /tmp partition"
-  when: "'1.1.2.1.2' not in active_exceptions"
+  when: "'1.1.2.1.2' not in active_exclusions"
   tags: [rule_1.1.2.1.2, level1, section_1]
   block:
     - name: "1.1.2.1.2 | AUDIT | Check /tmp mount for missing nosuid" # noqa: command-instead-of-module risky-shell-pipe
@@ -337,7 +337,7 @@
 # ---
 
 - name: "1.1.2.1.3 | Ensure noexec option set on /tmp partition"
-  when: "'1.1.2.1.3' not in active_exceptions"
+  when: "'1.1.2.1.3' not in active_exclusions"
   tags: [rule_1.1.2.1.3, level1, section_1]
   block:
     - name: "1.1.2.1.3 | AUDIT | Check /tmp mount for missing noexec" # noqa: command-instead-of-module risky-shell-pipe
@@ -390,7 +390,7 @@
 
 - name: "1.1.2.2.1 | Ensure separate partition exists for /home"
   when:
-    - "'1.1.2.2.1' not in active_exceptions"
+    - "'1.1.2.2.1' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_1.1.2.2.1, level2, section_1]
   block:
@@ -411,7 +411,7 @@
 # ---
 
 - name: "1.1.2.2.2 | Ensure nosuid option set on /home partition"
-  when: "'1.1.2.2.2' not in active_exceptions"
+  when: "'1.1.2.2.2' not in active_exclusions"
   tags: [rule_1.1.2.2.2, level1, section_1]
   block:
     - name: "1.1.2.2.2 | AUDIT | Check /home mount for missing nosuid" # noqa: command-instead-of-module risky-shell-pipe
@@ -451,7 +451,7 @@
 
 - name: "1.1.2.3.1 | Ensure separate partition exists for /var"
   when:
-    - "'1.1.2.3.1' not in active_exceptions"
+    - "'1.1.2.3.1' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_1.1.2.3.1, level2, section_1]
   block:
@@ -472,7 +472,7 @@
 # ---
 
 - name: "1.1.2.3.2 | Ensure nosuid option set on /var partition"
-  when: "'1.1.2.3.2' not in active_exceptions"
+  when: "'1.1.2.3.2' not in active_exclusions"
   tags: [rule_1.1.2.3.2, level1, section_1]
   block:
     - name: "1.1.2.3.2 | AUDIT | Check /var mount for missing nosuid" # noqa: command-instead-of-module risky-shell-pipe
@@ -512,7 +512,7 @@
 
 - name: "1.1.2.4.1 | Ensure separate partition exists for /var/tmp"
   when:
-    - "'1.1.2.4.1' not in active_exceptions"
+    - "'1.1.2.4.1' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_1.1.2.4.1, level2, section_1]
   block:
@@ -533,7 +533,7 @@
 # ---
 
 - name: "1.1.2.4.2 | Ensure nosuid option set on /var/tmp partition"
-  when: "'1.1.2.4.2' not in active_exceptions"
+  when: "'1.1.2.4.2' not in active_exclusions"
   tags: [rule_1.1.2.4.2, level1, section_1]
   block:
     - name: "1.1.2.4.2 | AUDIT | Check /var/tmp mount for missing nosuid" # noqa: command-instead-of-module risky-shell-pipe
@@ -570,7 +570,7 @@
 # ---
 
 - name: "1.1.2.4.3 | Ensure noexec option set on /var/tmp partition"
-  when: "'1.1.2.4.3' not in active_exceptions"
+  when: "'1.1.2.4.3' not in active_exclusions"
   tags: [rule_1.1.2.4.3, level1, section_1]
   block:
     - name: "1.1.2.4.3 | AUDIT | Check /var/tmp mount for missing noexec" # noqa: command-instead-of-module risky-shell-pipe
@@ -610,7 +610,7 @@
 
 - name: "1.1.2.5.1 | Ensure separate partition exists for /var/log"
   when:
-    - "'1.1.2.5.1' not in active_exceptions"
+    - "'1.1.2.5.1' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_1.1.2.5.1, level2, section_1]
   block:
@@ -631,7 +631,7 @@
 # ---
 
 - name: "1.1.2.5.2 | Ensure nosuid option set on /var/log partition"
-  when: "'1.1.2.5.2' not in active_exceptions"
+  when: "'1.1.2.5.2' not in active_exclusions"
   tags: [rule_1.1.2.5.2, level1, section_1]
   block:
     - name: "1.1.2.5.2 | AUDIT | Check /var/log mount for missing nosuid" # noqa: command-instead-of-module risky-shell-pipe
@@ -668,7 +668,7 @@
 # ---
 
 - name: "1.1.2.5.3 | Ensure noexec option set on /var/log partition"
-  when: "'1.1.2.5.3' not in active_exceptions"
+  when: "'1.1.2.5.3' not in active_exclusions"
   tags: [rule_1.1.2.5.3, level1, section_1]
   block:
     - name: "1.1.2.5.3 | AUDIT | Check /var/log mount for missing noexec" # noqa: command-instead-of-module risky-shell-pipe
@@ -708,7 +708,7 @@
 
 - name: "1.1.2.6.1 | Ensure separate partition exists for /var/audit"
   when:
-    - "'1.1.2.6.1' not in active_exceptions"
+    - "'1.1.2.6.1' not in active_exclusions"
     - freebsd_cis_level | int >= 2
   tags: [rule_1.1.2.6.1, level2, section_1]
   block:
@@ -729,7 +729,7 @@
 # ---
 
 - name: "1.1.2.6.2 | Ensure nosuid option set on /var/audit partition"
-  when: "'1.1.2.6.2' not in active_exceptions"
+  when: "'1.1.2.6.2' not in active_exclusions"
   tags: [rule_1.1.2.6.2, level1, section_1]
   block:
     - name: "1.1.2.6.2 | AUDIT | Check /var/audit mount for missing nosuid" # noqa: command-instead-of-module risky-shell-pipe
@@ -766,7 +766,7 @@
 # ---
 
 - name: "1.1.2.6.3 | Ensure noexec option set on /var/audit partition"
-  when: "'1.1.2.6.3' not in active_exceptions"
+  when: "'1.1.2.6.3' not in active_exclusions"
   tags: [rule_1.1.2.6.3, level1, section_1]
   block:
     - name: "1.1.2.6.3 | AUDIT | Check /var/audit mount for missing noexec" # noqa: command-instead-of-module risky-shell-pipe
@@ -805,7 +805,7 @@
 # =============================================================
 
 - name: "1.2.1 | Ensure update server certificate key fingerprints are configured"
-  when: "'1.2.1' not in active_exceptions"
+  when: "'1.2.1' not in active_exclusions"
   tags: [rule_1.2.1, level1, section_1]
   block:
     - name: "1.2.1 | AUDIT | Read KeyPrint from freebsd-update.conf"
@@ -837,7 +837,7 @@
 # ---
 
 - name: "1.2.2 | Ensure package manager repositories are configured"
-  when: "'1.2.2' not in active_exceptions"
+  when: "'1.2.2' not in active_exclusions"
   tags: [rule_1.2.2, level1, section_1]
   block:
     # Guard against the pkg bootstrap stub hanging: the stub at /usr/sbin/pkg
@@ -877,7 +877,7 @@
 # ---
 
 - name: "1.2.3 | Ensure updates, patches, and additional security software are installed"
-  when: "'1.2.3' not in active_exceptions"
+  when: "'1.2.3' not in active_exclusions"
   tags: [rule_1.2.3, level1, section_1]
   block:
     - name: "1.2.3 | AUDIT | Check for pending base system updates"
@@ -939,7 +939,7 @@
 # =============================================================
 
 - name: "1.3.1 | Ensure bootloader password is set"
-  when: "'1.3.1' not in active_exceptions"
+  when: "'1.3.1' not in active_exclusions"
   tags: [rule_1.3.1, level1, section_1]
   block:
     - name: "1.3.1 | AUDIT | Check for bootloader password in loader.conf"
@@ -984,7 +984,7 @@
 # ---
 
 - name: "1.3.2 | Ensure permissions on bootloader config are configured"
-  when: "'1.3.2' not in active_exceptions"
+  when: "'1.3.2' not in active_exclusions"
   tags: [rule_1.3.2, level1, section_1]
   block:
     - name: "1.3.2 | AUDIT | Check /boot/loader.conf permissions"
@@ -1032,7 +1032,7 @@
 # =============================================================
 
 - name: "1.4.1 | Ensure address space layout randomization (ASLR) is enabled"
-  when: "'1.4.1' not in active_exceptions"
+  when: "'1.4.1' not in active_exclusions"
   tags: [rule_1.4.1, level1, section_1]
   block:
     - name: "1.4.1 | AUDIT | Read kern.elf64.aslr.enable sysctl"
@@ -1071,7 +1071,7 @@
 # ---
 
 - name: "1.4.2 | Ensure core dump backtraces are disabled"
-  when: "'1.4.2' not in active_exceptions"
+  when: "'1.4.2' not in active_exclusions"
   tags: [rule_1.4.2, level1, section_1]
   block:
     - name: "1.4.2 | AUDIT | Check savecore_enable sysrc value"
@@ -1106,7 +1106,7 @@
 # ---
 
 - name: "1.4.3 | Ensure core dump storage is disabled"
-  when: "'1.4.3' not in active_exceptions"
+  when: "'1.4.3' not in active_exclusions"
   tags: [rule_1.4.3, level1, section_1]
   block:
     - name: "1.4.3 | AUDIT | Check dumpdev sysrc value"
@@ -1135,7 +1135,7 @@
 # =============================================================
 
 - name: "1.6.1 | Ensure message of the day is configured properly"
-  when: "'1.6.1' not in active_exceptions"
+  when: "'1.6.1' not in active_exclusions"
   tags: [rule_1.6.1, level1, section_1]
   block:
     - name: "1.6.1 | AUDIT | Check /etc/motd for OS version disclosure"
@@ -1175,7 +1175,7 @@
 # ---
 
 - name: "1.6.2 | Ensure local login warning banner is configured properly"
-  when: "'1.6.2' not in active_exceptions"
+  when: "'1.6.2' not in active_exclusions"
   tags: [rule_1.6.2, level1, section_1]
   block:
     - name: "1.6.2 | AUDIT | Check /etc/issue for OS version disclosure"
@@ -1207,7 +1207,7 @@
 # ---
 
 - name: "1.6.3 | Ensure remote login warning banner is configured properly"
-  when: "'1.6.3' not in active_exceptions"
+  when: "'1.6.3' not in active_exclusions"
   tags: [rule_1.6.3, level1, section_1]
   block:
     - name: "1.6.3 | AUDIT | Check /etc/issue.net for OS version disclosure"
@@ -1239,7 +1239,7 @@
 # ---
 
 - name: "1.6.4 | Ensure access to /etc/motd is configured"
-  when: "'1.6.4' not in active_exceptions"
+  when: "'1.6.4' not in active_exclusions"
   tags: [rule_1.6.4, level1, section_1]
   block:
     - name: "1.6.4 | AUDIT | Stat /etc/motd"
@@ -1275,7 +1275,7 @@
 # ---
 
 - name: "1.6.5 | Ensure access to /etc/issue is configured"
-  when: "'1.6.5' not in active_exceptions"
+  when: "'1.6.5' not in active_exclusions"
   tags: [rule_1.6.5, level1, section_1]
   block:
     - name: "1.6.5 | AUDIT | Stat /etc/issue"
