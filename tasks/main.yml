@@ -1,7 +1,7 @@
 ---
 # FreeBSD 14 CIS Benchmark v1.0.1 — Task Orchestrator
 
-- name: "Initialize | Validate exception variable types"
+- name: "Initialize | Validate exclusion variable types"
   ansible.builtin.assert:
     that:
       - (freebsd_cis_global_exclusions | map('type_debug') | unique | difference(['str']) | length) == 0
@@ -15,7 +15,7 @@
       integers, or nested lists.
   tags: [always]
 
-- name: "Initialize | Merge exception lists"
+- name: "Initialize | Merge exclusion lists"
   ansible.builtin.set_fact:
     active_exclusions: "{{ (freebsd_cis_global_exclusions + freebsd_cis_local_exclusions) | unique }}"
   tags: [always]
