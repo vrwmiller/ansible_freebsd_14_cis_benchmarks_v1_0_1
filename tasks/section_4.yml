@@ -342,19 +342,22 @@
          else 'sshd -T: effective configuration query succeeded' }}
   changed_when: cis_4_2_sshd_config_dump.rc != 0
 
-- name: "4.2 | PREFLIGHT | Stat sshd_config path"
+- name: "4.2 | PRE-FLIGHT | Stat sshd_config path"
   ansible.builtin.stat:
     path: "{{ freebsd_cis_sshd_config }}"
   register: cis_4_2_sshd_config_stat
+  tags: [always]
   failed_when: false
   check_mode: false
 
-- name: "4.2 | PREFLIGHT | Warn if sshd_config not found"
+- name: "4.2 | PRE-FLIGHT | Warn if sshd_config not found"
   ansible.builtin.debug:
     msg: >-
       WARNING: {{ freebsd_cis_sshd_config }} does not exist — verify
       freebsd_cis_sshd_source ('{{ freebsd_cis_sshd_source }}') matches
-      the installed sshd on this host. All 4.2.x remediation tasks will be skipped.
+      the installed sshd on this host. All remediations that modify sshd_config
+      will be skipped.
+  tags: [always]
   when: not cis_4_2_sshd_config_stat.stat.exists
 
 # ---
