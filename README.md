@@ -11,7 +11,7 @@ An Ansible role for auditing and optionally remediating FreeBSD 14 hosts against
 - Audits CIS controls by default — no host state is changed unless explicitly enabled.
 - Marks non-compliant checks as `changed` in Ansible output for easy grep/reporting.
 - Applies remediation only when `freebsd_cis_remediate: true`.
-- Supports layered exception handling for environment-specific deviations.
+- Supports layered exclusion handling for environment-specific deviations.
 - Audit-only mode (`freebsd_cis_remediate: false`) is safe to run on production hosts at any time.
 
 ## Modes
@@ -60,22 +60,22 @@ The role includes pre-flight `stat` checks for optional files and binaries. When
 
 The handler `Resync auditd` runs `/usr/sbin/audit -s` after any change to `/etc/security/audit_control`. This ensures audit configuration changes take effect immediately without a full audit daemon restart.
 
-## Exception Model
+## Exclusion Model
 
-Two lists merge into one active exceptions set used by each control:
+Two lists merge into one active exclusions set used by each control:
 
 ```yaml
-freebsd_cis_global_exceptions: []   # role-level skips
-freebsd_cis_local_exceptions: []    # playbook/host-level skips
+freebsd_cis_global_exclusions: []   # role-level skips
+freebsd_cis_local_exclusions: []    # playbook/host-level skips
 ```
 
 Both variables are intended to be YAML lists of string rule IDs. At play start,
-`tasks/main.yml` validates that the iterated exception values are string rule IDs and
+`tasks/main.yml` validates that the iterated exclusion values are string rule IDs and
 fails with a clear message when non-string elements are present. The effective set is
 then computed:
 
 ```yaml
-active_exceptions: "{{ (freebsd_cis_global_exceptions + freebsd_cis_local_exceptions) | unique }}"
+active_exclusions: "{{ (freebsd_cis_global_exclusions + freebsd_cis_local_exclusions) | unique }}"
 ```
 
 Skipped controls appear as `skipped` in Ansible output.
@@ -90,8 +90,8 @@ All operator-tunable variables live in `defaults/main.yml`.
 | --- | --- | --- |
 | `freebsd_cis_remediate` | `false` | Enable remediation. `false` = audit-only. |
 | `freebsd_cis_level` | `1` | CIS profile level (1 or 2). Level 2 enables additional controls. |
-| `freebsd_cis_global_exceptions` | `[]` | Rule IDs to skip at the role level. |
-| `freebsd_cis_local_exceptions` | `[]` | Rule IDs to skip at the playbook or host level. |
+| `freebsd_cis_global_exclusions` | `[]` | Rule IDs to skip at the role level. |
+| `freebsd_cis_local_exclusions` | `[]` | Rule IDs to skip at the playbook or host level. |
 
 ### Section 1 — Initial Setup
 
@@ -163,9 +163,9 @@ bash scripts/syntax-check.sh                              # validate playbook sy
 ## Project Layout
 
 ```bash
-defaults/main.yml       # Operator tunables and exception lists
+defaults/main.yml       # Operator tunables and exclusion lists
 vars/main.yml           # Internal role metadata (benchmark name/version)
-tasks/main.yml          # Orchestrator: merge exceptions, import sections
+tasks/main.yml          # Orchestrator: merge exclusions, import sections
 tasks/section_1.yml     # CIS Section 1 — Initial Setup
 tasks/section_2.yml     # CIS Section 2 — Services
 tasks/section_3.yml     # CIS Section 3 — Network

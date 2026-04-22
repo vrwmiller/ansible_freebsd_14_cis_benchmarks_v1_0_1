@@ -10,10 +10,10 @@ I have several FreeBSD VPS's and manually maintaining compliance is inefficient 
 A single Ansible Galaxy role that:
 
 1. **Runs audits by default**, using Ansible’s `changed` status to flag non-compliant conditions without modifying the system.
-2. **Allows rule exceptions** through a layered variable structure, enabling environment-specific overrides (e.g., relaxing SSH requirements on a bastion host).
+2. **Allows rule exclusions** through a layered variable structure, enabling environment-specific overrides (e.g., relaxing SSH requirements on a bastion host).
 3. **Performs remediation only when explicitly enabled**, ensuring administrators retain full control over when changes are applied.
 
 ## Expected Outcomes
 - **Visibility:** Immediate insight into the compliance state across all managed FreeBSD systems.
 - **Safety:** Audit mode runs without `--check`, enabling more comprehensive validation than standard check mode typically allows.
-- **Flexibility:** Combined global and local exception handling allows security teams to define baselines while enabling operations teams to override specific rules as needed.
+- **Flexibility:** Combined global and local exclusion handling allows security teams to define baselines while enabling operations teams to override specific rules as needed.

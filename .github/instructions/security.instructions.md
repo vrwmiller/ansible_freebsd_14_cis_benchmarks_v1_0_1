@@ -24,8 +24,8 @@ applyTo: "**/*.py, **/*.sql, **/*.yaml, **/*.yml, **/*.tf, **/*.tfvars, **/*.aut
 - Remediation logic must run only when both are true:
   - the control is non-compliant
   - `freebsd_cis_remediate | bool`
-- Respect exceptions consistently using `active_exceptions`.
-- Avoid silent bypasses of controls due to broad or malformed exception checks.
+- Respect exclusions consistently using `active_exclusions`.
+- Avoid silent bypasses of controls due to broad or malformed exclusion checks.
 
 ## FreeBSD Hardening Safety
 

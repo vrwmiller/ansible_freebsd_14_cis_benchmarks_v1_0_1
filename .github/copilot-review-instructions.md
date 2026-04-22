@@ -65,7 +65,7 @@ If the answer is no — the current wording is unambiguous, the command works, t
 ## Repo-Specific Risk Priorities
 
 - Audit/remediation mode gating errors (`freebsd_cis_remediate`)
-- Exception merge/skip logic errors (`freebsd_cis_global_exceptions`, `freebsd_cis_local_exceptions`, `active_exceptions`)
+- Exclusion merge/skip logic errors (`freebsd_cis_global_exclusions`, `freebsd_cis_local_exclusions`, `active_exclusions`)
 - Non-idempotent Ansible behavior (`changed_when`, `failed_when`, missing guards)
 - Secret exposure risks in automation and IaC
 
