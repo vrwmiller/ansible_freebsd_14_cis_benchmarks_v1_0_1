@@ -538,7 +538,7 @@
 - name: "6.2.4 | Ensure no duplicate UIDs exist"
   # FreeBSD note: FreeBSD ships with a 'toor' account at UID 0 by design.
   # This is intended to allow a third-party shell for root. If toor is the
-  # only duplicate UID 0 entry and your site policy permits it, exception-list
+  # only duplicate UID 0 entry and your site policy permits it, exclude
   # this control with '6.2.4' in freebsd_cis_local_exclusions.
   when: "'6.2.4' not in active_exclusions"
   tags: [rule_6.2.4, level1, section_6, manual]
@@ -779,7 +779,7 @@
   # FreeBSD note: FreeBSD ships with 'toor' at UID 0 by design (provides a
   # root shell with a third-party shell binary). This control will always
   # report NON-COMPLIANT on a stock FreeBSD install unless toor is removed.
-  # If your site policy retains toor, exception-list this control with
+  # If your site policy retains toor, exclude this control with
   # '6.2.9' in freebsd_cis_local_exclusions.
   when: "'6.2.9' not in active_exclusions"
   tags: [rule_6.2.9, level1, section_6, manual]

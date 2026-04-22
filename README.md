@@ -62,6 +62,14 @@ The handler `Resync auditd` runs `/usr/sbin/audit -s` after any change to `/etc/
 
 ## Exclusion Model
 
+### Breaking Change
+
+This role renamed the skip-list variables from `*_exceptions` to `*_exclusions`.
+If your inventory or playbooks still set `freebsd_cis_global_exceptions` or
+`freebsd_cis_local_exceptions`, rename them to
+`freebsd_cis_global_exclusions` and `freebsd_cis_local_exclusions`.
+The old names are ignored.
+
 Two lists merge into one active exclusions set used by each control:
 
 ```yaml

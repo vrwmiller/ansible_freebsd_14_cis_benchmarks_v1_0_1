@@ -4,6 +4,8 @@
 - name: "Initialize | Validate exclusion variable types"
   ansible.builtin.assert:
     that:
+      - (freebsd_cis_global_exclusions | type_debug) == 'list'
+      - (freebsd_cis_local_exclusions | type_debug) == 'list'
       - (freebsd_cis_global_exclusions | map('type_debug') | unique | difference(['str']) | length) == 0
       - (freebsd_cis_local_exclusions | map('type_debug') | unique | difference(['str']) | length) == 0
     fail_msg: >-
