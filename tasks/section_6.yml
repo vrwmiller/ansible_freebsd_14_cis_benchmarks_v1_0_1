@@ -14,7 +14,7 @@
   # Benchmark divergence: the remediation says 'chown root:root /etc/passwd'
   # but the Audit expected output and Default Value both show Gid: (0/wheel).
   # FreeBSD convention is root:wheel. We use root:wheel and note the error.
-  when: "'6.1.1' not in active_exceptions"
+  when: "'6.1.1' not in active_exclusions"
   tags: [rule_6.1.1, level1, section_6, automated]
   block:
 
@@ -63,7 +63,7 @@
 # ---
 
 - name: "6.1.2 | Ensure permissions on /etc/group are configured"
-  when: "'6.1.2' not in active_exceptions"
+  when: "'6.1.2' not in active_exclusions"
   tags: [rule_6.1.2, level1, section_6, automated]
   block:
 
@@ -112,7 +112,7 @@
 # ---
 
 - name: "6.1.3 | Ensure permissions on /etc/master.passwd are configured"
-  when: "'6.1.3' not in active_exceptions"
+  when: "'6.1.3' not in active_exclusions"
   tags: [rule_6.1.3, level1, section_6, automated]
   block:
 
@@ -161,7 +161,7 @@
 # ---
 
 - name: "6.1.4 | Ensure permissions on /etc/shells are configured"
-  when: "'6.1.4' not in active_exceptions"
+  when: "'6.1.4' not in active_exclusions"
   tags: [rule_6.1.4, level1, section_6, automated]
   block:
 
@@ -216,7 +216,7 @@
   # World-writable file remediation is NOT automated — removing o-w from unknown
   # files can break applications. Directories are remediated (sticky bit added,
   # world-write removed) because that only restricts deletion, not file access.
-  when: "'6.1.5' not in active_exceptions"
+  when: "'6.1.5' not in active_exclusions"
   tags: [rule_6.1.5, level1, section_6, manual]
   block:
 
@@ -285,7 +285,7 @@
   # Note: -xdev limits the scan to the root filesystem. Files on separately
   # mounted filesystems (/home, /var, /usr) are not checked. This matches
   # the benchmark's audit command but the scope limitation should be noted.
-  when: "'6.1.6' not in active_exceptions"
+  when: "'6.1.6' not in active_exclusions"
   tags: [rule_6.1.6, level1, section_6, manual]
   block:
 
@@ -320,7 +320,7 @@
 # ---
 
 - name: "6.1.7 | Ensure SUID and SGID files are reviewed"
-  when: "'6.1.7' not in active_exceptions"
+  when: "'6.1.7' not in active_exclusions"
   tags: [rule_6.1.7, level1, section_6, manual]
   block:
 
@@ -390,7 +390,7 @@
   # security risk and is checked in 6.2.2. Implementing as-written for
   # benchmark compliance; the conceptual mismatch should be corrected in a
   # future benchmark version.
-  when: "'6.2.1' not in active_exceptions"
+  when: "'6.2.1' not in active_exclusions"
   tags: [rule_6.2.1, level1, section_6, manual]
   block:
 
@@ -448,7 +448,7 @@
   # field is $2 == "" (empty string), which allows passwordless login.
   # We check $2 == "" to match the description's stated intent. This divergence
   # should be corrected in a future benchmark version.
-  when: "'6.2.2' not in active_exceptions"
+  when: "'6.2.2' not in active_exclusions"
   tags: [rule_6.2.2, level1, section_6, manual]
   block:
 
@@ -497,7 +497,7 @@
 # ---
 
 - name: "6.2.3 | Ensure all groups in /etc/passwd exist in /etc/group"
-  when: "'6.2.3' not in active_exceptions"
+  when: "'6.2.3' not in active_exclusions"
   tags: [rule_6.2.3, level1, section_6, manual]
   block:
 
@@ -539,8 +539,8 @@
   # FreeBSD note: FreeBSD ships with a 'toor' account at UID 0 by design.
   # This is intended to allow a third-party shell for root. If toor is the
   # only duplicate UID 0 entry and your site policy permits it, exception-list
-  # this control with '6.2.4' in freebsd_cis_local_exceptions.
-  when: "'6.2.4' not in active_exceptions"
+  # this control with '6.2.4' in freebsd_cis_local_exclusions.
+  when: "'6.2.4' not in active_exclusions"
   tags: [rule_6.2.4, level1, section_6, manual]
   block:
 
@@ -583,7 +583,7 @@
 # ---
 
 - name: "6.2.5 | Ensure no duplicate GIDs exist"
-  when: "'6.2.5' not in active_exceptions"
+  when: "'6.2.5' not in active_exclusions"
   tags: [rule_6.2.5, level1, section_6, manual]
   block:
 
@@ -623,7 +623,7 @@
 # ---
 
 - name: "6.2.6 | Ensure no duplicate user names exist"
-  when: "'6.2.6' not in active_exceptions"
+  when: "'6.2.6' not in active_exclusions"
   tags: [rule_6.2.6, level1, section_6, manual]
   block:
 
@@ -664,7 +664,7 @@
 # ---
 
 - name: "6.2.7 | Ensure no duplicate group names exist"
-  when: "'6.2.7' not in active_exceptions"
+  when: "'6.2.7' not in active_exclusions"
   tags: [rule_6.2.7, level1, section_6, manual]
   block:
 
@@ -703,7 +703,7 @@
 # ---
 
 - name: "6.2.8 | Ensure root path integrity"
-  when: "'6.2.8' not in active_exceptions"
+  when: "'6.2.8' not in active_exclusions"
   tags: [rule_6.2.8, level1, section_6, manual]
   block:
 
@@ -780,8 +780,8 @@
   # root shell with a third-party shell binary). This control will always
   # report NON-COMPLIANT on a stock FreeBSD install unless toor is removed.
   # If your site policy retains toor, exception-list this control with
-  # '6.2.9' in freebsd_cis_local_exceptions.
-  when: "'6.2.9' not in active_exceptions"
+  # '6.2.9' in freebsd_cis_local_exclusions.
+  when: "'6.2.9' not in active_exclusions"
   tags: [rule_6.2.9, level1, section_6, manual]
   block:
 
@@ -822,7 +822,7 @@
   # user, or creating a home directory — decisions that cannot be automated
   # safely. Tagging as manual and reporting only. Future benchmark versions
   # should correct the automated label.
-  when: "'6.2.10' not in active_exceptions"
+  when: "'6.2.10' not in active_exclusions"
   tags: [rule_6.2.10, level1, section_6, manual]
   block:
 
@@ -886,7 +886,7 @@
   # users' files without alerting the user community can result in unexpected
   # outages." Tagging as manual. Future benchmark versions should correct the
   # automated label.
-  when: "'6.2.11' not in active_exceptions"
+  when: "'6.2.11' not in active_exclusions"
   tags: [rule_6.2.11, level1, section_6, manual]
   block:
 
