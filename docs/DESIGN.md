@@ -98,5 +98,5 @@ both `database=` and `database_out=` lines before running `aide --init`. All pat
 init and move tasks use `/var/db/aide/databases/` (the correct FreeBSD path).
 
 **Verified against:** FreeBSD 14 with `security/aide` port installed; aide binary at
-`/usr/local/bin/aide`; aide.conf at `/usr/local/etc/aide.conf` (line 75 and corresponding
-`database_out` line both affected).
+`/usr/local/bin/aide`; aide.conf at `/usr/local/etc/aide.conf` (the `database=` and
+`database_out=` entries both affected).
