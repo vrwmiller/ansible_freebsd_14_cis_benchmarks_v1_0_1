@@ -27,8 +27,8 @@ Each CIS control is defined as a block to keep audit and remediation logic group
         msg: "Applying fix for /tmp partition..."
       # Replace with actual remediation logic
       when: 
-        - cis_1_1_1_mount.rc != 0   # Use .rc directly, not .changed
         - freebsd_cis_remediate | bool
+        - cis_1_1_1_mount.rc != 0   # Use .rc directly, not .changed
   when: "'1.1.1' not in active_exclusions"
   tags: [rule_1.1.1, level1, section_1]
 ```
